@@ -55,7 +55,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 - These colors represent the state of an item, for example a new post will use the "Approved" color, while a removed post will use the "Removed" color.
 
 	![Embed Color Customization](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAppearance.png)
-- 
+
 - Specific Feature Information:
 	- Public New Posts
 		- This feed is designed to be used in public discord servers.
@@ -64,7 +64,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If a post becomes approved after being filtered or removed at any point, it will be resent.
 		- Public messages will never show any information regarding moderation.
 
-		![Public Message Example](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
+		![Public Message Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
 	- 
 	- Private New Posts
 		- This feed is designed to be used in private moderator discord servers/channels.
@@ -80,7 +80,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
 		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
 
-		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
+		![Removal User Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
 	- 
 	- Reports
 		- This feed will notify you of any reports that occur in your subreddit.
@@ -88,7 +88,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If the reported item is later removed or deleted, the message will update to reflect that change.
 		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
-		![Report Example](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
+		![Report Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
 	- 
 	- ModMail
 		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
@@ -98,13 +98,13 @@ Making at easy to keep track of anything related to your subreddit directly from
 	
 	| New Post Notification | Removal Log |
 	| :---: | :---: |
-	| ![New Mod Mail](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied Mod Mail](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
+	| ![New Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
  
 	- ModLog
 		- This feed will notify you of any ModLog actions that occur in your subreddit.
 		- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
 
-		![Mod Log Selector](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
+		![Mod Log Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
 	
 ## Information regarding deletions
 
@@ -112,7 +112,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 - This includes the author of the post or comment, as well as the message body.
 - To ensure no messages can be missed for any reason the app will delete sent messages after 13 days.
 
-![Deleted Message](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostDeletion.png)
+![Deleted Message](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostDeletion.png)
 
 # This app is still in early development!
 
