@@ -49,12 +49,12 @@ Making at easy to keep track of anything related to your subreddit directly from
 - Any feature will only become active once a valid Discord webhook URL is provided for that feed type.
 - Pingable notification messages are optional and can be left empty if not desired.
 
-	!(https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/Settings.png)
+	![Basic Setup Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/Settings.png)
 
 - Embed colors can be customized by providing a hex color code (eg. #FF0000 for red). If left empty a default color will be used.
 - These colors represent the state of an item, for example a new post will use the "Approved" color, while a removed post will use the "Removed" color.
 
-	!(https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAppearance.png)
+	![Embed Color Customization](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAppearance.png)
 - 
 - Specific Feature Information:
 	- Public New Posts
@@ -64,7 +64,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If a post becomes approved after being filtered or removed at any point, it will be resent.
 		- Public messages will never show any information regarding moderation.
 
-		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
+		![Public Message Example](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
 	- 
 	- Private New Posts
 		- This feed is designed to be used in private moderator discord servers/channels.
@@ -88,7 +88,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If the reported item is later removed or deleted, the message will update to reflect that change.
 		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
-		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
+		![Report Example](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
 	- 
 	- ModMail
 		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
@@ -104,15 +104,15 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- This feed will notify you of any ModLog actions that occur in your subreddit.
 		- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
 
-		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
-	- 
+		![Mod Log Selector](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
+	
 ## Information regarding deletions
 
 - This app will respect deletions. This means that if a post that is being tracked is deleted, the corresponding message data in discord will be replaced.
 - This includes the author of the post or comment, as well as the message body.
 - To ensure no messages can be missed for any reason the app will delete sent messages after 13 days.
 
-!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostDeletion.png)
+![Deleted Message](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostDeletion.png)
 
 # This app is still in early development!
 
