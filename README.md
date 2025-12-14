@@ -20,7 +20,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 | New Post Notification | Removal Log |
 | :---: | :---: |
-| ![New Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPost.png) | ![Removed Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostUpdated.png) |
+| ![New Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPost.png) | ![Same Message after removal](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostUpdated.png) |
 
 - Public New Post Feed:
   - This is a special new post feed that is designed to be viewed in public discord servers.
@@ -88,7 +88,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If the reported item is later removed or deleted, the message will update to reflect that change.
 		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
-		![Report Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
+		![Report Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostReport.png)
 	 
 	- ModMail
 		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
@@ -98,7 +98,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 	
 	| New Post Notification | Removal Log |
 	| :---: | :---: |
-	| ![New Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
+	| ![New Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied by a moderator](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
  
 	- ModLog
 		- This feed will notify you of any ModLog actions that occur in your subreddit.
@@ -112,10 +112,15 @@ Making at easy to keep track of anything related to your subreddit directly from
 - This includes the author of the post or comment, as well as the message body.
 - To ensure no messages can be missed for any reason the app will delete sent messages after 13 days.
 
-![Deleted Message](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostDeletion.png)
+	![Deleted Message](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostDeletion.png)
 
 # This app is still in early development!
 
 - It is likely that bugs or incorrectly identified events may occur.
 - If you run into any issues feel free to let me know.
 - The app will never perform any action on your subreddit, it is read-only by design.
+
+## Important Links:
+- [Source Code](https://github.com/laserman120/discord-bridge)
+- [Privacy Policy](https://github.com/laserman120/discord-bridge/blob/main/PRIVACY.md)
+- [Terms](https://github.com/laserman120/discord-bridge/blob/main/TERMS.md)
