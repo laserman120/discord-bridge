@@ -65,7 +65,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- Public messages will never show any information regarding moderation.
 
 		![Public Message Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
-	- 
+	
 	- Private New Posts
 		- This feed is designed to be used in private moderator discord servers/channels.
 		- All new posts will be sent here, regardless of their state.
@@ -81,7 +81,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
 
 		![Removal User Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
-	- 
+	
 	- Reports
 		- This feed will notify you of any reports that occur in your subreddit.
 		- It will specify what was reported (post or comment) and the reason provided.
@@ -89,7 +89,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
 		![Report Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
-	- 
+	 
 	- ModMail
 		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
 		- It will specify who sent the message (user or moderator) and the content of the message.
