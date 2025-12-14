@@ -18,10 +18,20 @@ Making at easy to keep track of anything related to your subreddit directly from
   - ModMail notifications will update when replied or when archived
   - This makes it not only easy, but also quick to see if anything requires your attention, or if another moderator already took care of it.
 
-<p align="center">
-  <img src="./assets/NewPost.png" width="45%" />
-  <img src="./assets/NewPostUpdated.png" width="45%" />
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <img src="./assets/>NewPost.png" width="300" alt="New Post" />
+      <br />
+      <b>New Post Notification</b>
+    </td>
+    <td align="center">
+      <img src="./assets/NewPostUpdated.png" width="300" alt="New Post Removal" />
+      <br />
+      <b>The same Notification after it was removed</b>
+    </td>
+  </tr>
+</table>
 
 - Public New Post Feed:
   - This is a special new post feed that is designed to be viewed in public discord servers.
@@ -49,7 +59,13 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 - Any feature will only become active once a valid Discord webhook URL is provided for that feed type.
 - Pingable notification messages are optional and can be left empty if not desired.
+
+<img src="./assets/Settings.png" width="600" alt="Image of the basic settings" />
+
 - Embed colors can be customized by providing a hex color code (eg. #FF0000 for red). If left empty a default color will be used.
+- These colors represent the state of an item, for example a new post will use the "Approved" color, while a removed post will use the "Removed" color.
+
+<img src="./assets/SettingsAppearance.png" width="600" alt="Image of the customization settings" />
 
 - Specific Feature Information:
 	- Public New Posts
@@ -70,6 +86,9 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- It will specify the type of removal (Moderator, AutoModerator, Admin) as well as who performed the removal and any reason provided.
 		- If a removal is later reversed (approved) the message will update to reflect that change.
 		- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
+		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
+
+		<img src="./assets/SettingsAutomaticUsers.png" width="600" alt="Image of the automatic removal user settings" />
 
 	- Reports
 		- This feed will notify you of any reports that occur in your subreddit.
@@ -83,9 +102,26 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If a conversation is archived, the message will update to reflect that change.
 		- For simplicity and size reasons, only the latest message in a conversation will be shown in the notification.
 	
+<table>
+  <tr>
+    <td align="center">
+      <img src="./assets/>ModMailNew.png" width="300" alt="New Post" />
+      <br />
+      <b>This is an example of a new ModMail Message</b>
+    </td>
+    <td align="center">
+      <img src="./assets/ModMailReply.png" width="300" alt="New Post Removal" />
+      <br />
+      <b>It will also display a moderator reply and mark it as replied</b>
+    </td>
+  </tr>
+</table>
+
 	- ModLog
 		- This feed will notify you of any ModLog actions that occur in your subreddit.
 		- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
+
+		<img src="./assets/SettingsModLogSelector.png" width="600" alt="Image of the settings of the modLog selector" />
 
 ## Information regarding deletions
 
