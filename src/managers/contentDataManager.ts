@@ -50,11 +50,17 @@ export class ContentDataManager {
             imageUrl: undefined,
             removedBy: undefined,
             removalReason: undefined,
-            reportReasons: item.userReportReasons || item.modReportReasons
+            reportReasons: undefined,
         };
 
         if (isPost) {
             details.imageUrl = await UtilityManager.getBestImageUrl(item);
+        }
+
+        if (item.userReportReasons && item.userReportReasons.length > 0) {
+            details.reportReasons = item.userReportReasons;
+        } else if (item.modReportReasons && item.modReportReasons.length > 0) {
+            details.reportReasons = item.modReportReasons;
         }
 
         if (isPost && item.numberOfReports && item.numberOfReports > 0)

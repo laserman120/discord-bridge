@@ -88,7 +88,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
 		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
 
-		<img src="./assets/SettingsAutomaticUsers.png" width="300" alt="Image of the automatic removal user settings" />
+		<img src="./assets/SettingsAutomaticUsers.png" width="280" alt="Image of the automatic removal user settings" />
 
 	- Reports
 		- This feed will notify you of any reports that occur in your subreddit.
@@ -96,32 +96,34 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If the reported item is later removed or deleted, the message will update to reflect that change.
 		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
+		<img src="./assets/NewPostReport.png" width="400" alt="Image of the automatic removal user settings" />
+
 	- ModMail
 		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
 		- It will specify who sent the message (user or moderator) and the content of the message.
 		- If a conversation is archived, the message will update to reflect that change.
 		- For simplicity and size reasons, only the latest message in a conversation will be shown in the notification.
 	
-<table>
-  <tr>
-    <td align="center">
-      <img src="./assets/ModMailNew.png" width="300" alt="New Mod Mail" />
-      <br />
-      <b>This is an example of a new ModMail Message</b>
-    </td>
-    <td align="center">
-      <img src="./assets/ModMailReply.png" width="300" alt="Responded Mod Mail" />
-      <br />
-      <b>It will also display a moderator reply and mark it as replied</b>
-    </td>
-  </tr>
-</table>
+	<table>
+	  <tr>
+		<td align="center">
+		  <img src="./assets/ModMailNew.png" width="300" alt="New Mod Mail" />
+		  <br />
+		  <b>This is an example of a new ModMail Message</b>
+		</td>
+		<td align="center">
+		  <img src="./assets/ModMailReply.png" width="300" alt="Responded Mod Mail" />
+		  <br />
+		  <b>It will also display a moderator reply and mark it as replied</b>
+		</td>
+	  </tr>
+	</table>
 
 	- ModLog
 		- This feed will notify you of any ModLog actions that occur in your subreddit.
 		- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
 
-		<img src="./assets/SettingsModLogSelector.png" width="600" alt="Image of the settings of the modLog selector" />
+		<img src="./assets/SettingsModLogSelector.png" width="280" alt="Image of the settings of the modLog selector" />
 
 ## Information regarding deletions
 

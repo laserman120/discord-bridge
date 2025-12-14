@@ -32,7 +32,7 @@ export class ReportHandler {
         }
 
         console.log(`[ReportHandler] Processing new report: ${targetId}`);
-        console.log(contentItem.userReportReasons)
+
         let status = ItemState.Unhandled_Report;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
