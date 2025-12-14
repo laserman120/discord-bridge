@@ -21,7 +21,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 <table>
   <tr>
     <td align="center">
-      <img src="./assets/>NewPost.png" width="300" alt="New Post" />
+      <img src="./assets/NewPost.png" width="300" alt="New Post" />
       <br />
       <b>New Post Notification</b>
     </td>
@@ -60,12 +60,12 @@ Making at easy to keep track of anything related to your subreddit directly from
 - Any feature will only become active once a valid Discord webhook URL is provided for that feed type.
 - Pingable notification messages are optional and can be left empty if not desired.
 
-<img src="./assets/Settings.png" width="600" alt="Image of the basic settings" />
+	<img src="./assets/Settings.png" width="600" alt="Image of the basic settings" />
 
 - Embed colors can be customized by providing a hex color code (eg. #FF0000 for red). If left empty a default color will be used.
 - These colors represent the state of an item, for example a new post will use the "Approved" color, while a removed post will use the "Removed" color.
 
-<img src="./assets/SettingsAppearance.png" width="600" alt="Image of the customization settings" />
+	<img src="./assets/SettingsAppearance.png" width="600" alt="Image of the customization settings" />
 
 - Specific Feature Information:
 	- Public New Posts
@@ -88,7 +88,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
 		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
 
-		<img src="./assets/SettingsAutomaticUsers.png" width="600" alt="Image of the automatic removal user settings" />
+		<img src="./assets/SettingsAutomaticUsers.png" width="300" alt="Image of the automatic removal user settings" />
 
 	- Reports
 		- This feed will notify you of any reports that occur in your subreddit.
@@ -105,12 +105,12 @@ Making at easy to keep track of anything related to your subreddit directly from
 <table>
   <tr>
     <td align="center">
-      <img src="./assets/>ModMailNew.png" width="300" alt="New Post" />
+      <img src="./assets/ModMailNew.png" width="300" alt="New Mod Mail" />
       <br />
       <b>This is an example of a new ModMail Message</b>
     </td>
     <td align="center">
-      <img src="./assets/ModMailReply.png" width="300" alt="New Post Removal" />
+      <img src="./assets/ModMailReply.png" width="300" alt="Responded Mod Mail" />
       <br />
       <b>It will also display a moderator reply and mark it as replied</b>
     </td>
