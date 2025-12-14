@@ -18,7 +18,7 @@ Making at easy to keep track of anything related to your subreddit directly from
   - ModMail notifications will update when replied or when archived
   - This makes it not only easy, but also quick to see if anything requires your attention, or if another moderator already took care of it.
 
-| New Post Notification | Removal Log |
+| New Post Notification | Same Message after removal |
 | :---: | :---: |
 | ![New Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPost.png) | ![Same Message after removal](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostUpdated.png) |
 
@@ -96,7 +96,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If a conversation is archived, the message will update to reflect that change.
 		- For simplicity and size reasons, only the latest message in a conversation will be shown in the notification.
 	
-	| New Post Notification | Removal Log |
+	| New Mod Mail Notification | The same notification after a moderator replied |
 	| :---: | :---: |
 	| ![New Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied by a moderator](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
  
