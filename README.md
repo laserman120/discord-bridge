@@ -72,7 +72,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- This feed is designed to be used in public discord servers.
 		- Posts that are no longer public (removed, deleted, filtered) will have their messages deleted.
 		- Posts that were automatically filtered or removed will not show up in this feed at all.
-		- If a post becomes approved after being filtered or removed at any point, it will be sent again into the public channel.
+		- If a post becomes approved after being filtered or removed at any point, it will be resent.
+		- Public messages will never show any information regarding moderation.
+
+		<img src="./assets/NewPostPublic.png" width="300" alt="Image of a public new Post message" />
 
 	- Private New Posts
 		- This feed is designed to be used in private moderator discord servers/channels.
@@ -96,7 +99,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If the reported item is later removed or deleted, the message will update to reflect that change.
 		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
-		<img src="./assets/NewPostReport.png" width="400" alt="Image of the automatic removal user settings" />
+		<img src="./assets/NewPostReport.png" width="300" alt="Image of a new report" />
 
 	- ModMail
 		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
@@ -130,6 +133,8 @@ Making at easy to keep track of anything related to your subreddit directly from
 - This app will respect deletions. This means that if a post that is being tracked is deleted, the corresponding message data in discord will be replaced.
 - This includes the author of the post or comment, as well as the message body.
 - To ensure no messages can be missed for any reason the app will delete sent messages after 13 days.
+
+<img src="./assets/NewPostDeletion.png" width="400" alt="Image of a deleted item" />
 
 # This app is still in early development!
 
