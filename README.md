@@ -120,6 +120,11 @@ Making at easy to keep track of anything related to your subreddit directly from
 - If you run into any issues feel free to let me know.
 - The app will never perform any action on your subreddit, it is read-only by design.
 
+## Changelog
+
+- v0.1
+  -	Initial Release
+
 ## Important Links:
 - [Source Code](https://github.com/laserman120/discord-bridge)
 - [Privacy Policy](https://github.com/laserman120/discord-bridge/blob/main/PRIVACY.md)
