@@ -20,7 +20,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 <p align="center">
   <img src="./assets/NewPost.png" width="45%" />
-  <img src="./assets/NewPostUpdating.png" width="45%" />
+  <img src="./assets/NewPostUpdated.png" width="45%" />
 </p>
 
 - Public New Post Feed:
