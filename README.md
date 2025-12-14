@@ -27,7 +27,7 @@ Making at easy to keep track of anything related to your subreddit directly from
   - Unlike the other webhooks it will not share any moderation information, plus it will remove any post messages that are no longer public. (eg. removed by moderators, deleted by the user, or filtered by AutoModerator)
 
 - Customizable Embed Colors
-  - You can fully customize the colors for each message state
+  - You can fully customize the colors for each message state.
 
 - Pingable Notification Text Fields
   - Each feed type has one or more notification fields, allowing you to ping a specific role or user when an event occurs.
