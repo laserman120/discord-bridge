@@ -18,20 +18,9 @@ Making at easy to keep track of anything related to your subreddit directly from
   - ModMail notifications will update when replied or when archived
   - This makes it not only easy, but also quick to see if anything requires your attention, or if another moderator already took care of it.
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="./assets/NewPost.png" width="300" alt="New Post" />
-      <br />
-      <b>New Post Notification</b>
-    </td>
-    <td align="center">
-      <img src="./assets/NewPostUpdated.png" width="300" alt="New Post Removal" />
-      <br />
-      <b>The same Notification after it was removed</b>
-    </td>
-  </tr>
-</table>
+| New Post Notification | Removal Log |
+| :---: | :---: |
+| ![New Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPost.png) | ![Removed Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostUpdated.png) |
 
 - Public New Post Feed:
   - This is a special new post feed that is designed to be viewed in public discord servers.
@@ -60,13 +49,13 @@ Making at easy to keep track of anything related to your subreddit directly from
 - Any feature will only become active once a valid Discord webhook URL is provided for that feed type.
 - Pingable notification messages are optional and can be left empty if not desired.
 
-	<img src="./assets/Settings.png" width="600" alt="Image of the basic settings" />
+	!(https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/Settings.png)
 
 - Embed colors can be customized by providing a hex color code (eg. #FF0000 for red). If left empty a default color will be used.
 - These colors represent the state of an item, for example a new post will use the "Approved" color, while a removed post will use the "Removed" color.
 
-	<img src="./assets/SettingsAppearance.png" width="600" alt="Image of the customization settings" />
-
+	!(https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAppearance.png)
+- 
 - Specific Feature Information:
 	- Public New Posts
 		- This feed is designed to be used in public discord servers.
@@ -75,8 +64,8 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- If a post becomes approved after being filtered or removed at any point, it will be resent.
 		- Public messages will never show any information regarding moderation.
 
-		<img src="./assets/NewPostPublic.png" width="300" alt="Image of a public new Post message" />
-
+		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
+	- 
 	- Private New Posts
 		- This feed is designed to be used in private moderator discord servers/channels.
 		- All new posts will be sent here, regardless of their state.
@@ -91,50 +80,39 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
 		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
 
-		<img src="./assets/SettingsAutomaticUsers.png" width="280" alt="Image of the automatic removal user settings" />
-
+		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
+	- 
 	- Reports
 		- This feed will notify you of any reports that occur in your subreddit.
 		- It will specify what was reported (post or comment) and the reason provided.
 		- If the reported item is later removed or deleted, the message will update to reflect that change.
 		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
-		<img src="./assets/NewPostReport.png" width="300" alt="Image of a new report" />
-
+		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
+	- 
 	- ModMail
 		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
 		- It will specify who sent the message (user or moderator) and the content of the message.
 		- If a conversation is archived, the message will update to reflect that change.
 		- For simplicity and size reasons, only the latest message in a conversation will be shown in the notification.
 	
-	<table>
-	  <tr>
-		<td align="center">
-		  <img src="./assets/ModMailNew.png" width="300" alt="New Mod Mail" />
-		  <br />
-		  <b>This is an example of a new ModMail Message</b>
-		</td>
-		<td align="center">
-		  <img src="./assets/ModMailReply.png" width="300" alt="Responded Mod Mail" />
-		  <br />
-		  <b>It will also display a moderator reply and mark it as replied</b>
-		</td>
-	  </tr>
-	</table>
-
+	| New Post Notification | Removal Log |
+	| :---: | :---: |
+	| ![New Mod Mail](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied Mod Mail](https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
+ 
 	- ModLog
 		- This feed will notify you of any ModLog actions that occur in your subreddit.
 		- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
 
-		<img src="./assets/SettingsModLogSelector.png" width="280" alt="Image of the settings of the modLog selector" />
-
+		!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
+	- 
 ## Information regarding deletions
 
 - This app will respect deletions. This means that if a post that is being tracked is deleted, the corresponding message data in discord will be replaced.
 - This includes the author of the post or comment, as well as the message body.
 - To ensure no messages can be missed for any reason the app will delete sent messages after 13 days.
 
-<img src="./assets/NewPostDeletion.png" width="400" alt="Image of a deleted item" />
+!(https://github.com/laserman120/discord-bridge/blob/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostDeletion.png)
 
 # This app is still in early development!
 
