@@ -1,0 +1,12 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\src",
+    "\\src\\config",
+    "\\src\\handlers",
+    "\\src\\managers",
+    "\\src\\scheduledEvents"
+  ],
+  "SelectedNode": "\\src\\scheduledEvents\\modMailSyncJob.ts",
+  "PreviewInSolutionExplorer": false
+}
