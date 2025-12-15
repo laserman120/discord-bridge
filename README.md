@@ -127,6 +127,8 @@ Making at easy to keep track of anything related to your subreddit directly from
 ## Changelog
 - v0.0.16
   - Added an additional delay during old message removal to prevent rate limiting on discords end.
+  - Added support for crossposts, now displaying if a post is a crosspost and from which subreddit, as well as linking to the original post.
+	- It will now also fetch the post body from the original post.
   - Removed the "No Body" text in cases without a message body attached.
   - Hotfix for reports not sending notifications when reported by AutoModerator
   - Fixed edge case in which a removed comment would be marked as Administrator removal incorrectly.
