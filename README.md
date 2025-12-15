@@ -78,6 +78,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- It will specify the type of removal (Moderator, AutoModerator, Admin) as well as who performed the removal and any reason provided.
 		- If a removal is later reversed (approved) the message will update to reflect that change.
 		- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
+		- This is an example for a post removed due to the Reputation Filter, as reddit is selected to be treated as automatic it will have its color and message set accordingly.
+
+		![Removal Example](https://raw.githubusercontent.com/laserman120/discord-bridge/refs/heads/main/assets/PortAutoRemovalReputationMasked.png)
+		
 		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
 
 		![Removal User Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
