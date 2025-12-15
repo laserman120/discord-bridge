@@ -45,12 +45,17 @@ export class RemovalHandler {
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
+        console.log("[RemovalHandler] Determining notification string... removed by: " + contentData.removedBy)
+
         if (state == ItemState.Removed) {
             let automatedRemovalUsers = await context.settings.get('AUTOMATIC_REMOVALS_USERS') as string[] || [];
+            console.log("[RemovalHandler] Automatic removal users: " + automatedRemovalUsers.join(", "))
             if (automatedRemovalUsers.includes(contentData.removedBy?.toLowerCase() || '')) {
                 state = ItemState.Awaiting_Review;
             }
         }
+
+        
 
         const notificationStrings = await UtilityManager.getMessageFromChannelType(ChannelType.Removals, context);
 
@@ -59,7 +64,7 @@ export class RemovalHandler {
         if (notificationStrings) {
 
             // 0=Mod, 1=Auto, 2=Admin
-
+            
             notificationString = notificationStrings[0];
 
             if (state == ItemState.Awaiting_Review) {
@@ -74,6 +79,10 @@ export class RemovalHandler {
                 subredditModerators.forEach(mod => {
                     subredditModeratorNames.push(mod.username.toLowerCase());
                 });
+
+                subredditModeratorNames.push("automoderator", "anti_evil_ops", "reddit");
+
+                console.log("Current Moderators: " + subredditModeratorNames.join(", "))
 
                 if (!subredditModeratorNames.includes(contentData.removedBy?.toLowerCase() || ""))
                 {

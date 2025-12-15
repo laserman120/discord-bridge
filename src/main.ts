@@ -60,7 +60,24 @@ Devvit.addTrigger({
 
             // Await plenty of time to ensure the post is fully up to date before checking for public posting
             await new Promise(resolve => setTimeout(resolve, 5000));
-            PublicPostHandler.handle(event.post, context);
+            await PublicPostHandler.handle(event.post, context);
+
+            // Hotfix due to reports by AutoModerator NOT calling the report trigger
+            ReportHandler.handle(event.post, context);
+        }
+
+    },
+});
+
+Devvit.addTrigger({
+    event: 'CommentSubmit',
+    onEvent: async (event, context) => {
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        if (event.comment && context) {
+            // Hotfix due to reports by AutoModerator NOT calling the report trigger
+            ReportHandler.handle(event.comment, context);
         }
 
     },
@@ -87,7 +104,7 @@ Devvit.addTrigger({
 Devvit.addTrigger({
     events: ['PostReport', 'CommentReport'],
     onEvent: async (event, context) => {
-
+        console.log("[TRIGGER: Report] Raw Report event data:", event)
         await new Promise(resolve => setTimeout(resolve, 3000));
 
         if (event.type == 'PostReport' && event.post) {

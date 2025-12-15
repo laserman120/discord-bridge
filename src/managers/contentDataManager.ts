@@ -21,6 +21,12 @@ export interface ContentDetails {
     reportReasons?: string[];
     reportCount?: number;
     modNote?: string;
+
+    // Crosspost Data
+    isCrossPost: boolean;
+    crossPostBody?: string;
+    crossPostPermalink?: string;
+    crossPostSubredditName?: string;
 }
 
 export interface ModActionDetails {
@@ -32,7 +38,7 @@ export interface ModActionDetails {
 }
 
 export class ContentDataManager {
-    static async gatherDetails(item: Post | Comment, context: TriggerContext): Promise<ContentDetails> {
+    static async gatherDetails(item: Post | Comment, context: TriggerContext, crosspostItem?: Post): Promise<ContentDetails> {
         const isPost = 'title' in item;
 
         const details: ContentDetails = {
@@ -51,6 +57,11 @@ export class ContentDataManager {
             removedBy: undefined,
             removalReason: undefined,
             reportReasons: undefined,
+            crossPostBody: crosspostItem ? crosspostItem.body : undefined,
+            crossPostPermalink: crosspostItem ? `https://reddit.com${crosspostItem.permalink}` : undefined,
+            crossPostSubredditName: crosspostItem ? crosspostItem.subredditName : undefined,
+            isCrossPost: !!crosspostItem,
+
         };
 
         if (isPost) {
@@ -71,9 +82,10 @@ export class ContentDataManager {
         {
             details.reportCount = item.numReports;
         }
-     
 
-        if (item.isRemoved() || item.isSpam() || isPost && item.removedByCategory) {
+        console.log(item.toJSON());
+
+        if (item.isRemoved() || item.isSpam() || isPost && item.removedByCategory || !isPost) {
             try {
                 const modLogEntries = await context.reddit.getModerationLog({
                     subredditName: item.subredditName,

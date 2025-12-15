@@ -72,8 +72,15 @@ export class EmbedManager {
 
         const color = await UtilityManager.getColorFromState(status, context);
 
-        const description = details.body ? (details.body.substring(0, 300) + (details.body.length > 300 ? '...' : '')) :
-            (details.type === 'post' ? "No content body." : "[No Body]");
+        let description = '';
+
+        if (details.body) {
+            description = (details.body.substring(0, 300) + (details.body.length > 300 ? '...' : ''))
+        }
+        else if (details.isCrossPost && details.crossPostBody)
+        {
+            description = (details.crossPostBody.substring(0, 300) + (details.crossPostBody.length > 300 ? '...' : ''));
+        }
 
         const footerText = `r/${details.subredditName}`;
         const imageUrl = details.imageUrl;
@@ -81,6 +88,10 @@ export class EmbedManager {
         const fields = [
             { name: 'Author', value: `u/${details.authorName}`, inline: true }
         ];
+
+        if (details.isCrossPost) {
+            fields.push({ name: 'Crosspost from:', value: `[r/${details.crossPostSubredditName}](${details.crossPostPermalink})`, inline: true });
+        }
 
         if (status != ItemState.Public_Post) {
             fields.push({ name: 'Status', value: statusText, inline: true });

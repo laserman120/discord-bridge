@@ -6,8 +6,8 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 
 export class PublicPostHandler {
-    static async handle(triggerPost: { id: string }, context: TriggerContext): Promise<void> {
-        const postId = triggerPost.id;
+    static async handle(event: any, context: TriggerContext): Promise<void> {
+        const postId = event.id;
 
         const webhookUrl = await context.settings.get('WEBHOOK_PUBLIC_NEW_POSTS') as string | undefined;
 
@@ -34,9 +34,20 @@ export class PublicPostHandler {
             return;
         }
 
+        let crosspostItem: Post | undefined;
+        if (event.crosspostParentId) {
+            console.log(`[NewPostHandler] Post ${postId} is a crosspost, fetching parent post ${event.crosspostParentId}`)
+            try {
+                crosspostItem = await context.reddit.getPostById(event.crosspostParentId)
+            } catch (error) {
+                console.error(`[NewPostHandler] Failed to fetch full post ${postId}:`, error);
+                return;
+            }
+        }
+
         console.log(`[PublicNewPostHandler] Processing new post: ${contentItem.title}`);
 
-        const contentData = await ContentDataManager.gatherDetails(contentItem, context);
+        const contentData = await ContentDataManager.gatherDetails(contentItem, context, crosspostItem);
 
         if (contentData.removalReason || contentData.removedBy) {
             console.log(`[PublicNewPostHandler] Post ${postId} appears to be removed, skipping.`);

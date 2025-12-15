@@ -5,6 +5,8 @@ import { WebhookManager } from '../managers/webhookManager.js';
 // 13 days in seconds (13 * 24 * 60 * 60)
 const PRUNE_AGE_SECONDS = 13 * 86400;
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function checkForOldMessages(event: any, context: JobContext): Promise<void> {
     console.log('[JOB] Starting scheduled old message cleanup...');
 
@@ -32,6 +34,8 @@ export async function checkForOldMessages(event: any, context: JobContext): Prom
                 if (entry.webhookUrl) {
                     await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId, context);
                     console.log(`[JOB] Successfully deleted Discord message ID ${entry.discordMessageId}.`);
+
+                    await sleep(500);
                 } else {
                     console.warn(`[JOB] No webhook URL for message ${entry.discordMessageId}. Skipping Discord deletion.`);
                 }

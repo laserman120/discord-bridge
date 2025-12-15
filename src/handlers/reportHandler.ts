@@ -9,7 +9,7 @@ export class ReportHandler {
     static async handle(triggerPost: { id: string }, context: TriggerContext): Promise<void> {
         const targetId = triggerPost.id;
 
-        console.log(`[ReportHandler] Received report for post ID: ${targetId}`)
+        console.log(`[ReportHandler] Received possible report for ID: ${targetId}`)
 
         const webhookUrl = await context.settings.get('WEBHOOK_REPORTS') as string | undefined;
 
@@ -31,11 +31,14 @@ export class ReportHandler {
             return;
         }
 
-        console.log(`[ReportHandler] Processing new report: ${targetId}`);
-
         let status = ItemState.Unhandled_Report;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
+
+        if (contentData.reportCount === undefined || contentData.reportCount == 0) {
+            console.log("[ReportHandler] Content has no reports, skipping handling.")
+            return;
+        }
 
         if (!contentData.reportCount) {
             console.log("[ReportHandler] Report already hidden and handled, no message will be sent")
