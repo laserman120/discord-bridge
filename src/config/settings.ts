@@ -228,6 +228,26 @@ export const modlogGroup = {
     ]
 };
 
+export const flairWatchConfigField = {
+    type: 'paragraph' as const,
+    name: 'FLAIR_WATCH_CONFIG',
+    label: 'Flair Watch Configuration (JSON)',
+    helpText: 'Here you can define Flairs to trigger notifications. Copy the default value as a template. See ReadMe for more info.',
+    defaultValue: JSON.stringify([
+        {
+            "flair": "NonExistentFlair_Example",
+            "post": true,
+            "comment": false,
+            "webhook": "https://discord.com/api/webhooks/1234567890/example_token_replace_me",
+            "publicFormat": false
+        }
+    ], null, 2),
+    scope: 'installation' as const,
+    onValidate: async ({ value }: { value?: string }) => {
+        return UtilityManager.validateFlairConfig(value);
+    }
+};
+
 export const customizationGroup = {
     type: 'group' as const,
     label: 'Appearance',

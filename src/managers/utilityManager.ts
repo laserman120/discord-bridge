@@ -139,9 +139,11 @@ export class UtilityManager {
     static validateWebhookUrl(url: string | undefined): string | undefined {
         if (!url) return undefined;
 
+        const trimmedUrl = url.trim();
+
         const regex = /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[a-zA-Z0-9_-]+$/;
 
-        if (!regex.test(url)) {
+        if (!regex.test(trimmedUrl)) {
             return "Invalid Webhook URL. Must be a valid Discord webhook.";
         }
         return undefined;
@@ -154,6 +156,31 @@ export class UtilityManager {
 
         if (!regex.test(hex)) {
             return "Invalid Hex Color. Format: #RRGGBB or #RGB";
+        }
+        return undefined;
+    }
+
+    static validateFlairConfig(configString: string | undefined): string | undefined {
+        if (!configString || configString.trim() === '') return undefined;
+
+        try {
+            const config = JSON.parse(configString);
+
+            if (!Array.isArray(config)) {
+                return "Configuration must be a JSON Array: [...]";
+            }
+
+            for (let i = 0; i < config.length; i++) {
+                const entry = config[i];
+                if (!entry.flair || typeof entry.flair !== 'string') {
+                    return `Entry #${i + 1}: Missing or invalid 'flair' property.`;
+                }
+                if (entry.webhook && this.validateWebhookUrl(entry.webhook)) {
+                    return `Entry #${i + 1}: Invalid 'webhook' URL.`;
+                }
+            }
+        } catch (e) {
+            return "Invalid JSON Syntax. Please check your brackets and quotes.";
         }
         return undefined;
     }

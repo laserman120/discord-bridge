@@ -12,6 +12,8 @@ Making at easy to keep track of anything related to your subreddit directly from
   - Reports
   - ModMail
   - ModLog
+  - Posts made with specific flairs
+  - Comments/Posts made by users with specific flairs
 
 - State Aware Messages:
   - If a post is approved/removed/deleted or similar all messages related to the post or comment will update to reflect the current state
@@ -41,6 +43,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 	- Moderator Removal
 	- Automatic Removal (AutoModerator)
 	- Admin Removal (Similar to AdminTattler)
+
+- Flair Watching
+  - Easily monitor posts or comments made by users with specific flairs, or posts with specific flairs.
+  - This also supports a public option, for example when you want to highlight posts by content creators in your discord.
 	
 ## Setup and Configuration
 
@@ -110,6 +116,21 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 		![Mod Log Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
 	
+	- Flair Watching
+		- This feed will notify you of any posts or comments made by users with specific flairs, or posts with specific flairs.
+		- The setup is a bit more complicated, to allow you to add several flair to watch it is a json configuration.
+		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/FlairWatchingSettings.png)
+		- Each configuration requires:
+			- flair        -  This is the text that a flair needs to include to trigger a notification.
+			- post         -  If enabled, posts with this flair will trigger a notification.
+			- comment      -  If enabled, comments made by users with this flair will trigger a notification.
+			- webhook      -  The webhook URL to send notifications to.
+			- publicFormat -  If enabled, the notification will be sent in the public format, removing any moderation information.
+
+		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/PostFlairWatching.png)
+
+		- If a flair watch is set to public format, the notification will be deleted if the post/comment is no longer public (removed, deleted, filtered).
+	
 ## Information regarding deletions
 
 - This app will respect deletions. This means that if a post that is being tracked is deleted, the corresponding message data in discord will be replaced.
@@ -125,6 +146,9 @@ Making at easy to keep track of anything related to your subreddit directly from
 - The app will never perform any action on your subreddit, it is read-only by design.
 
 ## Changelog
+- v0.0.17
+  - Added Flair Watching feature
+  - Minor fixes and improvements
 - v0.0.16
   - Added an additional delay during old message removal to prevent rate limiting on discords end.
   - Added support for crossposts, now displaying if a post is a crosspost and from which subreddit, as well as linking to the original post.

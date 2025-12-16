@@ -93,6 +93,10 @@ export class EmbedManager {
             fields.push({ name: 'Crosspost from:', value: `[r/${details.crossPostSubredditName}](${details.crossPostPermalink})`, inline: true });
         }
 
+        if (details.flairText) {
+            fields.splice(1, 0, { name: 'Flair', value: details.flairText, inline: true });
+        }
+
         if (status != ItemState.Public_Post) {
             fields.push({ name: 'Status', value: statusText, inline: true });
         
@@ -111,10 +115,6 @@ export class EmbedManager {
 
             if (details.removalReason) {
                 fields.push({ name: 'Removal Reason', value: details.removalReason.substring(0, 1024), inline: true });
-            }
-
-            if (details.flairText) {
-                fields.splice(1, 0, { name: 'Flair', value: details.flairText, inline: true });
             }
         
             if (details.reportReasons && details.reportReasons.length > 0) {

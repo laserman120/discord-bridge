@@ -1,5 +1,5 @@
 ﻿import { Devvit } from '@devvit/public-api';
-import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
+import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
 import { NewPostHandler } from './handlers/newPostHandler.js';
 import { StateSyncHandler } from './handlers/stateSyncHandler.js';
 import { RemovalHandler } from './handlers/removalHandler.js';
@@ -11,6 +11,7 @@ import { PublicPostHandler } from './handlers/publicPostHandler.js';
 import { checkForOldMessages } from './scheduledEvents/checkForOldMessages.js';
 import { ModMailHandler } from './handlers/modMailHandler.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
+import { FlairWatchHandler } from './handlers/flairWatchHandler.js';
 
 Devvit.configure({
     http: true,
@@ -25,6 +26,7 @@ Devvit.addSettings([
     reportGroup,
     modmailGroup,
     modlogGroup,
+    flairWatchConfigField,
     customizationGroup,
     modMailCustomizationGroup,
 ]);
@@ -61,6 +63,7 @@ Devvit.addTrigger({
             // Await plenty of time to ensure the post is fully up to date before checking for public posting
             await new Promise(resolve => setTimeout(resolve, 5000));
             await PublicPostHandler.handle(event.post, context);
+            await FlairWatchHandler.handle(event.post, context);
 
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
             ReportHandler.handle(event.post, context);
@@ -77,7 +80,10 @@ Devvit.addTrigger({
 
         if (event.comment && context) {
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
-            ReportHandler.handle(event.comment, context);
+            await ReportHandler.handle(event.comment, context);
+
+
+            await FlairWatchHandler.handle(event.comment, context);
         }
 
     },
@@ -96,7 +102,7 @@ Devvit.addTrigger({
     event: 'ModMail',
     onEvent: async (event, context) => {
         await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log("[TRIGGER: ModMail] Raw ModMail event data:", event);
+
         ModMailHandler.handle(event, context);
     },
 });
@@ -104,7 +110,6 @@ Devvit.addTrigger({
 Devvit.addTrigger({
     events: ['PostReport', 'CommentReport'],
     onEvent: async (event, context) => {
-        console.log("[TRIGGER: Report] Raw Report event data:", event)
         await new Promise(resolve => setTimeout(resolve, 3000));
 
         if (event.type == 'PostReport' && event.post) {

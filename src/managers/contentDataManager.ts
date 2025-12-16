@@ -83,8 +83,6 @@ export class ContentDataManager {
             details.reportCount = item.numReports;
         }
 
-        console.log(item.toJSON());
-
         if (item.isRemoved() || item.isSpam() || isPost && item.removedByCategory || !isPost) {
             try {
                 const modLogEntries = await context.reddit.getModerationLog({
