@@ -6,6 +6,7 @@ import { UtilityManager } from '../managers/utilityManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { PublicPostHandler } from '../handlers/publicPostHandler.js';
+import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
 
 export class StateSyncHandler {
     static async handleModAction(event: any, context: TriggerContext): Promise<void> {
@@ -46,6 +47,8 @@ export class StateSyncHandler {
         if (!contentItem) return;
 
         PublicPostHandler.handlePossibleStateChange(targetId, newStatus, context);
+        FlairWatchHandler.handlePossibleStateChange(targetId, newStatus, context);
+
 
         for (const entry of logEntries) {
 

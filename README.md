@@ -128,7 +128,6 @@ Making at easy to keep track of anything related to your subreddit directly from
 			- publicFormat -  If enabled, the notification will be sent in the public format, removing any moderation information.
 
 		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/PostFlairWatching.png)
-
 		- If a flair watch is set to public format, the notification will be deleted if the post/comment is no longer public (removed, deleted, filtered).
 	
 ## Information regarding deletions
@@ -146,9 +145,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 - The app will never perform any action on your subreddit, it is read-only by design.
 
 ## Changelog
-- v0.0.17
+- v0.0.19
   - Added Flair Watching feature
   - Minor fixes and improvements
+  - Updated dependencies
 - v0.0.16
   - Added an additional delay during old message removal to prevent rate limiting on discords end.
   - Added support for crossposts, now displaying if a post is a crosspost and from which subreddit, as well as linking to the original post.
