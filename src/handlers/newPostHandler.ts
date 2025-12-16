@@ -50,9 +50,6 @@ export class NewPostHandler {
                 return;
             }
         }
-        
-
-        console.log(`[NewPostHandler] Processing new post: ${contentItem.title}`, contentItem.toJSON());
 
         let status = ItemState.Live;
         if (contentItem.isApproved()) {

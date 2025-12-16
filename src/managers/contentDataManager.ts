@@ -123,21 +123,16 @@ export class ContentDataManager {
                     }
                 }).all();
 
-                console.log(`[ContentDataManager] Fetched ModLog entries for ${details.id}`)
-                console.log(modLogEntries)
-
                 const match = modLogEntries.find(entry => entry.target?.id === details.id);
 
                 if (match && match.moderatorName)
                 {
                     details.removedBy = match.moderatorName || undefined;
-                    console.log(`[ContentDataManager] Found removed By in ModLog: ${details.removedBy}`);
                 }
 
                 if (match && match.details && !details.removalReason)
                 {
 					details.removalReason = match.details || undefined;
-					console.log(`[ContentDataManager] Found removal reason in ModLog details: ${details.removalReason}`);
 				}
 
             } catch (e) {

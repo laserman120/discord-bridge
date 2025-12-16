@@ -32,7 +32,7 @@ export class FlairWatchHandler {
             return;
         }
 
-        const isPost = 'title' in event;
+        const isPost = targetId.startsWith('t3_');
 
         let contentItem;
         try {
@@ -55,6 +55,7 @@ export class FlairWatchHandler {
         const authorFlair = userFlair?.flairText;
 
         console.log("[FlairWatchHandler] Found user flair: " + authorFlair)
+        console.log("[FlairWatchHandler] Found post flair: " + postFlair)
 
         for (const entry of watchList) {
             if ((authorFlair?.includes(entry.flair)) || (postFlair?.includes(entry.flair))) {

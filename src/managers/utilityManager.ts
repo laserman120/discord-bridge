@@ -112,12 +112,10 @@ export class UtilityManager {
 
 
             const rawPost = post as any;
-            console.log("checking raw post data ", rawPost.preview?.images?.[0]?.source?.url);
             if (rawPost.preview?.images?.[0]?.source?.url) {
                 return rawPost.preview.images[0].source.url.replace(/&amp;/g, '&');
             }
 
-            console.log("checking thumbnail ", post.thumbnail);
             if (post.thumbnail && post.thumbnail.url.startsWith('http')) {
                 return post.thumbnail.url;
             }
