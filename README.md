@@ -119,7 +119,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 	- Flair Watching
 		- This feed will notify you of any posts or comments made by users with specific flairs, or posts with specific flairs.
 		- The setup is a bit more complicated, to allow you to add several flair to watch it is a json configuration.
-		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/FlairWatchingSettings.png)
+		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/FlairWatchingSettings.png)
 		- Each configuration requires:
 			- flair        -  This is the text that a flair needs to include to trigger a notification.
 			- post         -  If enabled, posts with this flair will trigger a notification.
@@ -127,7 +127,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 			- webhook      -  The webhook URL to send notifications to.
 			- publicFormat -  If enabled, the notification will be sent in the public format, removing any moderation information.
 
-		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/PostFlairWatching.png)
+		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/PostFlairWatching.png)
 
 		- If a flair watch is set to public format, the notification will be deleted if the post/comment is no longer public (removed, deleted, filtered).
 	
