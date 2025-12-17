@@ -145,7 +145,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 - The app will never perform any action on your subreddit, it is read-only by design.
 
 ## Changelog
-- v0.0.20
+- v0.0.21
   - Added Flair Watching feature
   - Minor fixes and improvements
   - Updated dependencies
