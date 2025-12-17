@@ -52,8 +52,8 @@ export class DeletionHandler {
         {
             console.log("[DeletionHandler] Post/Comment was deleted. Updating entries...");
 
-            PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context);
-            FlairWatchHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context);
+            await PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context);
+            await FlairWatchHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context);
 
             for (const entry of logEntries) {
 

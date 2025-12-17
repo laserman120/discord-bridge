@@ -46,8 +46,8 @@ export class StateSyncHandler {
 
         if (!contentItem) return;
 
-        PublicPostHandler.handlePossibleStateChange(targetId, newStatus, context);
-        FlairWatchHandler.handlePossibleStateChange(targetId, newStatus, context);
+        await PublicPostHandler.handlePossibleStateChange(targetId, newStatus, context);
+        await FlairWatchHandler.handlePossibleStateChange(targetId, newStatus, context);
 
 
         for (const entry of logEntries) {
