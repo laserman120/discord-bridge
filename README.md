@@ -155,6 +155,8 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- You can set this to either react to posts/comment or both, depending on your needs.
 		- If you dont want to use the system just remove the webhook url and it will be disabled.
 
+		![Moderator Watching System Settings](https://github.com/laserman120/discord-bridge/blob/77d6e97da760a41b7a41fed36bafc1a07e25982c/assets/ModeratorWatchingSettings.png) 
+	
 	- Mod Abuse Warning System
 		- This system will trigger a notification if a moderator performs too many actions in a set period of time.
 		- You can configure the amount of actions, the time period as well as actions that should be monitored.
