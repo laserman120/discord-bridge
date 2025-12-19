@@ -276,7 +276,7 @@ export const modAbuseGroup = {
             type: 'string' as const,
             name: 'MOD_ABUSE_MESSAGE',
             label: 'Pingable Mod Abuse Message',
-            defaultValue: '**Possible Mod Abuse Warning**',
+            defaultValue: '**Possible Mod Abuse Warning** @here',
             scope: 'installation' as const,
             helpText: 'Custom text sent with notification',
         },

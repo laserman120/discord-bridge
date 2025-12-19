@@ -48,9 +48,17 @@ Making at easy to keep track of anything related to your subreddit directly from
   - Easily monitor posts or comments made by users with specific flairs, or posts with specific flairs.
   - This also supports a public option, for example when you want to highlight posts by content creators in your discord.
 	
+- Mod Abuse Detection
+  -  This system will notify you if a moderator performs too many actions in a set period of time.
+  - This is designed to help catch potential mod abuse early on.
+	
 ## Setup and Configuration
 
 - To learn how to create a webhook URL, check out the official [Intro to Webhooks (Discord Support)](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks)
+
+- If you want to ping a specific user or role in custom messages you can use this format:
+ 	- User: `<@USER__ID>`
+	- Role: `<@&ROLE__ID>`
 
 - Any feature will only become active once a valid Discord webhook URL is provided for that feed type.
 - Pingable notification messages are optional and can be left empty if not desired.
@@ -115,7 +123,15 @@ Making at easy to keep track of anything related to your subreddit directly from
 		- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
 
 		![Mod Log Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
-	
+		
+		- You can use the custom modlog message system to specify specific messages when specific mod actions occur.
+
+		![ModLog CustomMessages](https://github.com/laserman120/discord-bridge/blob/62e9f69ec8b898da4d2ae03d7e42d886a126e6dd/assets/CustomModLogMessage.png)
+
+		- Each entry requires:
+			- action    -  The modlog action that will trigger this custom message.
+			- message   -  The message to send when this action occurs.
+
 	- Flair Watching
 		- This feed will notify you of any posts or comments made by users with specific flairs, or posts with specific flairs.
 		- The setup is a bit more complicated, to allow you to add several flair to watch it is a json configuration.
@@ -129,6 +145,13 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/PostFlairWatching.png)
 		- If a flair watch is set to public format, the notification will be deleted if the post/comment is no longer public (removed, deleted, filtered).
+	
+	- Mod Abuse Warning System
+		- This system will trigger a notification if a moderator performs too many actions in a set period of time.
+		- You can configure the amount of actions, the time period as well as actions that should be monitored.
+		- This is designed to help catch potential mod abuse early on.
+
+		![Mod Abuse Warning System](https://github.com/laserman120/discord-bridge/blob/62e9f69ec8b898da4d2ae03d7e42d886a126e6dd/assets/ModAbuseWarningSystemSettings.png)
 	
 ## Information regarding deletions
 
