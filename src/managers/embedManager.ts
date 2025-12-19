@@ -134,7 +134,7 @@ export class EmbedManager {
             description: description,
             color: color,
             fields: fields,
-            timestamp: details.createdAt.toISOString(),
+            timestamp: new Date(details.createdAt).toISOString(),
             footer: { text: footerText },
         };
 
@@ -193,26 +193,11 @@ export class EmbedManager {
         };
     }
 
-    private static getStatusTextModMail(status: ItemState): string {
-		switch (status) {
-			case ItemState.New_Modmail:
-				return 'New ModMail';
-			case ItemState.Answered_Modmail:
-				return 'Replied';
-			case ItemState.Archived_Modmail:
-                return 'Archived';
-            case ItemState.New_Reply_Modmail:
-                return 'New Reply'
-			default:
-				return 'Unknown';
-		}
-	}
-
-    static async createModMailEmbed( conversationTitle: string, conversationId: string, userMessage: any, moderatorReply: any | undefined, status: ItemState, context: TriggerContext): Promise<unknown> {
+    static async createModMailEmbed(conversationTitle: string, conversationId: string, userMessage: any, moderatorReply: any | undefined, status: ItemState, context: TriggerContext): Promise<unknown> {
         const color = await UtilityManager.getColorFromState(status, context);
-        const statusText = this.getStatusTextModMail(status);
+        const statusText = UtilityManager.getStatusTextModMail(status);
         const permalink = `https://mod.reddit.com/mail/all/${conversationId}`;
-        const timestamp = new Date().toISOString(); 
+        const timestamp = new Date().toISOString();
 
         let description = userMessage?.bodyMarkdown || "No content.";
         if (description.length > 400) description = description.substring(0, 390) + '...';

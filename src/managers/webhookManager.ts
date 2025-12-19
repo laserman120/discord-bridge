@@ -1,6 +1,7 @@
 import { Devvit, Post, Context } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { LogEntry } from './storageManager.js';
+import { UtilityManager } from './utilityManager.js';
 
 const DISCORD_API_BASE = 'https://discord.com/api/webhooks';
 
@@ -79,6 +80,62 @@ export class WebhookManager {
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             console.error(`[WEBHOOK] Exception during editMessage: ${errorMessage}`);
+        }
+    }
+
+    static async updateMessageStateOnly(webhookUrl: string, messageId: string, newState: ItemState, context: Context): Promise<void> {
+        const webhookDetails = this.parseWebhookUrl(webhookUrl);
+        if (!webhookDetails) {
+            console.error(`[WEBHOOK] Invalid Webhook URL for update: ${webhookUrl}`);
+            return;
+        }
+
+        const [webhookId, webhookToken] = webhookDetails;
+        const discordApiUrl = `${DISCORD_API_BASE}/${webhookId}/${webhookToken}/messages/${messageId}`;
+
+        try {
+            const getResponse = await fetch(discordApiUrl);
+            if (!getResponse.ok) {
+                console.error(`[WEBHOOK] Failed to fetch message ${messageId} for update (Status ${getResponse.status}).`);
+                return;
+            }
+
+            const existingMessage = await getResponse.json();
+
+            if (!existingMessage.embeds || existingMessage.embeds.length === 0) {
+                console.warn(`[WEBHOOK] Message ${messageId} has no embeds to update.`);
+                return;
+            }
+
+            const embed = existingMessage.embeds[0];
+
+            embed.color = await UtilityManager.getColorFromState(newState, context);
+
+            const statusText = UtilityManager.getStatusTextModMail(newState);
+
+            if (embed.fields) {
+                const statusField = embed.fields.find((f: any) => f.name === 'Status');
+                if (statusField) {
+                    statusField.value = statusText;
+                } else {
+                    embed.fields.push({ name: 'Status', value: statusText, inline: true });
+                }
+            }
+
+            const patchResponse = await fetch(discordApiUrl, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ embeds: [embed] }),
+            });
+
+            if (patchResponse.ok) {
+                console.log(`[WEBHOOK] Successfully updated state for message ${messageId} to ${newState}`);
+            } else {
+                console.error(`[WEBHOOK] Failed to patch message state (Status ${patchResponse.status}).`);
+            }
+
+        } catch (e) {
+            console.error(`[WEBHOOK] Exception during updateMessageStateOnly: ${e}`);
         }
     }
 

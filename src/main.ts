@@ -1,5 +1,5 @@
 ﻿import { Devvit } from '@devvit/public-api';
-import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
+import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
 import { NewPostHandler } from './handlers/newPostHandler.js';
 import { StateSyncHandler } from './handlers/stateSyncHandler.js';
 import { RemovalHandler } from './handlers/removalHandler.js';
@@ -12,6 +12,7 @@ import { checkForOldMessages } from './scheduledEvents/checkForOldMessages.js';
 import { ModMailHandler } from './handlers/modMailHandler.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { FlairWatchHandler } from './handlers/flairWatchHandler.js';
+import { ModAbuseHandler } from './handlers/modAbuseHandler.js';
 
 Devvit.configure({
     http: true,
@@ -27,6 +28,7 @@ Devvit.addSettings([
     modmailGroup,
     modlogGroup,
     flairWatchConfigField,
+    modAbuseGroup,
     customizationGroup,
     modMailCustomizationGroup,
 ]);
@@ -48,6 +50,7 @@ Devvit.addTrigger({
         }
 
         await ModLogHandler.handle(event, context);
+        await ModAbuseHandler.handle(event, context);
     },
 });
 

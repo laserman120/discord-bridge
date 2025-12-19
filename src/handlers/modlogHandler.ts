@@ -29,6 +29,22 @@ export class ModLogHandler {
             payload.content = notificationString[0];
         }
 
+        const customConfigString = await context.settings.get('MODLOG_CUSTOM_MESSAGES') as string | undefined;
+        if (customConfigString) {
+            try {
+                const customConfig = JSON.parse(customConfigString);
+                if (Array.isArray(customConfig)) {
+                    const match = customConfig.find((entry: any) => entry.action === event.action);
+                    if (match && match.message) {
+                        payload.content = match.message;
+                        console.log(`[ModLogHandler] Applying custom message for action '${event.action}'`);
+                    }
+                }
+            } catch (e) {
+                console.error('[ModLogHandler] Failed to parse custom messages config', e);
+            }
+        }
+
         console.log(`[ModLogHandler] Creating new modlog notification for ${event.id}`);
 
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload);

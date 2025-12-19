@@ -70,6 +70,21 @@ export class UtilityManager {
         return parseInt(hex.replace('#', ''), 16);
     }
 
+    static getStatusTextModMail(status: ItemState): string {
+        switch (status) {
+            case ItemState.New_Modmail:
+                return 'New ModMail';
+            case ItemState.Answered_Modmail:
+                return 'Replied';
+            case ItemState.Archived_Modmail:
+                return 'Archived';
+            case ItemState.New_Reply_Modmail:
+                return 'New Reply'
+            default:
+                return 'Unknown';
+        }
+    }
+
     static async getMessageFromChannelType(channelType: ChannelType, context: TriggerContext): Promise<string[] | undefined> {
         const settings = context.settings;
 

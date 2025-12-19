@@ -101,14 +101,11 @@ export class ModMailHandler {
                     webhookUrl: webhookUrl
                 }, context as any);
 
-                // Ensure it's tracked for archival checks
                 await StorageManager.trackActiveModmail(cleanId, context as any);
             }
         } else {
             console.log(`[ModMailHandler] Updating EXISTING notification for ${cleanId} (State: ${state})`);
 
-            // If updating, we usually only want to update the LATEST log entry, 
-            // leaving older "tickets" in the history alone.
             if (latestLogEntry) {
                 await WebhookManager.editMessage(
                     latestLogEntry.webhookUrl,

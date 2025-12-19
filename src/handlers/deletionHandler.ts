@@ -44,8 +44,6 @@ export class DeletionHandler {
             return;
         }
 
-        console.log("[DeletionHandler] Fetched content item for deletion check.", contentItem.toJSON());
-
         if (!contentItem) return;
 
         if (isPost && contentItem.removedByCategory == 'deleted' || !isPost && contentItem.authorName == '[deleted]')

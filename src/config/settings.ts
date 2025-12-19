@@ -225,6 +225,25 @@ export const modlogGroup = {
             scope: 'installation' as const,
             helpText: 'Select which Mod Log actions should trigger a notification.',
         },
+        {
+            type: 'paragraph' as const,
+            name: 'MODLOG_CUSTOM_MESSAGES',
+            label: 'Custom Mod Log Messages (JSON)',
+            helpText: 'JSON list to override the default message for specific actions. Example: [{"action": "banuser", "message": "@here User Banned!"}]',
+            defaultValue: JSON.stringify([{ "action": "banuser", "message": "**New ban has been issued**" }], null, 2),
+            scope: 'installation' as const,
+            onValidate: async ({ value }: { value?: string }) => {
+                if (!value) return undefined;
+                try {
+                    const parsed = JSON.parse(value);
+                    if (!Array.isArray(parsed)) return "Must be a JSON Array";
+                    for (const item of parsed) {
+                        if (!item.action || !item.message) return "Items must have 'action' and 'message' fields";
+                    }
+                } catch { return "Invalid JSON"; }
+                return undefined;
+            }
+        }
     ]
 };
 
@@ -246,6 +265,55 @@ export const flairWatchConfigField = {
     onValidate: async ({ value }: { value?: string }) => {
         return UtilityManager.validateFlairConfig(value);
     }
+};
+
+export const modAbuseGroup = {
+    type: 'group' as const,
+    label: 'Mod Abuse Warning System',
+    helpText: 'Configure automatic warnings for high volumes of mod actions.',
+    fields: [
+        {
+            type: 'string' as const,
+            name: 'MOD_ABUSE_MESSAGE',
+            label: 'Pingable Mod Abuse Message',
+            defaultValue: '**Possible Mod Abuse Warning**',
+            scope: 'installation' as const,
+            helpText: 'Custom text sent with notification',
+        },
+        {
+            type: 'number' as const,
+            name: 'MOD_ABUSE_TIMEFRAME',
+            label: 'Timeframe (Minutes)',
+            defaultValue: 10,
+            scope: 'installation' as const,
+            helpText: 'The rolling window of time to count actions (e.g., 10 minutes).',
+        },
+        {
+            type: 'number' as const,
+            name: 'MOD_ABUSE_THRESHOLD',
+            label: 'Action Threshold',
+            defaultValue: 20,
+            scope: 'installation' as const,
+            helpText: 'Number of actions within the timeframe to trigger a warning.',
+        },
+        {
+            type: 'select' as const,
+            name: 'MOD_ABUSE_ACTIONS',
+            label: 'Monitored Actions',
+            options: modActionOptions,
+            multiSelect: true,
+            defaultValue: ['banuser', 'removelink', 'spamlink', 'removecomment'],
+            scope: 'installation' as const,
+            helpText: 'Select which actions count towards the abuse threshold.',
+        },
+        {
+            type: 'string' as const,
+            name: 'WEBHOOK_MOD_ABUSE',
+            label: 'Warning Webhook URL',
+            scope: 'installation' as const,
+            helpText: 'Webhook URL where abuse warnings will be sent.'
+        }
+    ]
 };
 
 export const customizationGroup = {

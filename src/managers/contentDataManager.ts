@@ -1,5 +1,6 @@
 import { Post, Comment, Context, TriggerContext, ModAction } from '@devvit/public-api';
 import { UtilityManager } from './utilityManager.js';
+import { CacheManager } from '../managers/cacheManager.js';
 
 export interface ContentDetails {
     id: string;
@@ -14,6 +15,7 @@ export interface ContentDetails {
     flairText?: string;
     thumbnail?: string;
     imageUrl?: string;
+
 
     // Enriched Data
     removalReason?: string;
@@ -35,6 +37,11 @@ export interface ModActionDetails {
     targetUrl?: string;
     details?: string; 
     contentDetails?: ContentDetails;
+}
+
+interface CachedModLogData {
+    reasonLog?: ModAction;
+    removalLog?: ModAction;
 }
 
 export class ContentDataManager {
@@ -84,59 +91,75 @@ export class ContentDataManager {
         }
 
         if (item.isRemoved() || item.isSpam() || isPost && item.removedByCategory || !isPost) {
-            try {
-                const modLogEntries = await context.reddit.getModerationLog({
-                    subredditName: item.subredditName,
-                    type: 'addremovalreason',
-                    limit: 1,
-                    more: {
-                        parentId: item.id,
-                        children: [],
-                        depth: 1
-                    }
-                }).all();
 
-                const match = modLogEntries.find(entry => entry.target?.id === details.id);
+            const cachedModLogs = await CacheManager.getCachedContent(`modlog:${details.id}`, context as any) as CachedModLogData | null;
 
-                if (match) {
-                    details.removalReason = match.description || match.details || undefined;
-                    console.log(`[ContentDataManager] Found removal reason in ModLog: ${details.removalReason}`);
+            let reasonLog = cachedModLogs?.reasonLog;
+            let removalLog = cachedModLogs?.removalLog;
+            let cacheMiss = false;
+
+            if (!reasonLog && !removalLog) {
+                cacheMiss = true;
+                try {
+                    const modLogEntries = await context.reddit.getModerationLog({
+                        subredditName: item.subredditName,
+                        type: 'addremovalreason',
+                        limit: 10,
+                        more: {
+                            parentId: item.id,
+                            children: [],
+                            depth: 1
+                        }
+                    }).all();
+
+                    reasonLog = modLogEntries.find(entry => entry.target?.id === details.id);
+                } catch (e) {
+                    console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
                 }
 
-            } catch (e) {
-                console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
+                try {
+                    const removalActionType = isPost ? 'removelink' : 'removecomment';
+
+
+                    const modLogEntries = await context.reddit.getModerationLog({
+                        subredditName: item.subredditName,
+                        type: removalActionType,
+                        limit: 10,
+                        more: {
+                            parentId: item.id,
+                            children: [],
+                            depth: 1
+                        }
+                    }).all();
+
+                    removalLog = modLogEntries.find(entry => entry.target?.id === details.id);
+                } catch (e) {
+                    console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
+                }
             }
 
+            if (cacheMiss && (reasonLog || removalLog)) {
+                await CacheManager.cacheContent(`modlog:${details.id}`, {
+                    reasonLog,
+                    removalLog
+                }, context as any);
+            }
 
-            try {
-                const removalActionType = isPost ? 'removelink' : 'removecomment';
-
-
-                const modLogEntries = await context.reddit.getModerationLog({
-                    subredditName: item.subredditName,
-                    type: removalActionType,
-                    limit: 1,
-                    more: {
-                        parentId: item.id,
-                        children: [],
-                        depth: 1
-                    }
-                }).all();
-
-                const match = modLogEntries.find(entry => entry.target?.id === details.id);
-
-                if (match && match.moderatorName)
-                {
-                    details.removedBy = match.moderatorName || undefined;
+            if (reasonLog) {
+                details.removalReason = reasonLog.description || reasonLog.details || undefined;
+                if (details.removalReason) {
+                    console.log(`[ContentDataManager] Found removal reason: ${details.removalReason}`);
                 }
+            }
 
-                if (match && match.details && !details.removalReason)
-                {
-					details.removalReason = match.details || undefined;
-				}
-
-            } catch (e) {
-                console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
+            if (removalLog) {
+                if (removalLog.moderatorName && !details.removedBy) {
+                    details.removedBy = removalLog.moderatorName;
+                }
+                // Sometimes the reason is in the removal action details themselves
+                if (!details.removalReason && (removalLog.details || removalLog.description)) {
+                    details.removalReason = removalLog.details || removalLog.description;
+                }
             }
         }
 

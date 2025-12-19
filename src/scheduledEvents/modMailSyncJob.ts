@@ -33,39 +33,24 @@ export async function checkModMailStatus(event: any, context: JobContext): Promi
             if (isArchived) {
                 console.log(`[ModMailSync] Conversation ${conversationId} is now Archived. Updating Discord.`);
 
-                const messages = conversation.messages;
-                const messageList = Object.values(messages).sort((a: any, b: any) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                );
-
-                const latestMessage = messageList[0];
-                let userMessage = latestMessage;
-                let moderatorReply = undefined;
-
-                const lastUserMsg = messageList.find((msg: any) => msg.participatingAs !== 'moderator');
-                if (lastUserMsg) {
-                    userMessage = lastUserMsg;
-                }
-
-                if (latestMessage.participatingAs === 'moderator') {
-                    moderatorReply = latestMessage;
-                }
-
-                const payload = await EmbedManager.createModMailEmbed(
-                    conversation.subject ?? "(No Subject)",
-                    conversationId,
-                    userMessage,
-                    moderatorReply,
-                    ItemState.Archived_Modmail,
-                    context
-                );
-
-                const logEntries = await StorageManager.getLinkedLogEntries(conversationId, context);
+                const logEntries = await StorageManager.getLinkedLogEntries(conversationId, context as any);
 
                 for (const entry of logEntries) {
-                    await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
+                    // Only update if it's not already marked archived (efficiency)
+                    if (entry.currentStatus !== ItemState.Archived_Modmail) {
+                        await WebhookManager.updateMessageStateOnly(
+                            entry.webhookUrl,
+                            entry.discordMessageId,
+                            ItemState.Archived_Modmail,
+                            context as any
+                        );
 
-                    await StorageManager.updateLogStatus(entry.discordMessageId, ItemState.Archived_Modmail, context);
+                        await StorageManager.updateLogStatus(
+                            entry.discordMessageId,
+                            ItemState.Archived_Modmail,
+                            context as any
+                        );
+                    }
                 }
 
                 await StorageManager.untrackActiveModmail(conversationId, context as any);
