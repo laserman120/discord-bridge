@@ -267,6 +267,47 @@ export const flairWatchConfigField = {
     }
 };
 
+export const moderatorWatchConfigGrup = {
+    type: 'group' as const,
+    label: 'Moderator Watching Settings',
+    helpText: 'Configure the Moderator notification system.',
+    fields: [
+        {
+            type: 'string' as const,
+            name: 'MOD_ACTIVITY_WEBHOOK',
+            label: 'ModLog Webhook URL',
+            required: false,
+            scope: 'installation' as const,
+            helpText: `Channel for modlog entries`,
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateWebhookUrl(value);
+            }
+        },
+        {
+            type: 'boolean' as const,
+            name: 'MOD_ACTIVITY_CHECK_POSTS',
+            label: 'Notify when a moderator submits a new post',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'MOD_ACTIVITY_CHECK_COMMENTS',
+            label: 'Notify when a moderator submits a new comment',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'string' as const,
+            name: 'MOD_ACTIVITY_MESSAGE',
+            label: 'Pingable new moderator notification message',
+            defaultValue: 'New Moderator Activity',
+            scope: 'installation' as const,
+            helpText: 'Custom text sent with notification',
+        }
+    ]
+}
+
 export const modAbuseGroup = {
     type: 'group' as const,
     label: 'Mod Abuse Warning System',

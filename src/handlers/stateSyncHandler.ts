@@ -80,6 +80,9 @@ export class StateSyncHandler {
                 case ChannelType.FlairWatch:
                     payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
+                case ChannelType.ModActivity:
+                    payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
+                    break;
                 default:
                     console.log(`[StateSync] Unknown channel type ${entry.channelType} for Msg ${entry.discordMessageId}. Skipping.`);
                     continue;

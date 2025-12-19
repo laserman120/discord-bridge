@@ -48,6 +48,10 @@ Making at easy to keep track of anything related to your subreddit directly from
   - Easily monitor posts or comments made by users with specific flairs, or posts with specific flairs.
   - This also supports a public option, for example when you want to highlight posts by content creators in your discord.
 	
+- Moderator Watching
+  - The moderator watching system will send messages whenever a moderator creates a new post or comment.
+  - Useful to keep track of moderator activity in your subreddit.
+	
 - Mod Abuse Detection
   -  This system will notify you if a moderator performs too many actions in a set period of time.
   - This is designed to help catch potential mod abuse early on.
@@ -146,6 +150,11 @@ Making at easy to keep track of anything related to your subreddit directly from
 		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/PostFlairWatching.png)
 		- If a flair watch is set to public format, the notification will be deleted if the post/comment is no longer public (removed, deleted, filtered).
 	
+	- Moderator Watching
+		- This feed will notify you of any new posts or comments made by moderators.
+		- You can set this to either react to posts/comment or both, depending on your needs.
+		- If you dont want to use the system just remove the webhook url and it will be disabled.
+
 	- Mod Abuse Warning System
 		- This system will trigger a notification if a moderator performs too many actions in a set period of time.
 		- You can configure the amount of actions, the time period as well as actions that should be monitored.

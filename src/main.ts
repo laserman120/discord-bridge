@@ -1,5 +1,5 @@
 ﻿import { Devvit } from '@devvit/public-api';
-import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
+import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
 import { NewPostHandler } from './handlers/newPostHandler.js';
 import { StateSyncHandler } from './handlers/stateSyncHandler.js';
 import { RemovalHandler } from './handlers/removalHandler.js';
@@ -13,6 +13,7 @@ import { ModMailHandler } from './handlers/modMailHandler.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { FlairWatchHandler } from './handlers/flairWatchHandler.js';
 import { ModAbuseHandler } from './handlers/modAbuseHandler.js';
+import { ModActivityHandler } from './handlers/modActivityHandler.js';
 
 Devvit.configure({
     http: true,
@@ -28,6 +29,7 @@ Devvit.addSettings([
     modmailGroup,
     modlogGroup,
     flairWatchConfigField,
+    moderatorWatchConfigGrup,
     modAbuseGroup,
     customizationGroup,
     modMailCustomizationGroup,
@@ -67,6 +69,7 @@ Devvit.addTrigger({
             await new Promise(resolve => setTimeout(resolve, 5000));
             await PublicPostHandler.handle(event.post, context);
             await FlairWatchHandler.handle(event.post, context);
+            await ModActivityHandler.handle(event.post, context);
 
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
             ReportHandler.handle(event.post, context);
@@ -85,8 +88,8 @@ Devvit.addTrigger({
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
             await ReportHandler.handle(event.comment, context);
 
-
             await FlairWatchHandler.handle(event.comment, context);
+            await ModActivityHandler.handle(event.comment, context)
         }
 
     },
