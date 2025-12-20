@@ -84,6 +84,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 		![Public Message Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
 	
+		- To protect your discord community from potential spoilers or nsfw content you can configure how these cases should be handled.
+		![Public Message Settings](https://raw.githubusercontent.com/laserman120/discord-bridge/f1bd36a62e3560c34831008d496eeefaf1f63d5c/assets/PublicPostSettings.png)
+		- For each case you can select if the image should be shown or hidden, as well as the content body, which is the text part of a post.
+		
 	- Private New Posts
 		- This feed is designed to be used in private moderator discord servers/channels.
 		- All new posts will be sent here, regardless of their state.
