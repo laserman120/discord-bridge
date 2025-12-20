@@ -115,7 +115,7 @@ export class EmbedManager {
         }
 
         if (details.contentWarning) {
-            fields.push({ name: 'ContentWarning', value: details.contentWarning, inline: true });
+            fields.push({ name: 'Content Warning', value: details.contentWarning, inline: true });
         }
 
         if (status != ItemState.Public_Post) {

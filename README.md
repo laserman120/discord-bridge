@@ -27,6 +27,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 - Public New Post Feed:
   - This is a special new post feed that is designed to be viewed in public discord servers.
   - Unlike the other webhooks it will not share any moderation information, plus it will remove any post messages that are no longer public. (eg. removed by moderators, deleted by the user, or filtered by AutoModerator)
+  - There are also additional options to hide certain content if a post is marked as NSFW or Spoiler.
 
 - Customizable Embed Colors
   - You can fully customize the colors for each message state.
@@ -183,24 +184,32 @@ Making at easy to keep track of anything related to your subreddit directly from
 - The app will never perform any action on your subreddit, it is read-only by design.
 
 ## Changelog
+- v0.0.24
+  - Added caching for certain reddit data to improve performance.
+  - Added customizable messages for mod log messages.
+  - Added Moderator Abuse warning system.
+  - Added Moderator Watching system.
+  - Added content warning configurations for public new post feed.
+  - Added content warning information to messages.
+  - Improved mod mail archival handling.
 - v0.0.23
-  - Hotfix due to an issue with deletions 
+  - Hotfix due to an issue with deletions .
 - v0.0.21
-  - Added Flair Watching feature
-  - Minor fixes and improvements
-  - Updated dependencies
+  - Added Flair Watching feature.
+  - Minor fixes and improvements.
+  - Updated dependencies.
 - v0.0.16
   - Added an additional delay during old message removal to prevent rate limiting on discords end.
   - Added support for crossposts, now displaying if a post is a crosspost and from which subreddit, as well as linking to the original post.
 	- It will now also fetch the post body from the original post.
   - Removed the "No Body" text in cases without a message body attached.
-  - Hotfix for reports not sending notifications when reported by AutoModerator
+  - Hotfix for reports not sending notifications when reported by AutoModerator.
   - Fixed edge case in which a removed comment would be marked as Administrator removal incorrectly.
   - Fixed edge case in which report reasons were not shown correctly in certain situations.
   - Fixed an issue which lead the comment removals showing no moderator name.
   - Fixed issue in which a removed post/comment would be marked as Admin removal if the bot user was deselected from automatic removals.
 - v0.0.14
-  -	Initial Release
+  -	Initial Release.
 
 ## Important Links:
 - [Source Code](https://github.com/laserman120/discord-bridge)
