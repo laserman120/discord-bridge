@@ -16,6 +16,8 @@ export interface ContentDetails {
     thumbnail?: string;
     imageUrl?: string;
     contentWarning?: string;
+    isNSFW?: boolean;
+    isSpoiler?: boolean;
 
 
     // Enriched Data
@@ -75,10 +77,20 @@ export class ContentDataManager {
         if (isPost) {
             details.imageUrl = await UtilityManager.getBestImageUrl(item);
 
-            if (item.isNsfw()) {
+            if (item.isNsfw() && !item.isSpoiler()) {
                 details.contentWarning = "NSFW"
-            } else if (item.isSpoiler()) {
+                details.isNSFW = true;
+                details.isSpoiler = false;
+            }
+            else if (item.isSpoiler() && !item.isNsfw()) {
                 details.contentWarning = "Spoilers"
+                details.isNSFW = false;
+                details.isSpoiler = true;
+            }
+            else if (item.isSpoiler() && item.isNsfw()) {
+                details.contentWarning = "NSFW & Spoilers"
+                details.isNSFW = true;
+                details.isSpoiler = true;
             }
         }
 

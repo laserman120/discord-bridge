@@ -14,6 +14,7 @@ import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { FlairWatchHandler } from './handlers/flairWatchHandler.js';
 import { ModAbuseHandler } from './handlers/modAbuseHandler.js';
 import { ModActivityHandler } from './handlers/modActivityHandler.js';
+import { UpdateHandler } from './handlers/updateHandler.js'; 
 
 Devvit.configure({
     http: true,
@@ -35,6 +36,8 @@ Devvit.addSettings([
     modMailCustomizationGroup,
 ]);
 
+const ActionsRequiringUpdate = ["markednsfw", "lock", "unlock", "sticky", "unsticky", "spoiler", "unspoiler", "editflair"];
+
 Devvit.addTrigger({
     event: 'ModAction',
     onEvent: async (event, context) => {
@@ -53,6 +56,11 @@ Devvit.addTrigger({
 
         await ModLogHandler.handle(event, context);
         await ModAbuseHandler.handle(event, context);
+
+        if (ActionsRequiringUpdate.includes(event.action || ""))
+        {
+            await UpdateHandler.handle(event, context);
+        }
     },
 });
 
@@ -124,6 +132,23 @@ Devvit.addTrigger({
 
         if (event.type == 'CommentReport' && event.comment) {
             ReportHandler.handle(event.comment, context);
+        }
+    },
+});
+
+Devvit.addTrigger({
+    events: ['PostUpdate', 'CommentUpdate'],
+    onEvent: async (event, context) => {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        if (event.type == 'PostUpdate' && event.post) {
+            console.log("[Trigger: PostUpdate] Received post update event: ", event)
+            UpdateHandler.handle(event, context);
+        }
+
+        if (event.type == 'CommentUpdate' && event.comment) {
+            console.log("[Trigger: PostUpdate] Received comment update event: ", event)
+            UpdateHandler.handle(event, context);
         }
     },
 });

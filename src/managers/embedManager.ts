@@ -79,7 +79,7 @@ export class EmbedManager {
         const color = await UtilityManager.getColorFromState(status, context);
 
         let description = '';
-        if (status == ItemState.Public_Post && NSFWBodyHidden && details.contentWarning == "NSFW" || status == ItemState.Public_Post && SPOILERBodyHidden && details.contentWarning == "Spoilers")
+        if (status == ItemState.Public_Post && NSFWBodyHidden && details.isNSFW || status == ItemState.Public_Post && SPOILERBodyHidden && details.isSpoiler)
         {
             /* empty */
         }
@@ -96,7 +96,7 @@ export class EmbedManager {
         const footerText = `r/${details.subredditName}`;
 
         let imageUrl;
-        if (status == ItemState.Public_Post && NSFWImagesHidden && details.contentWarning == "NSFW" || status == ItemState.Public_Post && SPOILERImagesHidden && details.contentWarning == "Spoilers") {
+        if (status == ItemState.Public_Post && NSFWImagesHidden && details.isNSFW || status == ItemState.Public_Post && SPOILERImagesHidden && details.isSpoiler) {
             imageUrl = undefined;
         } else {
             imageUrl = details.imageUrl;

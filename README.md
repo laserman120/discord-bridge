@@ -192,6 +192,9 @@ Making at easy to keep track of anything related to your subreddit directly from
   - Added content warning configurations for public new post feed.
   - Added content warning information to messages.
   - Improved mod mail archival handling.
+  - Added update system to update messages when necessary.
+	- this includes body updates by the author
+	- as well as changes if flair or content warnings
 - v0.0.23
   - Hotfix due to an issue with deletions .
 - v0.0.21
