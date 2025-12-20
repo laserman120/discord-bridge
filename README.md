@@ -75,99 +75,100 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 	![Embed Color Customization](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAppearance.png)
 
-- Specific Feature Information:
-	- Public New Posts
-		- This feed is designed to be used in public discord servers.
-		- Posts that are no longer public (removed, deleted, filtered) will have their messages deleted.
-		- Posts that were automatically filtered or removed will not show up in this feed at all.
-		- If a post becomes approved after being filtered or removed at any point, it will be resent.
-		- Public messages will never show any information regarding moderation.
+## Detailed Feature Information
 
-		![Public Message Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
+- Public New Posts
+	- This feed is designed to be used in public discord servers.
+	- Posts that are no longer public (removed, deleted, filtered) will have their messages deleted.
+	- Posts that were automatically filtered or removed will not show up in this feed at all.
+	- If a post becomes approved after being filtered or removed at any point, it will be resent.
+	- Public messages will never show any information regarding moderation.
+
+	![Public Message Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostPublic.png)
 	
-		- To protect your discord community from potential spoilers or nsfw content you can configure how these cases should be handled.
-		![Public Message Settings](https://raw.githubusercontent.com/laserman120/discord-bridge/f1bd36a62e3560c34831008d496eeefaf1f63d5c/assets/PublicPostSettings.png)
-		- For each case you can select if the image should be shown or hidden, as well as the content body, which is the text part of a post.
+	- To protect your discord community from potential spoilers or nsfw content you can configure how these cases should be handled.
+	![Public Message Settings](https://raw.githubusercontent.com/laserman120/discord-bridge/f1bd36a62e3560c34831008d496eeefaf1f63d5c/assets/PublicPostSettings.png)
+	- For each case you can select if the image should be shown or hidden, as well as the content body, which is the text part of a post.
 		
-	- Private New Posts
-		- This feed is designed to be used in private moderator discord servers/channels.
-		- All new posts will be sent here, regardless of their state.
-		- If a post is later removed or deleted, the message will update to reflect that.
-		- It also contains moderatory information, including last action performed on that item, who performed that action and any removal reason provided if one exists.
-		- This feed is ideal for keeping track of all new posts and their current state.
+- Private New Posts
+	- This feed is designed to be used in private moderator discord servers/channels.
+	- All new posts will be sent here, regardless of their state.
+	- If a post is later removed or deleted, the message will update to reflect that.
+	- It also contains moderatory information, including last action performed on that item, who performed that action and any removal reason provided if one exists.
+	- This feed is ideal for keeping track of all new posts and their current state.
 
-	- Removals
-		- This feed will notify you of any removals that occur in your subreddit.
-		- It will specify the type of removal (Moderator, AutoModerator, Admin) as well as who performed the removal and any reason provided.
-		- If a removal is later reversed (approved) the message will update to reflect that change.
-		- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
-		- This is an example for a post removed due to the Reputation Filter, as reddit is selected to be treated as automatic it will have its color and message set accordingly.
+- Removals
+	- This feed will notify you of any removals that occur in your subreddit.
+	- It will specify the type of removal (Moderator, AutoModerator, Admin) as well as who performed the removal and any reason provided.
+	- If a removal is later reversed (approved) the message will update to reflect that change.
+	- Depending on which type of removal occured the message color as well as the pingable notification text will be chosen accordingly.
+	- This is an example for a post removed due to the Reputation Filter, as reddit is selected to be treated as automatic it will have its color and message set accordingly.
 
-		![Removal Example](https://raw.githubusercontent.com/laserman120/discord-bridge/refs/heads/main/assets/PortAutoRemovalReputationMasked.png)
+	![Removal Example](https://raw.githubusercontent.com/laserman120/discord-bridge/refs/heads/main/assets/PortAutoRemovalReputationMasked.png)
 		
-		- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
+	- You can select which type of automated user is marked as "Automatic". So if you trust a removal by certain bots you can have them marked as moderator removals instead of automatic.
 
-		![Removal User Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
+	![Removal User Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
 	
-	- Reports
-		- This feed will notify you of any reports that occur in your subreddit.
-		- It will specify what was reported (post or comment) and the reason provided.
-		- If the reported item is later removed or deleted, the message will update to reflect that change.
-		- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
+- Reports
+	- This feed will notify you of any reports that occur in your subreddit.
+	- It will specify what was reported (post or comment) and the reason provided.
+	- If the reported item is later removed or deleted, the message will update to reflect that change.
+	- Each report will generate its own message, so multiple reports on the same item will create multiple notifications.
 
-		![Report Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostReport.png)
+	![Report Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostReport.png)
 	 
-	- ModMail
-		- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
-		- It will specify who sent the message (user or moderator) and the content of the message.
-		- If a conversation is archived, the message will update to reflect that change.
-		- For simplicity and size reasons, only the latest message in a conversation will be shown in the notification.
+- ModMail
+	- This feed will notify you of any new ModMail conversations as well as replies to existing conversations.
+	- It will specify who sent the message (user or moderator) and the content of the message.
+	- If a conversation is archived, the message will update to reflect that change.
+	- For simplicity and size reasons, only the latest message in a conversation will be shown in the notification.
 	
-	| New Mod Mail Notification | The same notification after a moderator replied |
-	| :---: | :---: |
-	| ![New Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied by a moderator](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
+| New Mod Mail Notification | The same notification after a moderator replied |
+| :---: | :---: |
+| ![New Mod Mail](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailNew.png) | ![Replied by a moderator](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/ModMailReply.png) |
  
-	- ModLog
-		- This feed will notify you of any ModLog actions that occur in your subreddit.
-		- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
+- ModLog
+	- This feed will notify you of any ModLog actions that occur in your subreddit.
+	- You can select which ModLog actions will trigger a notification, allowing you to mute less relevant actions.
 
-		![Mod Log Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
+	![Mod Log Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsModLogSelector.png)
 		
-		- You can use the custom modlog message system to specify specific messages when specific mod actions occur.
+	- You can use the custom modlog message system to specify specific messages when specific mod actions occur.
+	- For flexibility this is a json strcture, but you can use pings the same way as in other notification messages.
 
-		![ModLog CustomMessages](https://github.com/laserman120/discord-bridge/blob/62e9f69ec8b898da4d2ae03d7e42d886a126e6dd/assets/CustomModLogMessage.png)
+	![ModLog CustomMessages](https://github.com/laserman120/discord-bridge/blob/62e9f69ec8b898da4d2ae03d7e42d886a126e6dd/assets/CustomModLogMessage.png)
 
-		- Each entry requires:
-			- action    -  The modlog action that will trigger this custom message.
-			- message   -  The message to send when this action occurs.
+	- Each entry requires:
+		- action    -  The modlog action that will trigger this custom message.
+		- message   -  The message to send when this action occurs.
 
-	- Flair Watching
-		- This feed will notify you of any posts or comments made by users with specific flairs, or posts with specific flairs.
-		- The setup is a bit more complicated, to allow you to add several flair to watch it is a json configuration.
-		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/FlairWatchingSettings.png)
-		- Each configuration requires:
-			- flair        -  This is the text that a flair needs to include to trigger a notification.
-			- post         -  If enabled, posts with this flair will trigger a notification.
-			- comment      -  If enabled, comments made by users with this flair will trigger a notification.
-			- webhook      -  The webhook URL to send notifications to.
-			- publicFormat -  If enabled, the notification will be sent in the public format, removing any moderation information.
+- Flair Watching
+	- This feed will notify you of any posts or comments made by users with specific flairs, or posts with specific flairs.
+	- To allow you an arbitrary amount of flairs to watch for this is in the form of a json configuration.
+	![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/FlairWatchingSettings.png)
+	- Each configuration requires:
+		- flair        -  This is the text that a flair needs to include to trigger a notification.
+		- post         -  If enabled, posts with this flair will trigger a notification.
+		- comment      -  If enabled, comments made by users with this flair will trigger a notification.
+		- webhook      -  The webhook URL to send notifications to.
+		- publicFormat -  If enabled, the notification will be sent in the public format, removing any moderation information.
 
-		![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/PostFlairWatching.png)
-		- If a flair watch is set to public format, the notification will be deleted if the post/comment is no longer public (removed, deleted, filtered).
+	![Flair Watching Example](https://raw.githubusercontent.com/laserman120/discord-bridge/6ba749aa5069cde1a01995e2ab80a2b5d61bb42d/assets/PostFlairWatching.png)
+	- If a flair watch is set to public format, the notification will be deleted if the post/comment is no longer public (removed, deleted, filtered).
 	
-	- Moderator Watching
-		- This feed will notify you of any new posts or comments made by moderators.
-		- You can set this to either react to posts/comment or both, depending on your needs.
-		- If you dont want to use the system just remove the webhook url and it will be disabled.
+- Moderator Watching
+	- This feed will notify you of any new posts or comments made by moderators.
+	- You can set this to either react to posts/comments or both.
 
-		![Moderator Watching System Settings](https://github.com/laserman120/discord-bridge/blob/77d6e97da760a41b7a41fed36bafc1a07e25982c/assets/ModeratorWatchingSettings.png) 
+	![Moderator Watching System Settings](https://github.com/laserman120/discord-bridge/blob/77d6e97da760a41b7a41fed36bafc1a07e25982c/assets/ModeratorWatchingSettings.png) 
 	
-	- Mod Abuse Warning System
-		- This system will trigger a notification if a moderator performs too many actions in a set period of time.
-		- You can configure the amount of actions, the time period as well as actions that should be monitored.
-		- This is designed to help catch potential mod abuse early on.
+- Mod Abuse Warning System
+	- This system will trigger a notification if a moderator performs too many actions in a set period of time.
+	- You can configure the amount of actions, the time period, as well as the types of actions that should be monitored.
+	- This is designed to help catch potential mod abuse early on.
 
-		![Mod Abuse Warning System](https://github.com/laserman120/discord-bridge/blob/62e9f69ec8b898da4d2ae03d7e42d886a126e6dd/assets/ModAbuseWarningSystemSettings.png)
+	![Mod Abuse Warning System](https://github.com/laserman120/discord-bridge/blob/62e9f69ec8b898da4d2ae03d7e42d886a126e6dd/assets/ModAbuseWarningSystemSettings.png)
 	
 ## Information regarding deletions
 
