@@ -49,6 +49,34 @@ export const publicNotificationGroup = {
             scope: 'installation' as const,
             helpText: 'Custom text sent with the notification (e.g., @here New Post!).',
         },
+        {
+            type: 'boolean' as const,
+            name: 'NEW_PUBLIC_POST_HIDE_NSFW_IMAGES',
+            label: 'Do not show a preview image when a post is marked as NSFW',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'NEW_PUBLIC_POST_HIDE_SPOILER_IMAGE',
+            label: 'Do not show a preview image when a post is marked as a Spoiler',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'NEW_PUBLIC_POST_HIDE_NSFW_BODY',
+            label: 'Do not show a preview of the post text when a post is marked as NSFW',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'NEW_PUBLIC_POST_HIDE_SPOILER_BODY',
+            label: 'Do not show a preview of the post text when a post is marked as a Spoiler',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
     ]
 };
 

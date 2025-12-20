@@ -68,22 +68,39 @@ export class EmbedManager {
     }
 
     static async createDefaultEmbed(details: ContentDetails, status: ItemState, channelType: ChannelType, context: TriggerContext): Promise<any> {
+        const NSFWImagesHidden = await context.settings.get('NEW_PUBLIC_POST_HIDE_NSFW_IMAGE') as boolean || false;
+        const NSFWBodyHidden = await context.settings.get('NEW_PUBLIC_POST_HIDE_NSFW_BODY') as boolean || false;
+        const SPOILERImagesHidden = await context.settings.get('NEW_PUBLIC_POST_HIDE_SPOILER_IMAGE') as boolean || false;
+        const SPOILERBodyHidden = await context.settings.get('NEW_PUBLIC_POST_HIDE_SPOILER_BODY') as boolean || false;
+
+
         const { statusText, actionText } = this.getStatusDetails(status);
 
         const color = await UtilityManager.getColorFromState(status, context);
 
         let description = '';
-
-        if (details.body) {
-            description = (details.body.substring(0, 300) + (details.body.length > 300 ? '...' : ''))
-        }
-        else if (details.isCrossPost && details.crossPostBody)
+        if (status == ItemState.Public_Post && NSFWBodyHidden && details.contentWarning == "NSFW" || status == ItemState.Public_Post && SPOILERBodyHidden && details.contentWarning == "Spoilers")
         {
-            description = (details.crossPostBody.substring(0, 300) + (details.crossPostBody.length > 300 ? '...' : ''));
+            /* empty */
+        }
+        else
+        {
+            if (details.body) {
+                description = (details.body.substring(0, 300) + (details.body.length > 300 ? '...' : ''))
+            }
+            else if (details.isCrossPost && details.crossPostBody) {
+                description = (details.crossPostBody.substring(0, 300) + (details.crossPostBody.length > 300 ? '...' : ''));
+            }
         }
 
         const footerText = `r/${details.subredditName}`;
-        const imageUrl = details.imageUrl;
+
+        let imageUrl;
+        if (status == ItemState.Public_Post && NSFWImagesHidden && details.contentWarning == "NSFW" || status == ItemState.Public_Post && SPOILERImagesHidden && details.contentWarning == "Spoilers") {
+            imageUrl = undefined;
+        } else {
+            imageUrl = details.imageUrl;
+        }
 
         const fields = [
             { name: 'Author', value: `u/${details.authorName}`, inline: true }
@@ -95,6 +112,10 @@ export class EmbedManager {
 
         if (details.flairText) {
             fields.splice(1, 0, { name: 'Flair', value: details.flairText, inline: true });
+        }
+
+        if (details.contentWarning) {
+            fields.push({ name: 'ContentWarning', value: details.contentWarning, inline: true });
         }
 
         if (status != ItemState.Public_Post) {

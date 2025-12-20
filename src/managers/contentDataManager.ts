@@ -15,6 +15,7 @@ export interface ContentDetails {
     flairText?: string;
     thumbnail?: string;
     imageUrl?: string;
+    contentWarning?: string;
 
 
     // Enriched Data
@@ -73,6 +74,12 @@ export class ContentDataManager {
 
         if (isPost) {
             details.imageUrl = await UtilityManager.getBestImageUrl(item);
+
+            if (item.isNsfw()) {
+                details.contentWarning = "NSFW"
+            } else if (item.isSpoiler()) {
+                details.contentWarning = "Spoilers"
+            }
         }
 
         if (item.userReportReasons && item.userReportReasons.length > 0) {
