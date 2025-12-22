@@ -49,6 +49,11 @@ export class RemovalHandler {
 
         if (state == ItemState.Removed) {
             let automatedRemovalUsers = await context.settings.get('AUTOMATIC_REMOVALS_USERS') as string[] || [];
+            let automatedRemovalUsersCustom = await context.settings.get('AUTOMATIC_REMOVALS_USERS_CUSTOM') as string || "";
+            let customAutomatedUsers = automatedRemovalUsersCustom.split(";");
+
+            automatedRemovalUsers = automatedRemovalUsers.concat(customAutomatedUsers.map(u => u.trim().toLowerCase()).filter(u => u.length > 0));
+
             console.log("[RemovalHandler] Automatic removal users: " + automatedRemovalUsers.join(", "))
             if (automatedRemovalUsers.includes(contentData.removedBy?.toLowerCase() || '')) {
                 state = ItemState.Awaiting_Review;

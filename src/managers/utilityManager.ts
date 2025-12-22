@@ -197,4 +197,27 @@ export class UtilityManager {
         }
         return undefined;
     }
+
+    static validateUsernameList(value: string | undefined): string | undefined {
+        if (!value || value.trim().length === 0) return undefined;
+
+        const names = value.split(';');
+
+        for (const rawName of names) {
+            const name = rawName.trim();
+            if (name.length === 0) continue; // Skip empty entries (e.g. "Bot1;")
+
+            // Check for internal whitespace (e.g. "Bot One")
+            if (/\s/.test(name)) {
+                return `Invalid username '${name}': Usernames cannot contain spaces.`;
+            }
+
+            // Check for valid Reddit characters (Alphanumeric, underscore, dash)
+            if (!/^[\w-]+$/.test(name)) {
+                return `Invalid username '${name}': Contains illegal characters.`;
+            }
+        }
+
+        return undefined;
+    }
 }

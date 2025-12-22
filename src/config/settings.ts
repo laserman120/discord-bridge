@@ -83,7 +83,7 @@ export const publicNotificationGroup = {
 
 export const newPostsGroup = {
     type: 'group' as const,
-    label: 'New Post Notifications',
+    label: 'Private New Post Notifications',
     helpText: 'Configure internal notifications for the mod team.',
     fields: [
         {
@@ -161,6 +161,18 @@ export const removalGroup = {
             defaultValue: ['automoderator', 'anti_evil_ops', 'reddit'],
             scope: 'installation' as const,
             helpText: 'Select which accounts should trigger the "Automatic Removal" message style.',
+        },
+        {
+            type: 'string' as const,
+            name: 'AUTOMATIC_REMOVALS_USERS_CUSTOM',
+            label: 'Custom users which removals will be treated as automatic removals',
+            defaultValue: 'ExampleBot; ExampleBot2',
+            required: false,
+            scope: 'installation' as const,
+            helpText: `Here you can enter custom usernames which will be treated as automatic, useful if you have other apps running on your subreddit you dont fully trust.`,
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateUsernameList(value)
+            }
         },
     ]
 };
@@ -403,7 +415,7 @@ export const customizationGroup = {
         {
             type: 'string' as const,
             name: 'liveColorCode',
-            label: 'Live Post Color (Hex)',
+            label: 'Live Post Color',
             defaultValue: '#71c7d6', 
             scope: 'installation' as const,
             helpText: 'Color code for LIVE content.',
@@ -414,7 +426,7 @@ export const customizationGroup = {
         {
             type: 'string' as const,
             name: 'approvedColorCode',
-            label: 'Approved Post Color (Hex)',
+            label: 'Approved Post Color',
             defaultValue: '#2ECC71',
             scope: 'installation' as const,
             helpText: 'Color code for APPROVED content.',
@@ -425,7 +437,7 @@ export const customizationGroup = {
         {
             type: 'string' as const,
             name: 'removedColorCode',
-            label: 'Removed Post Color (Hex)',
+            label: 'Removed Post Color',
             defaultValue: '#E74C3C',
             scope: 'installation' as const,
             helpText: 'Color code for confirmed REMOVED content.',
@@ -436,7 +448,7 @@ export const customizationGroup = {
         {
             type: 'string' as const,
             name: 'spamColorCode',
-            label: 'Spam Removal Post Color (Hex)',
+            label: 'Spam Removal Post Color',
             defaultValue: '#E74C3C',
             scope: 'installation' as const,
             helpText: 'Color code for content removed due to SPAM.',
@@ -447,7 +459,7 @@ export const customizationGroup = {
         {
             type: 'string' as const,
             name: 'deletedColorCode',
-            label: 'Deleten Post Color (Hex)',
+            label: 'Deleten Post Color',
             defaultValue: '#808080', 
             scope: 'installation' as const,
             helpText: 'Color code for content which has been DELETED.',
@@ -458,7 +470,7 @@ export const customizationGroup = {
         {
             type: 'string' as const,
             name: 'awaitingReviewColorCode',
-            label: 'Awaiting Review Post Color (Hex)',
+            label: 'Awaiting Review Post Color',
             defaultValue: '#E67E22', 
             scope: 'installation' as const,
             helpText: 'Color code for content which has been automatically REMOVED and requires review.',
@@ -469,7 +481,7 @@ export const customizationGroup = {
         {
             type: 'string' as const,
             name: 'unhandledReportColorCode',
-            label: 'Unhandled Report Post Color (Hex)',
+            label: 'Unhandled Report Post Color',
             defaultValue: '#E67E22', 
             scope: 'installation' as const,
             helpText: 'Color code for content which has been REPORTED and not yet reviewed.',
@@ -487,7 +499,7 @@ export const modMailCustomizationGroup = {
         {
             type: 'string' as const,
             name: 'newModMailColorCode',
-            label: 'New ModMail Post Color (Hex)',
+            label: 'New ModMail Post Color',
             defaultValue: '#3498DB', 
             scope: 'installation' as const,
             helpText: 'Color code for NEW ModMail conversations.',
@@ -498,7 +510,7 @@ export const modMailCustomizationGroup = {
         {
             type: 'string' as const,
             name: 'answeredModMailColorCode',
-            label: 'Answered ModMail Post Color (Hex)',
+            label: 'Answered ModMail Post Color',
             defaultValue: '#2ECC71', 
             scope: 'installation' as const,
             helpText: 'Color code for ModMail conversations that have been ANSWERED by a moderator.',
@@ -509,7 +521,7 @@ export const modMailCustomizationGroup = {
         {
             type: 'string' as const,
             name: 'newReplyModMailColorCode',
-            label: 'New Reply ModMail Post Color (Hex)',
+            label: 'New Reply ModMail Post Color',
             defaultValue: '#9B59B6',
             scope: 'installation' as const,
             helpText: 'Color code for ModMail conversations that recieved a new reply by the user',
@@ -520,7 +532,7 @@ export const modMailCustomizationGroup = {
         {
             type: 'string' as const,
             name: 'archivedModMailColorCode',
-            label: 'Archived ModMail Post Color (Hex)',
+            label: 'Archived ModMail Post Color',
             defaultValue: '#2ECC71',
             scope: 'installation' as const,
             helpText: 'Color code for Archived ModMail conversations.',

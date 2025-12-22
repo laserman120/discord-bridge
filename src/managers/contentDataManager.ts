@@ -117,7 +117,7 @@ export class ContentDataManager {
             let removalLog = cachedModLogs?.removalLog;
             let cacheMiss = false;
 
-            if (!reasonLog && !removalLog) {
+            if (!reasonLog) {
                 cacheMiss = true;
                 try {
                     const modLogEntries = await context.reddit.getModerationLog({
@@ -130,12 +130,14 @@ export class ContentDataManager {
                             depth: 1
                         }
                     }).all();
-
                     reasonLog = modLogEntries.find(entry => entry.target?.id === details.id);
-                } catch (e) {
+                } catch {
                     console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
                 }
+            }
 
+            if (!removalLog) {
+                cacheMiss = true;
                 try {
                     const removalActionType = isPost ? 'removelink' : 'removecomment';
 
@@ -152,7 +154,7 @@ export class ContentDataManager {
                     }).all();
 
                     removalLog = modLogEntries.find(entry => entry.target?.id === details.id);
-                } catch (e) {
+                } catch {
                     console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
                 }
             }
@@ -168,6 +170,7 @@ export class ContentDataManager {
                 details.removalReason = reasonLog.description || reasonLog.details || undefined;
                 if (details.removalReason) {
                     console.log(`[ContentDataManager] Found removal reason: ${details.removalReason}`);
+                    console.log(reasonLog)
                 }
             }
 
