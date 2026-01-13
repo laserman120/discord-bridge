@@ -154,13 +154,12 @@ export const removalGroup = {
             label: 'Users treated as Automatic',
             options: [
                 { label: 'AutoModerator', value: 'automoderator' },
-                { label: 'Anti-Evil Operations', value: 'anti_evil_ops' },
                 { label: 'reddit', value: 'reddit' },
             ],
             multiSelect: true,
-            defaultValue: ['automoderator', 'anti_evil_ops', 'reddit'],
+            defaultValue: ['automoderator', 'reddit'],
             scope: 'installation' as const,
-            helpText: 'Select which accounts should trigger the "Automatic Removal" message style.',
+            helpText: 'Select which accounts should trigger the "Automatic Removal" message style. Please check the ReadMe for more information',
         },
         {
             type: 'string' as const,
@@ -315,7 +314,7 @@ export const moderatorWatchConfigGrup = {
         {
             type: 'string' as const,
             name: 'MOD_ACTIVITY_WEBHOOK',
-            label: 'ModLog Webhook URL',
+            label: 'Moderator Watching Webhook URL',
             required: false,
             scope: 'installation' as const,
             helpText: `Channel for modlog entries`,

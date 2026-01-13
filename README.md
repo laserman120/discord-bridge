@@ -105,6 +105,12 @@ Making at easy to keep track of anything related to your subreddit directly from
 	![Removal User Selector](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/SettingsAutomaticUsers.png)
 	
 	- If you have an app that is capable of performing removals and you want to have those removals marked as automatic, you can simply add the app's username to the list.
+
+	- Notes regarding Admin Removals:
+		- Admin removals are removals performed by reddit administrators, usually for rule violations of reddit itself.
+		- These will only create a new message if the post/comment was not already removed by a moderator or automatically.
+		- If a post/comment is already removed by a moderator or automatically, and then later removed by an admin, the message will update to reflect the admin removal instead of creating a new message.
+		- This behavior is different from apps like AdminTattler, which will always show you that an admin removal occured, even if the post/comment was already removed.
 	
 - Reports
 	- This feed will notify you of any reports that occur in your subreddit.
@@ -187,6 +193,23 @@ Making at easy to keep track of anything related to your subreddit directly from
 ---
 
 ## Changelog
+- v0.0.38
+  - Removed Anti-Evil Ops from the list of automatic removal users. These can never be marked as automatic as these are admin removals.
+  - Reworked admin removals to now pull from a static list instead of checking for actions by non moderator accounts.
+	- This should help avoid false positives. If you want a reliable notification for admin removals use an app like AdminTattler.
+- v0.0.37
+  - Fixed an issue which lead to certain removals not creating notifications.
+  - Fixed an issue that lead to certain reports appearing twice.
+- v0.0.30
+  - Added Queue system to hopefully avoid rate limiting as well as issues with the order of execution.
+  - Adjusted execution timing to improve stability.
+  - Fixed issue with incorrect removal reason being shown.
+  - Added more options for automatic removals.
+  - Minor fix for mod watching and flair watching not updating correctly upon deletion.
+  - Updated Devvit
+- v0.0.26
+  - Fixed an issue which lead to removal reasons not showing up correctly in certain situations.
+  - Added custom user entry field for marking additional apps for automatic removals
 - v0.0.25
   - Added caching for certain reddit data to improve performance.
   - Added customizable messages for mod log messages.

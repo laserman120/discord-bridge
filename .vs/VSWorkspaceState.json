@@ -1,12 +1,13 @@
 {
   "ExpandedNodes": [
     "",
+    "\\assets",
     "\\src",
     "\\src\\config",
     "\\src\\handlers",
     "\\src\\managers",
     "\\src\\scheduledEvents"
   ],
-  "SelectedNode": "\\src\\scheduledEvents\\modMailSyncJob.ts",
+  "SelectedNode": "\\src\\handlers\\silentRemovalHandler.ts",
   "PreviewInSolutionExplorer": false
 }

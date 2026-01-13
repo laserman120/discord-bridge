@@ -1,11 +1,11 @@
-import { Devvit, Post, Comment, TriggerContext } from '@devvit/public-api';
+import { Post, Comment, TriggerContext,} from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { UtilityManager } from '../managers/utilityManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
-
+import { isAdminAccount } from '../helpers/adminAccountHelper.js';
 export class RemovalHandler {
 
     static async handle(event: any, context: TriggerContext): Promise<void> {
@@ -42,8 +42,13 @@ export class RemovalHandler {
             return;
         }
 
-
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
+
+        if (!contentItem.isRemoved() && !contentItem.isSpam() && contentData.removedBy|| contentItem.isApproved()) {
+            console.log(`[RemovalHandler] Content ${targetId} is not removed or spam, or is approved. Skipping.`);
+            return;
+        }
+
 
         console.log("[RemovalHandler] Determining notification string... removed by: " + contentData.removedBy)
 
@@ -54,13 +59,10 @@ export class RemovalHandler {
 
             automatedRemovalUsers = automatedRemovalUsers.concat(customAutomatedUsers.map(u => u.trim().toLowerCase()).filter(u => u.length > 0));
 
-            console.log("[RemovalHandler] Automatic removal users: " + automatedRemovalUsers.join(", "))
             if (automatedRemovalUsers.includes(contentData.removedBy?.toLowerCase() || '')) {
                 state = ItemState.Awaiting_Review;
             }
         }
-
-        
 
         const notificationStrings = await UtilityManager.getMessageFromChannelType(ChannelType.Removals, context);
 
@@ -76,23 +78,8 @@ export class RemovalHandler {
                 notificationString = notificationStrings[1];
             }
 
-            if (state == ItemState.Removed && context.subredditName) {
-                const subredditModerators = await context.reddit.getModerators({ subredditName: context.subredditName }).all();
-
-                let subredditModeratorNames: string[] = [];
-
-                subredditModerators.forEach(mod => {
-                    subredditModeratorNames.push(mod.username.toLowerCase());
-                });
-
-                subredditModeratorNames.push("automoderator", "anti_evil_ops", "reddit");
-
-                console.log("Current Moderators: " + subredditModeratorNames.join(", "))
-
-                if (!subredditModeratorNames.includes(contentData.removedBy?.toLowerCase() || ""))
-                {
-                    notificationString = notificationStrings[2];
-                }
+            if (state == ItemState.Removed && context.subredditName && contentData.removedBy && isAdminAccount(contentData.removedBy.toLowerCase())) {
+                notificationString = notificationStrings[2];
             }
         }
 

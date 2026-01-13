@@ -1,4 +1,4 @@
-﻿import { Post, Comment, ModAction, ModActionTrigger, TriggerContext } from '@devvit/public-api';
+﻿import { Post, Comment, ModAction, TriggerContext } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { UtilityManager } from './utilityManager.js';
 import { ContentDetails, ModActionDetails } from './contentDataManager.js';
@@ -206,7 +206,7 @@ export class EmbedManager {
             color: color,
             fields: fields,
             timestamp: timestamp,
-            footer: { text: `r/${event.subreddit.name || 'Subreddit'} • ${channelType}` },
+            footer: { text: `r/${event.subreddit.name || 'Subreddit'}` },
         };
 
         return {

@@ -1,20 +1,8 @@
 ﻿import { Devvit } from '@devvit/public-api';
 import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
-import { NewPostHandler } from './handlers/newPostHandler.js';
-import { StateSyncHandler } from './handlers/stateSyncHandler.js';
-import { RemovalHandler } from './handlers/removalHandler.js';
-import { RemovalReasonHandler } from './handlers/removalReasonHandler.js';
-import { ReportHandler } from './handlers/reportHandler.js';
-import { ModLogHandler } from './handlers/modlogHandler.js';
-import { DeletionHandler } from './handlers/deletionHandler.js';
-import { PublicPostHandler } from './handlers/publicPostHandler.js';
 import { checkForOldMessages } from './scheduledEvents/checkForOldMessages.js';
-import { ModMailHandler } from './handlers/modMailHandler.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
-import { FlairWatchHandler } from './handlers/flairWatchHandler.js';
-import { ModAbuseHandler } from './handlers/modAbuseHandler.js';
-import { ModActivityHandler } from './handlers/modActivityHandler.js';
-import { UpdateHandler } from './handlers/updateHandler.js'; 
+import { QueueManager } from './managers/queueManager.js';
 
 Devvit.configure({
     http: true,
@@ -42,24 +30,24 @@ Devvit.addTrigger({
     event: 'ModAction',
     onEvent: async (event, context) => {
 
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 4000));
 
         const redditItemId = event.targetPost?.id || event.targetComment?.id;
 
         console.log(`[TRIGGER: ModAction] Action: ${event.action}, Target ID: ${redditItemId}`);
         if (redditItemId && context)
         {
-            await StateSyncHandler.handleModAction(event, context);
-            await RemovalHandler.handle(event, context);
-            await RemovalReasonHandler.handle(event, context);
+            await QueueManager.enqueue({ handler: 'StateSyncHandler', data: event }, context);
+            await QueueManager.enqueue({ handler: 'RemovalHandler', data: event }, context);
+            await QueueManager.enqueue({ handler: 'RemovalReasonHandler', data: event }, context);
         }
 
-        await ModLogHandler.handle(event, context);
-        await ModAbuseHandler.handle(event, context);
+        await QueueManager.enqueue({ handler: 'ModLogHandler', data: event }, context);
+        await QueueManager.enqueue({ handler: 'ModAbuseHandler', data: event }, context);
 
         if (ActionsRequiringUpdate.includes(event.action || ""))
         {
-            await UpdateHandler.handle(event, context);
+            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context);
         }
     },
 });
@@ -71,16 +59,19 @@ Devvit.addTrigger({
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         if (event.post && context) {
-            NewPostHandler.handle(event.post, context);
+
+            await QueueManager.enqueue({ handler: 'NewPostHandler', data: event.post }, context);
 
             // Await plenty of time to ensure the post is fully up to date before checking for public posting
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            await PublicPostHandler.handle(event.post, context);
-            await FlairWatchHandler.handle(event.post, context);
-            await ModActivityHandler.handle(event.post, context);
+            await new Promise(resolve => setTimeout(resolve, 6000));
+
+            await QueueManager.enqueue({ handler: 'PublicPostHandler', data: event.post }, context);
+            await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.post }, context);
+            await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.post }, context);
 
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
-            ReportHandler.handle(event.post, context);
+
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context);
         }
 
     },
@@ -94,10 +85,9 @@ Devvit.addTrigger({
 
         if (event.comment && context) {
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
-            await ReportHandler.handle(event.comment, context);
-
-            await FlairWatchHandler.handle(event.comment, context);
-            await ModActivityHandler.handle(event.comment, context)
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context);
+            await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.comment }, context);
+            await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.comment }, context);
         }
 
     },
@@ -108,7 +98,7 @@ Devvit.addTrigger({
     onEvent: async (event, context) => {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        DeletionHandler.handle(event, context);
+        await QueueManager.enqueue({ handler: 'DeletionHandler', data: event }, context);
     },
 });
 
@@ -117,7 +107,7 @@ Devvit.addTrigger({
     onEvent: async (event, context) => {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        ModMailHandler.handle(event, context);
+        await QueueManager.enqueue({ handler: 'ModMailHandler', data: event }, context);
     },
 });
 
@@ -127,11 +117,11 @@ Devvit.addTrigger({
         await new Promise(resolve => setTimeout(resolve, 3000));
 
         if (event.type == 'PostReport' && event.post) {
-            ReportHandler.handle(event.post, context);
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context);
         }
 
         if (event.type == 'CommentReport' && event.comment) {
-            ReportHandler.handle(event.comment, context);
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context);
         }
     },
 });
@@ -143,12 +133,12 @@ Devvit.addTrigger({
 
         if (event.type == 'PostUpdate' && event.post) {
             console.log("[Trigger: PostUpdate] Received post update event: ", event)
-            UpdateHandler.handle(event, context);
+            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context);
         }
 
         if (event.type == 'CommentUpdate' && event.comment) {
             console.log("[Trigger: PostUpdate] Received comment update event: ", event)
-            UpdateHandler.handle(event, context);
+            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context);
         }
     },
 });
@@ -161,6 +151,11 @@ Devvit.addSchedulerJob({
 Devvit.addSchedulerJob({
     name: 'modmail_sync_job',
     onRun: checkModMailStatus,
+});
+
+Devvit.addSchedulerJob({
+    name: 'process_queue',
+    onRun: (event, context) => QueueManager.processQueue(event, context),
 });
 
 Devvit.addTrigger({
@@ -185,7 +180,11 @@ Devvit.addTrigger({
             });
             console.log(`[Setup] Scheduled modmail sync job with ID: ${modmailJobId}`);
 
-            
+            const queueJobId = await context.scheduler.runJob({
+                name: 'process_queue',
+                cron: '*/30 * * * * *', // Run every 30 seconds
+            });
+            console.log(`[Setup] Scheduled queue processor with ID: ${queueJobId}`);
         } catch (e) {
             console.error('[Setup] Failed to schedule cleanup job:', e);
         }

@@ -53,7 +53,7 @@ export class ReportHandler {
             await StorageManager.createLogEntry({
                 redditId: targetId,
                 discordMessageId: discordMessageId,
-                channelType: ChannelType.NewPosts,
+                channelType: ChannelType.Reports,
                 currentStatus: status,
                 webhookUrl: webhookUrl
             }, context as any);

@@ -167,10 +167,9 @@ export class ContentDataManager {
             }
 
             if (reasonLog) {
-                details.removalReason = reasonLog.description || reasonLog.details || undefined;
+                details.removalReason = reasonLog.description || undefined;
                 if (details.removalReason) {
                     console.log(`[ContentDataManager] Found removal reason: ${details.removalReason}`);
-                    console.log(reasonLog)
                 }
             }
 
@@ -179,8 +178,9 @@ export class ContentDataManager {
                     details.removedBy = removalLog.moderatorName;
                 }
                 // Sometimes the reason is in the removal action details themselves
-                if (!details.removalReason && (removalLog.details || removalLog.description)) {
-                    details.removalReason = removalLog.details || removalLog.description;
+                if (!details.removalReason && removalLog.description) {
+                    details.removalReason = removalLog.description;
+                    console.log(`[ContentDataManager] Found removal reason from removal log: ${details.removalReason}`);
                 }
             }
         }

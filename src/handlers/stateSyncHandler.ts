@@ -1,4 +1,4 @@
-import { Devvit, ModAction, TriggerContext } from '@devvit/public-api';
+import { TriggerContext } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';

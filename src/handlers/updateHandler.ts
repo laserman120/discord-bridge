@@ -1,9 +1,8 @@
-import { Devvit, Post, Comment, TriggerContext } from '@devvit/public-api';
+import { Post, Comment, TriggerContext } from '@devvit/public-api';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
-import { ChannelType } from '../config/enums.js';
 
 export class UpdateHandler {
     static async handle(event: any, context: TriggerContext): Promise<void> {
