@@ -6,7 +6,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 
 export class PublicPostHandler {
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const postId = event.id;
 
         const webhookUrl = await context.settings.get('WEBHOOK_PUBLIC_NEW_POSTS') as string | undefined;
@@ -27,20 +27,25 @@ export class PublicPostHandler {
         }
 
         let contentItem: Post;
-        try {
-            contentItem = await context.reddit.getPostById(postId);
-        } catch (error) {
-            console.error(`[PublicNewPostHandler] Failed to fetch full post ${postId}:`, error);
-            return;
+        if (preFetchedContent) {
+            contentItem = preFetchedContent as Post;
+        } else {
+            try {
+                console.warn(`[PublicNewPostHandler] No pre-fetched data found, running manual fetch for ${postId}`);
+                contentItem = await context.reddit.getPostById(postId);
+            } catch (error) {
+                console.error(`[PublicNewPostHandler] Failed to fetch full post ${postId}:`, error);
+                return;
+            }
         }
 
         let crosspostItem: Post | undefined;
         if (event.crosspostParentId) {
-            console.log(`[NewPostHandler] Post ${postId} is a crosspost, fetching parent post ${event.crosspostParentId}`)
+            console.log(`[PublicNewPostHandler] Post ${postId} is a crosspost, fetching parent post ${event.crosspostParentId}`)
             try {
                 crosspostItem = await context.reddit.getPostById(event.crosspostParentId)
             } catch (error) {
-                console.error(`[NewPostHandler] Failed to fetch full post ${postId}:`, error);
+                console.error(`[PublicNewPostHandler] Failed to fetch full post ${postId}:`, error);
                 return;
             }
         }
@@ -69,7 +74,7 @@ export class PublicPostHandler {
         }
     }
 
-    static async handlePossibleStateChange(postId: string, state: ItemState, context: TriggerContext): Promise<void> {
+    static async handlePossibleStateChange(postId: string, state: ItemState, context: TriggerContext, contentItem: Post | Comment): Promise<void> {
         if (!postId) return;
 
         const logEntries = await StorageManager.getLinkedLogEntries(postId, context);
@@ -93,7 +98,7 @@ export class PublicPostHandler {
         }
         else if (!alreadyPosted && (state == ItemState.Live || state == ItemState.Approved))
         {
-            PublicPostHandler.handle({ id: postId }, context);
+            PublicPostHandler.handle({ id: postId }, context, contentItem);
         }
     }
 }

@@ -63,8 +63,6 @@ export class StorageManager {
             StorageManager.getChronoIndexKey(),
             { score: unixTimestamp, member: fullEntry.discordMessageId }
         );
-
-        console.log(`[DB] Created log for ${fullEntry.redditId}. Msg ID: ${fullEntry.discordMessageId}`);
     }
 
     static async getLogEntry(discordMessageId: string, context: any): Promise<LogEntry | null> {
@@ -102,7 +100,6 @@ export class StorageManager {
             }
         }
 
-        console.log(`[DB] Retrieved ${entries.length} linked log entries for ${redditId}`);
         return entries;
     }
 
@@ -111,7 +108,6 @@ export class StorageManager {
             StorageManager.getLogKey(discordMessageId),
             { 'currentStatus': newStatus }
         );
-        console.log(`[DB] Updated status for Msg ID ${discordMessageId} to ${newStatus}`);
     }
 
     static async getExpiredLogKeys(ageInSeconds: number, context: any): Promise<string[]> {

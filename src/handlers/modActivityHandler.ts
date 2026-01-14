@@ -6,7 +6,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 
 export class ModActivityHandler {
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const targetId = event.id;
 
         if (!context.subredditName) return;
@@ -23,15 +23,20 @@ export class ModActivityHandler {
         if (!isPost && !checkComments) return;
 
         let contentItem: Post | Comment | undefined;
-        try {
-            if (isPost) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else {
-                contentItem = await context.reddit.getCommentById(targetId);
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[ModActivityHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (isPost) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (error) {
+                console.error(`[ModActivityHandler] Failed to fetch content ${targetId}:`, error);
+                return;
             }
-        } catch (error) {
-            console.error(`[ModActivityHandler] Failed to fetch content ${targetId}:`, error);
-            return;
         }
 
         if (!contentItem) return;
@@ -49,8 +54,6 @@ export class ModActivityHandler {
         }
 
         if (!isMod) return;
-
-        console.log(`[ModActivityHandler] Moderator activity detected: ${contentItem.authorName} on ${targetId}`);
 
         const details = await ContentDataManager.gatherDetails(contentItem, context);
 

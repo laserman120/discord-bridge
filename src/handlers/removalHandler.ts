@@ -8,7 +8,7 @@ import { ContentDataManager, ContentDetails } from '../managers/contentDataManag
 import { isAdminAccount } from '../helpers/adminAccountHelper.js';
 export class RemovalHandler {
 
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const actionString = event.action;
         const targetId = event.targetPost?.id || event.targetComment?.id || event.targetId;
 
@@ -31,20 +31,25 @@ export class RemovalHandler {
         }
 
         let contentItem: Post | Comment;
-        try {
-            if (targetId.startsWith('t3_')) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else {
-                contentItem = await context.reddit.getCommentById(targetId);
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[RemovalHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (targetId.startsWith('t3_')) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (e) {
+                console.error(`[RemovalHandler] Failed to fetch content: ${e}`);
+                return;
             }
-        } catch (e) {
-            console.error(`[RemovalHandler] Failed to fetch content: ${e}`);
-            return;
         }
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-        if (!contentItem.isRemoved() && !contentItem.isSpam() && contentData.removedBy|| contentItem.isApproved()) {
+        if (!contentItem.isRemoved() && !contentItem.isSpam() && contentData.removedBy == undefined|| contentItem.isApproved()) {
             console.log(`[RemovalHandler] Content ${targetId} is not removed or spam, or is approved. Skipping.`);
             return;
         }

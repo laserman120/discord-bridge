@@ -5,7 +5,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 
 export class UpdateHandler {
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         let targetId: string | undefined;
 
         if (event.post) targetId = event.post.id;
@@ -20,15 +20,20 @@ export class UpdateHandler {
         console.log(`[PostUpdateHandler] Content update detected for ${targetId}. Syncing ${logEntries.length} messages.`);
 
         let contentItem: Post | Comment | undefined;
-        try {
-            if (targetId.startsWith('t3_')) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else if (targetId.startsWith('t1_')) {
-                contentItem = await context.reddit.getCommentById(targetId);
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[PostUpdateHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (targetId.startsWith('t3_')) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else if (targetId.startsWith('t1_')) {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (error) {
+                console.error(`[PostUpdateHandler] Failed to fetch content ${targetId}:`, error);
+                return;
             }
-        } catch (error) {
-            console.error(`[PostUpdateHandler] Failed to fetch content ${targetId}:`, error);
-            return;
         }
 
         if (!contentItem) return;

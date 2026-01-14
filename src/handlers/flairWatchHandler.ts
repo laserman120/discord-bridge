@@ -1,4 +1,4 @@
-import { TriggerContext, Post } from '@devvit/public-api';
+import { TriggerContext, Post, Comment } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
@@ -14,7 +14,7 @@ interface FlairConfigEntry {
 }
 
 export class FlairWatchHandler {
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const targetId = event.id;
 
         if (context.subredditName === undefined) {
@@ -35,15 +35,20 @@ export class FlairWatchHandler {
         const isPost = targetId.startsWith('t3_');
 
         let contentItem;
-        try {
-            if (typeof targetId === 'string' && targetId.startsWith('t3_')) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else if (typeof targetId === 'string' && targetId.startsWith('t1_')) {
-                contentItem = await context.reddit.getCommentById(targetId);
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[FlairWatchHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (typeof targetId === 'string' && targetId.startsWith('t3_')) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else if (typeof targetId === 'string' && targetId.startsWith('t1_')) {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (error) {
+                console.error(`[FlairWatchHandler] Failed to fetch content ${targetId} for update: ${error}`);
+                return;
             }
-        } catch (error) {
-            console.error(`[FlairWatchHandler] Failed to fetch content ${targetId} for update: ${error}`);
-            return;
         }
 
         if (!contentItem) return;
@@ -53,9 +58,6 @@ export class FlairWatchHandler {
         const user = await contentItem.getAuthor();
         const userFlair = await user?.getUserFlairBySubreddit(context.subredditName);
         const authorFlair = userFlair?.flairText;
-
-        console.log("[FlairWatchHandler] Found user flair: " + authorFlair)
-        console.log("[FlairWatchHandler] Found post flair: " + postFlair)
 
         for (const entry of watchList) {
             if ((authorFlair?.includes(entry.flair)) || (postFlair?.includes(entry.flair))) {
@@ -98,7 +100,7 @@ export class FlairWatchHandler {
         }
     }
 
-    static async handlePossibleStateChange(Id: string, state: ItemState, context: TriggerContext): Promise<void> {
+    static async handlePossibleStateChange(Id: string, state: ItemState, context: TriggerContext, contentItem: Post | Comment): Promise<void> {
         if (!Id) return;
 
         const logEntries = await StorageManager.getLinkedLogEntries(Id, context);
@@ -118,7 +120,7 @@ export class FlairWatchHandler {
             }
         }
         else if (!alreadyPosted && (state == ItemState.Live || state == ItemState.Approved)) {
-            FlairWatchHandler.handle({ id: Id }, context);
+            FlairWatchHandler.handle({ id: Id }, context, contentItem);
         }
     }
 }

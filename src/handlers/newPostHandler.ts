@@ -1,4 +1,4 @@
-import { Devvit, Post, TriggerContext } from '@devvit/public-api';
+import { Devvit, Post, Comment, TriggerContext } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
@@ -6,7 +6,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 
 export class NewPostHandler {
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const postId = event.id;
 
         if (!postId) {
@@ -32,12 +32,18 @@ export class NewPostHandler {
         }
 
         let contentItem: Post;
-        try {
-            contentItem = await context.reddit.getPostById(postId);
-        } catch (error) {
-            console.error(`[NewPostHandler] Failed to fetch full post ${postId}:`, error);
-            return;
+        if (preFetchedContent) {
+            contentItem = preFetchedContent as Post;
+        } else {
+            try {
+                contentItem = await context.reddit.getPostById(postId);
+                console.warn(`[NewPostHandler] No pre-fetched data found, running manual fetch for ${postId}`);
+            } catch (error) {
+                console.error(`[NewPostHandler] Failed to fetch full post ${postId}:`, error);
+                return;
+            }
         }
+        
 
         let crosspostItem: Post | undefined;
         if (event.crosspostParentId)

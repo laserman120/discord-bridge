@@ -193,10 +193,11 @@ Making at easy to keep track of anything related to your subreddit directly from
 ---
 
 ## Changelog
-- v0.0.38
+- v0.0.48
   - Removed Anti-Evil Ops from the list of automatic removal users. These can never be marked as automatic as these are admin removals.
   - Reworked admin removals to now pull from a static list instead of checking for actions by non moderator accounts.
 	- This should help avoid false positives. If you want a reliable notification for admin removals use an app like AdminTattler.
+  - Potential fix for certain removals not creating a notification
 - v0.0.37
   - Fixed an issue which lead to certain removals not creating notifications.
   - Fixed an issue that lead to certain reports appearing twice.

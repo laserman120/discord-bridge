@@ -6,10 +6,8 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 
 export class ReportHandler {
-    static async handle(triggerPost: { id: string }, context: TriggerContext): Promise<void> {
+    static async handle(triggerPost: { id: string }, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const targetId = triggerPost.id;
-
-        console.log(`[ReportHandler] Received possible report for ID: ${targetId}`)
 
         const webhookUrl = await context.settings.get('WEBHOOK_REPORTS') as string | undefined;
 
@@ -20,15 +18,20 @@ export class ReportHandler {
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
 
         let contentItem: Post | Comment;
-        try {
-            if (targetId.startsWith('t3_')) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else {
-                contentItem = await context.reddit.getCommentById(targetId);
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[ReportHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (targetId.startsWith('t3_')) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (e) {
+                console.error(`[ReportHandler] Failed to fetch content: ${e}`);
+                return;
             }
-        } catch (e) {
-            console.error(`[RemovalHandler] Failed to fetch content: ${e}`);
-            return;
         }
 
         let status = ItemState.Unhandled_Report;
@@ -36,7 +39,6 @@ export class ReportHandler {
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
         if (contentData.reportCount === undefined || contentData.reportCount == 0) {
-            console.log("[ReportHandler] Content has no reports, skipping handling.")
             return;
         }
 
@@ -44,6 +46,8 @@ export class ReportHandler {
             console.log("[ReportHandler] Report already hidden and handled, no message will be sent")
             return;
         }
+
+        console.log("[ReportHandler] Found new report for item: " + targetId);
 
         const payload = await EmbedManager.createDefaultEmbed(contentData, status, ChannelType.Reports, context);
 
@@ -74,7 +78,6 @@ export class ReportHandler {
                     payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
                     break;
                 default:
-                    console.log(`[ReportHandler] Unsupported channel type ${entry.channelType} for message update.`);
                     continue;
             }
 

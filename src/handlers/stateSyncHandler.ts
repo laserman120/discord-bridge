@@ -1,4 +1,4 @@
-import { TriggerContext } from '@devvit/public-api';
+import { TriggerContext, Post, Comment } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
@@ -9,7 +9,7 @@ import { PublicPostHandler } from '../handlers/publicPostHandler.js';
 import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
 
 export class StateSyncHandler {
-    static async handleModAction(event: any, context: TriggerContext): Promise<void> {
+    static async handleModAction(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const safeEvent = event as any;
 
         const targetId = safeEvent.targetPost?.id || safeEvent.targetComment?.id || safeEvent.targetId;
@@ -33,21 +33,27 @@ export class StateSyncHandler {
         }
 
         let contentItem;
-        try {
-            if (typeof targetId === 'string' && targetId.startsWith('t3_')) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else if (typeof targetId === 'string' && targetId.startsWith('t1_')) {
-                contentItem = await context.reddit.getCommentById(targetId);
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[StateSync] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (typeof targetId === 'string' && targetId.startsWith('t3_')) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else if (typeof targetId === 'string' && targetId.startsWith('t1_')) {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (error) {
+                console.error(`[StateSync] Failed to fetch content ${targetId} for update: ${error}`);
+                return;
             }
-        } catch (error) {
-            console.error(`[StateSync] Failed to fetch content ${targetId} for update: ${error}`);
-            return;
         }
+        
 
         if (!contentItem) return;
 
-        await PublicPostHandler.handlePossibleStateChange(targetId, newStatus, context);
-        await FlairWatchHandler.handlePossibleStateChange(targetId, newStatus, context);
+        await PublicPostHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem);
+        await FlairWatchHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem);
 
 
         for (const entry of logEntries) {
@@ -84,7 +90,6 @@ export class StateSyncHandler {
                     payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 default:
-                    console.log(`[StateSync] Unknown channel type ${entry.channelType} for Msg ${entry.discordMessageId}. Skipping.`);
                     continue;
             }
 

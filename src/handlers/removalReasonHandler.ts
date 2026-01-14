@@ -1,4 +1,4 @@
-import { Devvit, TriggerContext, GetModerationLogOptions, ModNote, ModNoteType } from '@devvit/public-api';
+import { Devvit, TriggerContext, Post, Comment } from '@devvit/public-api';
 import { ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
@@ -6,7 +6,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 
 export class RemovalReasonHandler {
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const actionString = event.action;
 
         if (actionString !== 'addremovalreason') {
@@ -25,15 +25,20 @@ export class RemovalReasonHandler {
         }
 
         let contentItem;
-        try {
-            if (typeof targetId === 'string' && targetId.startsWith('t3_')) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else if (typeof targetId === 'string' && targetId.startsWith('t1_')) {
-                contentItem = await context.reddit.getCommentById(targetId);
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[RemovalReasonHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (typeof targetId === 'string' && targetId.startsWith('t3_')) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else if (typeof targetId === 'string' && targetId.startsWith('t1_')) {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (error) {
+                console.error(`[RemovalReasonHandler] Failed to fetch content: ${error}`);
+                return;
             }
-        } catch (error) {
-            console.error(`[RemovalReasonHandler] Failed to fetch content: ${error}`);
-            return;
         }
 
         if (!contentItem) return;

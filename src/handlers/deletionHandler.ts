@@ -10,7 +10,7 @@ import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
 
 export class DeletionHandler {
 
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
 
         let targetId;
         if (event.type == 'PostDelete')
@@ -31,17 +31,21 @@ export class DeletionHandler {
         }
         
         let contentItem: any;
-        let isPost = true;
-        try {
-            if (targetId.startsWith('t3_')) {
-                contentItem = await context.reddit.getPostById(targetId);
-            } else {
-                contentItem = await context.reddit.getCommentById(targetId);
-                isPost = false;
+        let isPost = targetId.startsWith('t3_');
+        if (preFetchedContent) {
+            contentItem = preFetchedContent;
+        } else {
+            try {
+                console.warn(`[[DeletionHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
+                if (targetId.startsWith('t3_')) {
+                    contentItem = await context.reddit.getPostById(targetId);
+                } else {
+                    contentItem = await context.reddit.getCommentById(targetId);
+                }
+            } catch (e) {
+                console.error(`[[DeletionHandler] Failed to fetch content: ${e}`);
+                return;
             }
-        } catch (e) {
-            console.error(`[RemovalHandler] Failed to fetch content: ${e}`);
-            return;
         }
 
         if (!contentItem) return;
@@ -50,8 +54,8 @@ export class DeletionHandler {
         {
             console.log("[DeletionHandler] Post/Comment was deleted. Updating entries...");
 
-            await PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context);
-            await FlairWatchHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context);
+            await PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
+            await FlairWatchHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
 
             for (const entry of logEntries) {
 

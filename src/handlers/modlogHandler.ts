@@ -45,7 +45,7 @@ export class ModLogHandler {
             }
         }
 
-        console.log(`[ModLogHandler] Creating new modlog notification for ${event.id}`);
+        console.log(`[ModLogHandler] Creating new modlog notification for ${event.action}`);
 
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload);
 

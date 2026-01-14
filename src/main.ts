@@ -4,11 +4,12 @@ import { checkForOldMessages } from './scheduledEvents/checkForOldMessages.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { QueueManager } from './managers/queueManager.js';
 
+/*
 Devvit.configure({
     http: true,
     redditAPI: true,
     redis: true
-});
+});*/
 
 Devvit.addSettings([
     publicNotificationGroup,
@@ -34,7 +35,6 @@ Devvit.addTrigger({
 
         const redditItemId = event.targetPost?.id || event.targetComment?.id;
 
-        console.log(`[TRIGGER: ModAction] Action: ${event.action}, Target ID: ${redditItemId}`);
         if (redditItemId && context)
         {
             await QueueManager.enqueue({ handler: 'StateSyncHandler', data: event }, context);

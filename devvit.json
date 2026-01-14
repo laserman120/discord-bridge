@@ -1,0 +1,36 @@
+{
+  "name": "discord-bridge",
+  "marketingAssets": {
+    "icon": "assets/discord_bridge_icon.png"
+  },
+  "blocks": {
+    "entry": "src/main.ts",
+    "triggers": [
+      "onModAction",
+      "onPostSubmit",
+      "onCommentSubmit",
+      "onPostDelete",
+      "onCommentDelete",
+      "onModMail",
+      "onPostReport",
+      "onCommentReport",
+      "onPostUpdate",
+      "onCommentUpdate",
+      "onAppInstall",
+      "onAppUpgrade"
+    ]
+  },
+  "permissions": {
+    "reddit": true,
+    "redis": true,
+    "http": {
+      "enable": true,
+      "domains": [
+        "discord.com",
+        "discordapp.com",
+        "slack.com",
+        "hooks.slack.com"
+      ]
+    }
+  }
+}
