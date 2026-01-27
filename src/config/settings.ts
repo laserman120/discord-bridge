@@ -25,6 +25,36 @@ const modActionOptions = [
     "dev_platform_app_enabled", "dev_platform_app_installed", "dev_platform_app_uninstalled"
 ].map(action => ({ label: action, value: action }));
 
+export const appNotificationGroup = {
+    type: 'group' as const,
+    label: 'App Notifications',
+    helpText: 'Configure notifications regarding the Discord Bridge App. These will be sent to the ModMail of your subreddit.',
+    fields: [
+        {
+            type: 'boolean' as const,
+            name: 'ENABLE_UPDATE_NOTIFICATIONS',
+            label: 'If enabled the app will send a notification when a new update is released',
+            defaultValue: true,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'ENABLE_NEWS_NOTIFICATIONS',
+            label: 'If enabled the app will send a notification when an announcement regarding the app is made',
+            defaultValue: true,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'ALLOW_NOTIFICATIONS_IN_DISCORD',
+            label: 'If enabled the notifications can create a discord message in the ModMail channel (If enabled)',
+            defaultValue: true,
+            scope: 'installation' as const,
+        },
+    ]
+}
+
+
 export const publicNotificationGroup = {
     type: 'group' as const,
     label: 'Public Notifications',
@@ -108,6 +138,41 @@ export const newPostsGroup = {
     ]
 };
 
+export const modQueueGroup = {
+    type: 'group' as const,
+    label: 'Mod Queue Settings',
+    helpText: 'Configure how the Mod Queue stream is handled and notified.',
+    fields: [
+        {
+            type: 'string' as const,
+            name: 'WEBHOOK_MOD_QUEUE',
+            label: 'Mod Queue Webhook',
+            required: false,
+            scope: 'installation' as const,
+            helpText: `The Channel to which new entries in the Mod Queue are sent.`,
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateWebhookUrl(value);
+            }
+        },
+        {
+            type: 'string' as const,
+            name: 'MOD_QUEUE_MESSAGE_REMOVAL',
+            label: 'Pingable Mod Queue Message for removals',
+            defaultValue: 'New Item Requiring Review due to **Removal**',
+            scope: 'installation' as const,
+            helpText: 'Custom text sent with notification',
+        },
+        {
+            type: 'string' as const,
+            name: 'MOD_QUEUE_MESSAGE_REPORT',
+            label: 'Pingable Mod Queue Message for reports',
+            defaultValue: 'New Item Requiring Review due to **Report**',
+            scope: 'installation' as const,
+            helpText: 'Custom text sent with notification',
+        },
+    ]
+};
+
 export const removalGroup = {
     type: 'group' as const,
     label: 'Removal Settings',
@@ -173,6 +238,25 @@ export const removalGroup = {
                 return UtilityManager.validateUsernameList(value)
             }
         },
+        {
+            type: 'boolean' as const,
+            name: 'REMOVALS_IGNORE_MODERATOR',
+            label: 'Ignore removals performed by a moderator or a bot that is not set as automatic removal',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'string' as const,
+            name: 'REMOVAL_IGNORE_AUTHOR',
+            label: 'Custom authors which removals will be ignored',
+            defaultValue: 'ExampleBot; ExampleBot2',
+            required: false,
+            scope: 'installation' as const,
+            helpText: `Here you can enter custom usernames, if these are the author of a post/comment which is removed, it will be ignored.`,
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateUsernameList(value)
+            }
+        },
     ]
 };
 
@@ -226,6 +310,18 @@ export const modmailGroup = {
             defaultValue: 'New Modmail Message (@here)',
             scope: 'installation' as const,
             helpText: 'Custom text sent with notification',
+        },
+        {
+            type: 'string' as const,
+            name: 'MODMAIL_AUTHOR_IGNORED',
+            label: 'List of users which ModMail messages will be ignored',
+            defaultValue: 'ExampleUser1; ExampleUser2',
+            required: false,
+            scope: 'installation' as const,
+            helpText: `Here you can enter usernames which will be ignored when they are the author of a ModMail message.`,
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateUsernameList(value)
+            }
         },
     ]
 };

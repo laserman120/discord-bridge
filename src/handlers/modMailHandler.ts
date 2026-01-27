@@ -2,12 +2,13 @@ import { Devvit, Post, Comment, TriggerContext } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { UtilityManager } from '../managers/utilityManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { PublicPostHandler } from '../handlers/publicPostHandler.js';
 
-
+const APP_NAME = "discord-bridge";
 export class ModMailHandler {
 
     static async handle(event: any, context: TriggerContext): Promise<void> {
@@ -37,12 +38,11 @@ export class ModMailHandler {
         if (messageList.length === 0) return;
 
         const latestMessage = messageList[0];
-
         const isModAuthor = latestMessage.participatingAs === 'moderator' || latestMessage.author?.isMod;
 
         const logEntries = await StorageManager.getLinkedLogEntries(cleanId, context);
-
         logEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
         const latestLogEntry = logEntries[0];
 
         let shouldCreateNew = false;
@@ -51,45 +51,60 @@ export class ModMailHandler {
         if (!latestLogEntry) {
             shouldCreateNew = true;
             state = ItemState.New_Modmail;
-        } else if (isModAuthor) {
-            shouldCreateNew = false;
-            state = ItemState.Answered_Modmail;
         } else {
-            if (latestLogEntry.currentStatus === ItemState.Answered_Modmail || latestLogEntry.currentStatus === ItemState.Archived_Modmail) {
-                shouldCreateNew = true;
-                state = ItemState.New_Reply_Modmail;
-            } else {
+            const lastStatus = latestLogEntry.currentStatus;
+
+            if (isModAuthor) {
                 shouldCreateNew = false;
-                state = ItemState.New_Reply_Modmail;
+                state = ItemState.Answered_Modmail;
+            } else {
+                if (lastStatus === ItemState.Answered_Modmail || lastStatus === ItemState.Archived_Modmail) {
+                    shouldCreateNew = true;
+                    state = ItemState.New_Reply_Modmail;
+                } else {
+
+                    shouldCreateNew = false;
+
+                    state = lastStatus === ItemState.New_Reply_Modmail ? ItemState.New_Reply_Modmail : ItemState.New_Modmail;
+                }
             }
         }
 
-        let moderatorMessage;
-        let userMessage;
-
-        if (state === ItemState.Answered_Modmail) {
-            moderatorMessage = latestMessage;
-            userMessage = messageList.find((msg: any) => msg.participatingAs !== 'moderator') || messageList[1];
-        } else {
-            userMessage = latestMessage;
+        if (state == ItemState.New_Modmail && isModAuthor) {
+            const allowNews = await context.settings.get('ALLOW_NOTIFICATIONS_IN_DISCORD') as boolean;
+            if (allowNews && latestMessage.author?.name && latestMessage.author?.name.toLowerCase() == APP_NAME) {
+                console.log(`[ModMailHandler] New conversation started by discord bridge app, creating notification...`)
+            } else {
+                console.log(`[ModMailHandler] New conversation started by Moderator, ignoring`)
+                return;
+            }
+            
         }
 
-        const payload = await EmbedManager.createModMailEmbed(
-            conversation.subject ?? "(No Subject)",
-            cleanId,
-            userMessage,
-            moderatorMessage,
-            state,
-            context
-        );
+        let ignoredUsersList = await context.settings.get('MODMAIL_AUTHOR_IGNORED') as string || "";
+        let ignoredUsers = ignoredUsersList.split(";");
 
-        const customMessages = await UtilityManager.getMessageFromChannelType(ChannelType.ModMail, context);
-        if (customMessages && customMessages.length > 0 && customMessages[0]) {
-            (payload as any).content = customMessages[0];
+        if (latestMessage.author?.name && ignoredUsers.map(u => u.trim().toLowerCase()).includes(latestMessage.author.name.toLowerCase())) {
+            console.log(`[ModMailHandler] Latest message author ${latestMessage.author.name} is in ignored list, skipping notification.`);
+            return;
         }
 
         if (shouldCreateNew) {
             console.log(`[ModMailHandler] Creating NEW notification for ${cleanId} (State: ${state})`);
+
+            const messageToShow = (!latestLogEntry) ? messageList[messageList.length - 1] : latestMessage;
+
+            const notificationString = await context.settings.get('MODMAIL_MESSAGE') as string | undefined;
+
+            const payload = await ComponentManager.createModMailMessage(
+                conversation.subject ?? "(No Subject)",
+                cleanId,
+                messageToShow,
+                state,
+                context,
+                notificationString
+            );
+
             const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
 
             if (messageId && !messageId.startsWith('failed')) {
@@ -103,18 +118,48 @@ export class ModMailHandler {
 
                 await StorageManager.trackActiveModmail(cleanId, context as any);
             }
+
         } else {
-            console.log(`[ModMailHandler] Updating EXISTING notification for ${cleanId} (State: ${state})`);
+            console.log(`[ModMailHandler] Updating EXISTING ${cleanId} (State: ${state})`);
 
             if (latestLogEntry) {
-                await WebhookManager.editMessage(
-                    latestLogEntry.webhookUrl,
-                    latestLogEntry.discordMessageId,
-                    payload
-                );
+                const currentMessage = await WebhookManager.getMessage(latestLogEntry.webhookUrl, latestLogEntry.discordMessageId);
+                if (!currentMessage) {
+                    console.error(`[ModMailHandler] Could not fetch message ${latestLogEntry.discordMessageId} to append/update.`);
+                    return;
+                }
+
+                let components = currentMessage.components || [];
+                let needsUpdate = false;
 
                 if (latestLogEntry.currentStatus !== state) {
+                    components = await ComponentManager.updateModMailState(components, state, context);
                     await StorageManager.updateLogStatus(latestLogEntry.discordMessageId, state, context);
+                    needsUpdate = true;
+                }
+
+                if (isModAuthor) {
+                    if (latestLogEntry.currentStatus == ItemState.Answered_Modmail) {
+                        console.log(`[ModMailHandler] Skipping append for Mod Reply (Already Answered).`);
+                    } else {
+                        const replyComponents = ComponentManager.createModMailReply(latestMessage, true);
+                        components = [...components, ...replyComponents];
+                        needsUpdate = true;
+                    }
+                } else {
+                    components = await ComponentManager.updateModMailBody(components, latestMessage.bodyMarkdown || "...");
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
+                    await WebhookManager.editMessage(
+                        latestLogEntry.webhookUrl,
+                        latestLogEntry.discordMessageId,
+                        {
+                            flags: currentMessage.flags,
+                            components: components
+                        }
+                    );
                 }
             }
         }

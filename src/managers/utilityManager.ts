@@ -121,7 +121,6 @@ export class UtilityManager {
     static async getBestImageUrl(post: Post): Promise<string | undefined> {
         try {
             if (post.url && /\.(jpeg|jpg|gif|png|webp)$/i.test(post.url)) {
-                console.log("Found URL ", post.url);
                 return post.url;
             }
 

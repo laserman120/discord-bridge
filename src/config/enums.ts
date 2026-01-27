@@ -23,6 +23,7 @@ export enum ChannelType {
     FlairWatch = 'FLAIR_WATCH_CHANNEL',
     PublicFlairWatch = 'PUBLIC_FLAIR_WATCH_CHANNEL',
     ModActivity = 'MOD_ACTIVITY_CHANNEL',
+    ModQueue = 'MOD_QUEUE_CHANNEL',
 }
 export enum ContentType {
     Post = 'POST',

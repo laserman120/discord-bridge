@@ -7,7 +7,8 @@ import { UtilityManager } from '../managers/utilityManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { PublicPostHandler } from '../handlers/publicPostHandler.js';
 import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
-
+import { ComponentManager } from '../managers/componentManager.js';
+import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 export class DeletionHandler {
 
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -56,6 +57,8 @@ export class DeletionHandler {
 
             await PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
             await FlairWatchHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
+            await ModQueueHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
+
 
             for (const entry of logEntries) {
 
@@ -69,22 +72,26 @@ export class DeletionHandler {
                 let payload;
                 switch (entry.channelType) {
                     case ChannelType.NewPosts:
-                        payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
                         break;
                     case ChannelType.Removals:
-                        payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
                         break;
                     case ChannelType.Reports:
-                        payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
                         break;
                     case ChannelType.FlairWatch:
-                        payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
                         break;
                     case ChannelType.ModActivity:
-                        payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
+                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
                         break;
                     default:
-                        console.log(`[StateSync] Unknown channel type ${entry.channelType} for Msg ${entry.discordMessageId}. Skipping.`);
                         continue;
                 }
 

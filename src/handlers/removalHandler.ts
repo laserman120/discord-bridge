@@ -6,6 +6,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { UtilityManager } from '../managers/utilityManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { isAdminAccount } from '../helpers/adminAccountHelper.js';
+import { ComponentManager } from '../managers/componentManager.js';
 export class RemovalHandler {
 
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -49,7 +50,7 @@ export class RemovalHandler {
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-        if (!contentItem.isRemoved() && !contentItem.isSpam() && contentData.removedBy == undefined|| contentItem.isApproved()) {
+        if (!contentItem.isRemoved() && !contentItem.isSpam() && contentData.removedBy == undefined || contentItem.isApproved()) {
             console.log(`[RemovalHandler] Content ${targetId} is not removed or spam, or is approved. Skipping.`);
             return;
         }
@@ -88,11 +89,24 @@ export class RemovalHandler {
             }
         }
 
-        let payload = await EmbedManager.createDefaultEmbed(contentData, state, ChannelType.Removals, context);
-
-        if (notificationString) {
-            payload.content = notificationString;
+        let skipModeratorRemovals = await context.settings.get('REMOVALS_IGNORE_MODERATOR') as boolean || false;
+        if (skipModeratorRemovals && ItemState.Removed) {
+            console.log(`[RemovalHandler] Removal made by moderator ${contentData.removedBy}, skipping notification as per settings.`)
+            return;
         }
+
+        let ignoredAuthorsList = await context.settings.get('REMOVAL_IGNORE_AUTHOR') as string || "";
+        let ignoredAuthors = ignoredAuthorsList.split(";");
+
+        if (contentData.authorName && ignoredAuthors.map(u => u.trim().toLowerCase()).includes(contentData.authorName.toLowerCase())) {
+            console.log(`[RemovalHandler] Latest removal author ${contentData.authorName} is in ignored list, skipping notification.`);
+            return;
+        }
+
+        //let payload = await EmbedManager.createDefaultEmbed(contentData, state, ChannelType.Removals, context);
+
+        const payload = await ComponentManager.createDefaultMessage(contentData, state, ChannelType.Removals, context, notificationString);
+        
 
         console.log(`[RemovalHandler] Creating new removal notification for ${targetId}`);
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload);

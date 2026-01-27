@@ -4,6 +4,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 
 export class RemovalReasonHandler {
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -61,7 +62,8 @@ export class RemovalReasonHandler {
                 state = ItemState.Removed;
             }
 
-            const payload = await EmbedManager.createDefaultEmbed(contentData, state, entry.channelType, context);
+            const payload = await ComponentManager.createDefaultMessage(contentData, state, entry.channelType, context);
+            //const payload = await EmbedManager.createDefaultEmbed(contentData, state, entry.channelType, context);
 
             await WebhookManager.editMessage(
                 entry.webhookUrl,

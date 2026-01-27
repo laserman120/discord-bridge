@@ -6,7 +6,9 @@ import { UtilityManager } from '../managers/utilityManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { PublicPostHandler } from '../handlers/publicPostHandler.js';
+import { ComponentManager } from '../managers/componentManager.js';
 import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
+import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 
 export class StateSyncHandler {
     static async handleModAction(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -52,9 +54,18 @@ export class StateSyncHandler {
 
         if (!contentItem) return;
 
+        const contentData = await ContentDataManager.gatherDetails(contentItem, context);
+
+        if (newStatus == ItemState.Removed) {
+            let automatedRemovalUsers = await context.settings.get('AUTOMATIC_REMOVALS_USERS') as string[] || [];
+            if (automatedRemovalUsers.includes(contentData.removedBy?.toLowerCase() || '')) {
+                newStatus = ItemState.Awaiting_Review;
+            }
+        }
+
         await PublicPostHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem);
         await FlairWatchHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem);
-
+        await ModQueueHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem);
 
         for (const entry of logEntries) {
 
@@ -63,31 +74,27 @@ export class StateSyncHandler {
                 continue;
             }
 
-            const contentData = await ContentDataManager.gatherDetails(contentItem, context);
-
-            if (newStatus == ItemState.Removed) {
-                let automatedRemovalUsers = await context.settings.get('AUTOMATIC_REMOVALS_USERS') as string[] || [];
-                if (automatedRemovalUsers.includes(contentData.removedBy?.toLowerCase() || '')) {
-                    newStatus = ItemState.Awaiting_Review;
-                }
-            }
-
             let payload;
             switch (entry.channelType) {
                 case ChannelType.NewPosts:
-                    payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
+                    payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.Removals:
-                    payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
+                    payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.Reports:
-                    payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
+                    payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.FlairWatch:
-                    payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
+                    payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.ModActivity:
-                    payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
+                    payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 default:
                     continue;

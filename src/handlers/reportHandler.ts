@@ -4,6 +4,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 
 export class ReportHandler {
     static async handle(triggerPost: { id: string }, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -49,7 +50,11 @@ export class ReportHandler {
 
         console.log("[ReportHandler] Found new report for item: " + targetId);
 
-        const payload = await EmbedManager.createDefaultEmbed(contentData, status, ChannelType.Reports, context);
+        //const payload = await EmbedManager.createDefaultEmbed(contentData, status, ChannelType.Reports, context);
+
+        const notificationString = await context.settings.get('REPORT_MESSAGE') as string | undefined;
+
+        const payload = await ComponentManager.createDefaultMessage(contentData, status, ChannelType.Reports, context);
 
         const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
 
@@ -72,10 +77,20 @@ export class ReportHandler {
             let payload;
             switch (entry.channelType) {
                 case ChannelType.NewPosts:
-                    payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
+                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
                     break;
                 case ChannelType.Removals:
-                    payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
+                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
+                    break;
+                case ChannelType.FlairWatch:
+                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
+                    break;
+                case ChannelType.ModActivity:
+                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
+                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
                     break;
                 default:
                     continue;

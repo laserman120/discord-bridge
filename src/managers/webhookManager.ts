@@ -20,9 +20,9 @@ export class WebhookManager {
 
     static async sendNewMessage(webhookUrl: string, payload: unknown, _context?: any): Promise<string> {
         try {
-            // Using global fetch instead of context.http
             const urlObj = new URL(webhookUrl);
             urlObj.searchParams.set('wait', 'true');
+            urlObj.searchParams.set('with_components', 'true');
             const urlWithWait = urlObj.toString();
 
             const response = await fetch(urlWithWait, {
@@ -46,11 +46,29 @@ export class WebhookManager {
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             console.error(`[WEBHOOK] Exception during sendNewMessage: ${errorMessage}`);
-            // Return a placeholder so we don't crash the app, but allow logs to show the error
             return `failed_id_${Date.now()}`;
         }
     }
 
+    static async getMessage(webhookUrl: string, messageId: string): Promise<any> {
+        const webhookDetails = this.parseWebhookUrl(webhookUrl);
+        if (!webhookDetails) return null;
+
+        const [webhookId, webhookToken] = webhookDetails;
+        const url = `https://discord.com/api/webhooks/${webhookId}/${webhookToken}/messages/${messageId}`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                console.error(`[WEBHOOK] Failed to fetch message ${messageId} (Status ${response.status})`);
+                return null;
+            }
+            return await response.json();
+        } catch (e) {
+            console.error(`[WEBHOOK] Exception fetching message:`, e);
+            return null;
+        }
+    }
 
     static async editMessage(webhookUrl: string, messageId: string, payload: unknown): Promise<void> {
         const webhookDetails = this.parseWebhookUrl(webhookUrl);
@@ -60,7 +78,13 @@ export class WebhookManager {
         }
 
         const [webhookId, webhookToken] = webhookDetails;
-        const discordApiUrl = `${DISCORD_API_BASE}/${webhookId}/${webhookToken}/messages/${messageId}`;
+
+        const baseUrl = `https://discord.com/api/webhooks/${webhookId}/${webhookToken}/messages/${messageId}`;
+        const urlObj = new URL(baseUrl);
+
+        urlObj.searchParams.set('with_components', 'true');
+
+        const discordApiUrl = urlObj.toString();
 
         try {
             const response = await fetch(discordApiUrl, {
@@ -72,7 +96,6 @@ export class WebhookManager {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error(`[WEBHOOK] Edit failed (Status ${response.status}): ${errorText}`);
-                // We don't throw here to ensure the sync loop continues for other messages
             } else {
                 console.log(`[WEBHOOK] Successfully updated message ID ${messageId}`);
             }

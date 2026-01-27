@@ -3,6 +3,7 @@ import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 
 interface FlairConfigEntry {
@@ -77,12 +78,14 @@ export class FlairWatchHandler {
                 const state = entry.publicFormat ? ItemState.Public_Post : ItemState.Live;
                 const channelType = entry.publicFormat ? ChannelType.PublicFlairWatch : ChannelType.FlairWatch;
 
-                const payload = await EmbedManager.createDefaultEmbed(
+                /*const payload = await EmbedManager.createDefaultEmbed(
                     details,
                     state,
                     channelType,
                     context
-                );
+                );*/
+
+                const payload = await ComponentManager.createDefaultMessage(details, state, channelType, context);
 
                 // Send & Log
                 const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);

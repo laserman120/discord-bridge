@@ -3,6 +3,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ItemState } from '../config/enums.js';
+import { ComponentManager } from '../managers/componentManager.js';
 
 export async function checkModMailStatus(event: any, context: JobContext): Promise<void> {
     console.log('[ModMailSync] Starting ModMail Archival Check...');
@@ -36,15 +37,30 @@ export async function checkModMailStatus(event: any, context: JobContext): Promi
                 const logEntries = await StorageManager.getLinkedLogEntries(conversationId, context as any);
 
                 for (const entry of logEntries) {
-                    // Only update if it's not already marked archived (efficiency)
                     if (entry.currentStatus !== ItemState.Archived_Modmail) {
-                        await WebhookManager.updateMessageStateOnly(
-                            entry.webhookUrl,
-                            entry.discordMessageId,
-                            ItemState.Archived_Modmail,
-                            context as any
-                        );
 
+                        const message = await WebhookManager.getMessage(entry.webhookUrl, entry.discordMessageId);
+
+                        if (message && message.components) {
+                            const updatedComponents = await ComponentManager.updateModMailState(
+                                message.components,
+                                ItemState.Archived_Modmail,
+                                context as any
+                            );
+
+                            await WebhookManager.editMessage(
+                                entry.webhookUrl,
+                                entry.discordMessageId,
+                                {
+                                    flags: message.flags,
+                                    components: updatedComponents
+                                }
+                            );
+                        } else {
+                            console.warn(`[ModMailSync] Message ${entry.discordMessageId} not found or has no components.`);
+                        }
+
+                        // 4. Update Database
                         await StorageManager.updateLogStatus(
                             entry.discordMessageId,
                             ItemState.Archived_Modmail,

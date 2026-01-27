@@ -166,6 +166,28 @@ export class StorageManager {
         return scoreMembers.map((item: { member: any; }) => item.member);
     }
 
+    static async getRecentLogEntries(limit: number, context: any): Promise<LogEntry[]> {
+        const { redis } = context;
+
+        // Use global chronological index
+        // Correct syntax for rank-based query: start=0, stop=limit-1
+        const scoreMembers = await redis.zRange(
+            StorageManager.getChronoIndexKey(),
+            0,
+            limit - 1,
+            { reverse: true }
+        );
+
+        const entries: LogEntry[] = [];
+        for (const item of scoreMembers) {
+            const entry = await this.getLogEntry(item.member, context);
+            if (entry) {
+                entries.push(entry);
+            }
+        }
+        return entries;
+    }
+
     // Unused until necessary to double check posts/comments
     static async getRecentTrackedPostIds(limit: number, context: any): Promise<string[]> {
         const uniqueIds = new Set<string>();

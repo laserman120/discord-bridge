@@ -3,6 +3,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 
 export class UpdateHandler {
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -43,12 +44,14 @@ export class UpdateHandler {
         for (const entry of logEntries) {
             const currentStatus = entry.currentStatus;
 
-            const payload = await EmbedManager.createDefaultEmbed(
+            /*const payload = await EmbedManager.createDefaultEmbed(
                 contentData,
                 currentStatus,
                 entry.channelType,
                 context as any
-            );
+            );*/
+
+            const payload = await ComponentManager.createDefaultMessage(contentData, currentStatus, entry.channelType, context);
 
             await WebhookManager.editMessage(
                 entry.webhookUrl,

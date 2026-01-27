@@ -3,6 +3,7 @@ import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 
 export class NewPostHandler {
@@ -61,10 +62,12 @@ export class NewPostHandler {
         if (contentItem.isApproved()) {
             status = ItemState.Approved;
         }
-
+        
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, crosspostItem);
+        
+        const notificationString = await context.settings.get('NEW_POST_MESSAGE') as string | undefined;
 
-        const payload = await EmbedManager.createDefaultEmbed(contentData, status, ChannelType.NewPosts, context);
+        const payload = await ComponentManager.createDefaultMessage(contentData, status, ChannelType.NewPosts, context, notificationString);
 
         const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
 

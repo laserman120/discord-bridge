@@ -4,6 +4,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 
 export class ModActivityHandler {
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -59,17 +60,21 @@ export class ModActivityHandler {
 
         const state = ItemState.Live;
 
-        const payload = await EmbedManager.createDefaultEmbed(
+        /*const payload = await EmbedManager.createDefaultEmbed(
             details,
             state,
             ChannelType.ModActivity,
             context
-        );
+        );*/
 
         const customMessage = await context.settings.get('MOD_ACTIVITY_MESSAGE') as string | undefined;
-        if (customMessage) {
+        /*if (customMessage) {
             payload.content = customMessage;
-        }
+        }*/
+
+        const payload = await ComponentManager.createDefaultMessage(details, state, ChannelType.ModActivity, context, customMessage);
+
+        
 
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
 

@@ -1,4 +1,4 @@
-import { Devvit, JobContext, TriggerContext, Post, Comment} from '@devvit/public-api';
+import { Devvit, JobContext, TriggerContext, Post, Comment, AboutSubredditTypes} from '@devvit/public-api';
 import { NewPostHandler } from '../handlers/newPostHandler.js';
 import { StateSyncHandler } from '../handlers/stateSyncHandler.js';
 import { RemovalHandler } from '../handlers/removalHandler.js';
@@ -12,6 +12,7 @@ import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
 import { ModAbuseHandler } from '../handlers/modAbuseHandler.js';
 import { ModActivityHandler } from '../handlers/modActivityHandler.js';
 import { UpdateHandler } from '../handlers/updateHandler.js'; 
+import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 
 export type HandlerName =
     | 'NewPostHandler'
@@ -26,6 +27,7 @@ export type HandlerName =
     | 'ModActivityHandler'
     | 'ModAbuseHandler'
     | 'ModMailHandler'
+    | 'ModQueueHandler'
     | 'UpdateHandler';
 
 export interface QueueTask {
@@ -125,13 +127,14 @@ export class QueueManager {
             });
 
             const contentCache = new Map<string, Post | Comment>();
-
+            let modQueue;
             if (allIds.size > 0) {
                 try {
                     console.log(`[Queue] Batch fetching ${allIds.size} unique items...`);
 
                     const subreddit = await context.reddit.getCurrentSubreddit();
                     const items = await subreddit.getCommentsAndPostsByIds(Array.from(allIds)).all();
+                    modQueue = await subreddit.getModQueue().all();
 
                     items.forEach(item => contentCache.set(item.id, item));
                 } catch (e) {
@@ -156,7 +159,7 @@ export class QueueManager {
                 const preFetchedItem = itemId ? contentCache.get(itemId) : undefined;
 
                 try {
-                    await this.dispatch(task.payload, context, preFetchedItem);
+                    await this.dispatch(task.payload, context, modQueue, preFetchedItem);
                 } catch (err) {
                     console.error(`[Queue] Error processing ${task.payload.handler}:`, err);
                 }
@@ -178,7 +181,7 @@ export class QueueManager {
         }
     }
 
-    private static async dispatch(task: QueueTask, context: JobContext, preFetchedContent?: Post | Comment): Promise<void> {
+    private static async dispatch(task: QueueTask, context: JobContext, currentQueue?: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<void> {
         const ctx = context as any;
         const { handler, data } = task;
 
@@ -221,6 +224,10 @@ export class QueueManager {
                 break;
             case 'DeletionHandler':
                 await DeletionHandler.handle(data, ctx, preFetchedContent);
+                break;
+            case 'ModQueueHandler':
+                if (!currentQueue) return;
+                await ModQueueHandler.handle(data, ctx, currentQueue, preFetchedContent)
                 break;
             default:
                 console.warn(`[Queue] Unknown handler type: ${handler}`);

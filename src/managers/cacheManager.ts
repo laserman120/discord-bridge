@@ -2,7 +2,7 @@ import { Devvit } from '@devvit/public-api';
 
 export class CacheManager {
 
-    private static POST_CACHE_TTL = 300;
+    private static POST_CACHE_TTL = 20;
 
     private static getContentKey(id: string): string {
         return `cache:content:${id}`;

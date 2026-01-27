@@ -1,8 +1,10 @@
 ﻿import { Devvit } from '@devvit/public-api';
-import { publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup } from './config/settings.js';
+import { appNotificationGroup, publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup, modQueueGroup } from './config/settings.js';
 import { checkForOldMessages } from './scheduledEvents/checkForOldMessages.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { QueueManager } from './managers/queueManager.js';
+import { checkModQueue } from './scheduledEvents/modQueueCheckJob.js';
+import { checkNewsUpdates } from './scheduledEvents/newsCheckJob.js';
 
 /*
 Devvit.configure({
@@ -12,8 +14,10 @@ Devvit.configure({
 });*/
 
 Devvit.addSettings([
+    appNotificationGroup,
     publicNotificationGroup,
     newPostsGroup,
+    modQueueGroup,
     removalGroup,
     reportGroup,
     modmailGroup,
@@ -25,18 +29,18 @@ Devvit.addSettings([
     modMailCustomizationGroup,
 ]);
 
-const ActionsRequiringUpdate = ["markednsfw", "lock", "unlock", "sticky", "unsticky", "spoiler", "unspoiler", "editflair"];
+const ActionsRequiringUpdate = ["marknsfw", "lock", "unlock", "sticky", "unsticky", "spoiler", "unspoiler", "editflair"];
 
 Devvit.addTrigger({
     event: 'ModAction',
     onEvent: async (event, context) => {
-
         await new Promise(resolve => setTimeout(resolve, 4000));
 
         const redditItemId = event.targetPost?.id || event.targetComment?.id;
 
         if (redditItemId && context)
         {
+            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event }, context);
             await QueueManager.enqueue({ handler: 'StateSyncHandler', data: event }, context);
             await QueueManager.enqueue({ handler: 'RemovalHandler', data: event }, context);
             await QueueManager.enqueue({ handler: 'RemovalReasonHandler', data: event }, context);
@@ -70,7 +74,7 @@ Devvit.addTrigger({
             await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.post }, context);
 
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
-
+            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context);
             await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context);
         }
 
@@ -85,6 +89,7 @@ Devvit.addTrigger({
 
         if (event.comment && context) {
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
+            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.comment }, context);
             await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context);
             await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.comment }, context);
             await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.comment }, context);
@@ -98,6 +103,7 @@ Devvit.addTrigger({
     onEvent: async (event, context) => {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
+        await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event }, context);
         await QueueManager.enqueue({ handler: 'DeletionHandler', data: event }, context);
     },
 });
@@ -118,26 +124,26 @@ Devvit.addTrigger({
 
         if (event.type == 'PostReport' && event.post) {
             await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context);
+            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context);
         }
 
         if (event.type == 'CommentReport' && event.comment) {
             await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context);
+            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.comment }, context);
         }
     },
 });
 
 Devvit.addTrigger({
-    events: ['PostUpdate', 'CommentUpdate'],
+    events: ['PostUpdate', 'CommentUpdate', 'PostNsfwUpdate', 'PostSpoilerUpdate', 'PostFlairUpdate'],
     onEvent: async (event, context) => {
         await new Promise(resolve => setTimeout(resolve, 3000));
 
-        if (event.type == 'PostUpdate' && event.post) {
-            console.log("[Trigger: PostUpdate] Received post update event: ", event)
+        if ((event.type == 'PostUpdate' || event.type == 'PostNsfwUpdate' || event.type == 'PostSpoilerUpdate' || event.type == 'PostFlairUpdate') && event.post) {
             await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context);
         }
 
         if (event.type == 'CommentUpdate' && event.comment) {
-            console.log("[Trigger: PostUpdate] Received comment update event: ", event)
             await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context);
         }
     },
@@ -154,8 +160,18 @@ Devvit.addSchedulerJob({
 });
 
 Devvit.addSchedulerJob({
+    name: 'check_mod_queue',
+    onRun: checkModQueue,
+});
+
+Devvit.addSchedulerJob({
     name: 'process_queue',
     onRun: (event, context) => QueueManager.processQueue(event, context),
+});
+
+Devvit.addSchedulerJob({
+    name: 'check_news',
+    onRun: checkNewsUpdates,
 });
 
 Devvit.addTrigger({
@@ -180,11 +196,24 @@ Devvit.addTrigger({
             });
             console.log(`[Setup] Scheduled modmail sync job with ID: ${modmailJobId}`);
 
+            const modQueueJobId = await context.scheduler.runJob({
+                name: 'check_mod_queue',
+                cron: '*/10 * * * *', // Every 10 minutes
+            });
+            console.log(`[Setup] Scheduled modQueue check job with ID: ${modQueueJobId}`);
+
             const queueJobId = await context.scheduler.runJob({
                 name: 'process_queue',
                 cron: '*/30 * * * * *', // Run every 30 seconds
             });
             console.log(`[Setup] Scheduled queue processor with ID: ${queueJobId}`);
+
+            const newsJobId = await context.scheduler.runJob({
+                name: 'check_news',
+                cron: '*/1 * * * *', // Run every 1 hour 0 * * * *
+            });
+            console.log(`[Setup] Scheduled news check with ID: ${newsJobId}`);
+
         } catch (e) {
             console.error('[Setup] Failed to schedule cleanup job:', e);
         }

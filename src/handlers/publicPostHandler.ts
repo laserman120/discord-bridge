@@ -4,6 +4,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
+import { ComponentManager } from '../managers/componentManager.js';
 
 export class PublicPostHandler {
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
@@ -59,7 +60,11 @@ export class PublicPostHandler {
             return;
         }
 
-        const payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Public_Post, ChannelType.PublicNewPosts, context);
+        //const payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Public_Post, ChannelType.PublicNewPosts, context);
+
+        const notificationString = await context.settings.get('NEW_PUBLIC_POST_MESSAGE') as string | undefined;
+
+        const payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Public_Post, ChannelType.PublicNewPosts, context, notificationString);
 
         const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
 
@@ -76,6 +81,11 @@ export class PublicPostHandler {
 
     static async handlePossibleStateChange(postId: string, state: ItemState, context: TriggerContext, contentItem: Post | Comment): Promise<void> {
         if (!postId) return;
+
+        if (postId.startsWith('t1_')) {
+            // Public posts are only for posts, not comments
+            return;
+        }
 
         const logEntries = await StorageManager.getLinkedLogEntries(postId, context);
 
