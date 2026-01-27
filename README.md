@@ -67,7 +67,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 ---
 
 ## Changelog
-- v0.0.XX
+- v0.0.59
   - Complete rework of the message system, to improve visibility and maintainability.
 	- This should generally also allow more customization as well as more fields.
 	- The title hyperlink was replaced with dedicated buttons
@@ -78,6 +78,9 @@ Making at easy to keep track of anything related to your subreddit directly from
 	- Unlike the other streams, items that have been handled will be completely deleted from the discord channel.
   - Improved Mod Mail handling, which will now update to show messages sent back to back
 	- This has a character limit to avoid hitting discords size constraints.
+  - Added settings to further adjust how public messages are displayed.
+  - Added setting to add an additional button to open a user profile with Arctic-Shifts User Info.
+  - Added a setting to remove the author button.
   - Added setting to ignore specific authors of modmails, useful for bot messages that are less important.
   - Added setting to ignore moderator removals in the removal stream.
   - Added setting to ignore removals of specific authors. (For example when a comment by AutoModerator is removed by a moderator)
