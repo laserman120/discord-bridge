@@ -133,11 +133,16 @@ export class ComponentManager {
 
 
     static async createDefaultMessage(details: ContentDetails, status: ItemState, channelType: ChannelType, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
-        // 1. Load Settings
         const hideNsfwBody = await context.settings.get('NEW_PUBLIC_POST_HIDE_NSFW_BODY') as boolean || false;
         const hideSpoilerBody = await context.settings.get('NEW_PUBLIC_POST_HIDE_SPOILER_BODY') as boolean || false;
         const hideNsfwImage = await context.settings.get('NEW_PUBLIC_POST_HIDE_NSFW_IMAGE') as boolean || false;
         const hideSpoilerImage = await context.settings.get('NEW_PUBLIC_POST_HIDE_SPOILER_IMAGE') as boolean || false;
+        const hideAuthorPublic = await context.settings.get('PUBLIC_POST_HIDE_AUTHOR') as boolean || false;
+        const hideFlairPublic = await context.settings.get('PUBLIC_POST_HIDE_FLAIR') as boolean || false;
+        const hideContentWarningPublic = await context.settings.get('PUBLIC_POST_HIDE_CONTENT_WARNING') as boolean || false;
+
+        const addArcticShift = await context.settings.get('PRIVATE_POST_ADD_ARCTIC_SHIFT') as boolean || false;
+        const hideAuthorButton = await context.settings.get('PRIVATE_HIDE_DEFAULT_AUTHOR') as boolean || false;
 
         const { statusText, actionText } = this.getStatusDetails(status);
         const color = await UtilityManager.getColorFromState(status, context);
@@ -235,7 +240,12 @@ export class ComponentManager {
             addField('Status', statusText);
         }
 
-        addField('Author', `u/${details.authorName}`);
+        if (hideAuthorPublic && status == ItemState.Public_Post) {
+            // Skipped due to hidden
+        } else {
+            addField('Author', `u/${details.authorName}`);
+        }
+        
 
         if (status !== ItemState.Public_Post) {
             if (status === ItemState.Removed || status === ItemState.Awaiting_Review && details.removedBy) {
@@ -246,11 +256,19 @@ export class ComponentManager {
         }
 
         if (details.flairText) {
-            addField('Flair', details.flairText);
+            if (hideFlairPublic && status == ItemState.Public_Post) {
+                // Skipped due to hidden
+            } else {
+                addField('Flair', details.flairText);
+            } 
         }
 
         if (details.contentWarning) {
-            addField('Content Warning', details.contentWarning);
+            if(hideContentWarningPublic && status == ItemState.Public_Post) {
+                // Skipped due to hidden
+            } else {
+                addField('Content Warning', details.contentWarning);
+            }
         }
 
         if (status !== ItemState.Public_Post) {
@@ -321,13 +339,24 @@ export class ComponentManager {
             url: details.permalink
         });
 
-        if (status !== ItemState.Public_Post && status !== ItemState.Deleted) {
+        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && !hideAuthorButton) {
             buttons.push({
                 id: this.generateRandomId(),
                 type: 2,
                 style: 5,
                 label: "Author",
                 url: `https://www.reddit.com/user/${details.authorName}`
+            });
+        }
+
+        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && addArcticShift) {
+            buttons.push({
+                id: this.generateRandomId(),
+                type: 2,
+                style: 5,
+                label: "Author A-S",
+                url: `https://arctic-shift.photon-reddit.com/search?fun=posts_search&author=${details.authorName}&limit=10&sort=desc`
+                
             });
         }
 

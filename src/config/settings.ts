@@ -54,31 +54,11 @@ export const appNotificationGroup = {
     ]
 }
 
-
-export const publicNotificationGroup = {
+export const publicMessageCustomizationGroup = {
     type: 'group' as const,
-    label: 'Public Notifications',
-    helpText: 'Configure notifications intended for public viewing (e.g., community Discord).',
+    label: 'Public Message Configuration',
+    helpText: 'Configure how notifications intended for public viewing are displayed.',
     fields: [
-        {
-            type: 'string' as const,
-            name: 'WEBHOOK_PUBLIC_NEW_POSTS',
-            label: 'Public New Posts Webhook URL',
-            required: false,
-            scope: 'installation' as const,
-            helpText: 'Channel for new submissions available to everyone. Updates on removal/deletion.',
-            onValidate: async ({ value }: { value?: string }) => {
-                return UtilityManager.validateWebhookUrl(value);
-            }
-        },
-        {
-            type: 'string' as const,
-            name: 'NEW_PUBLIC_POST_MESSAGE',
-            label: 'Pingable Message (Public)',
-            defaultValue: 'New Post',
-            scope: 'installation' as const,
-            helpText: 'Custom text sent with the notification (e.g., @here New Post!).',
-        },
         {
             type: 'boolean' as const,
             name: 'NEW_PUBLIC_POST_HIDE_NSFW_IMAGES',
@@ -107,9 +87,78 @@ export const publicNotificationGroup = {
             defaultValue: false,
             scope: 'installation' as const,
         },
+        {
+            type: 'boolean' as const,
+            name: 'PUBLIC_POST_HIDE_AUTHOR',
+            label: 'Hide the name of the Author in public posts',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'PUBLIC_POST_HIDE_FLAIR',
+            label: 'Hide the selected post flair in public posts',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'PUBLIC_POST_HIDE_CONTENT_WARNING',
+            label: 'Hide the content warning (Spoiler|NSFW) in public posts',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+    ]
+}
+
+export const publicNotificationGroup = {
+    type: 'group' as const,
+    label: 'Public Notifications',
+    helpText: 'Configure notifications intended for public viewing (e.g., community Discord).',
+    fields: [
+        {
+            type: 'string' as const,
+            name: 'WEBHOOK_PUBLIC_NEW_POSTS',
+            label: 'Public New Posts Webhook URL',
+            required: false,
+            scope: 'installation' as const,
+            helpText: 'Channel for new submissions available to everyone. Updates on removal/deletion.',
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateWebhookUrl(value);
+            }
+        },
+        {
+            type: 'string' as const,
+            name: 'NEW_PUBLIC_POST_MESSAGE',
+            label: 'Pingable Message (Public)',
+            defaultValue: 'New Post',
+            scope: 'installation' as const,
+            helpText: 'Custom text sent with the notification (e.g., @here New Post!).',
+        },
     ]
 };
 
+export const privateMessageCustomizationGroup = {
+    type: 'group' as const,
+    label: 'Private Message Configuration',
+    helpText: 'Configure how notifications intended for private viewing are displayed.',
+    fields: [
+        {
+            type: 'boolean' as const,
+            name: 'PRIVATE_POST_ADD_ARCTIC_SHIFT',
+            label: 'Add an additional button to open a user profile in Arctic-Shift',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'PRIVATE_HIDE_DEFAULT_AUTHOR',
+            label: 'Hide the default Author button which links to the reddit profile',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+    ]
+}
 
 export const newPostsGroup = {
     type: 'group' as const,

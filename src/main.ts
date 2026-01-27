@@ -1,5 +1,5 @@
 ﻿import { Devvit } from '@devvit/public-api';
-import { appNotificationGroup, publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup, modQueueGroup } from './config/settings.js';
+import { privateMessageCustomizationGroup, publicMessageCustomizationGroup, appNotificationGroup, publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup, modQueueGroup } from './config/settings.js';
 import { checkForOldMessages } from './scheduledEvents/checkForOldMessages.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { QueueManager } from './managers/queueManager.js';
@@ -15,7 +15,9 @@ Devvit.configure({
 
 Devvit.addSettings([
     appNotificationGroup,
+    publicMessageCustomizationGroup,
     publicNotificationGroup,
+    privateMessageCustomizationGroup,
     newPostsGroup,
     modQueueGroup,
     removalGroup,
