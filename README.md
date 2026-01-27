@@ -4,7 +4,7 @@
 An app to help bridge the gap between reddit and discord. 
 Making at easy to keep track of anything related to your subreddit directly from your discord server.
 
-![Preview Gif](https://github.com/laserman120/discord-bridge/blob/262e0344fe9f93b9fa9f374be2c0b0f0012fc63a/assets/Discord-Bridge_Preview.gif)
+![Preview Gif](https://raw.githubusercontent.com/laserman120/discord-bridge/262e0344fe9f93b9fa9f374be2c0b0f0012fc63a/assets/Discord-Bridge_Preview.gif)
 
 ---
 
