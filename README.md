@@ -69,7 +69,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 ---
 
 ## Changelog
-- v0.0.59
+- v0.0.63
   - Complete rework of the message system, to improve visibility and maintainability.
 	- This should generally also allow more customization as well as more fields.
 	- The title hyperlink was replaced with dedicated buttons
