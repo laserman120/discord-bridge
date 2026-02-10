@@ -13,6 +13,7 @@ import { ModAbuseHandler } from '../handlers/modAbuseHandler.js';
 import { ModActivityHandler } from '../handlers/modActivityHandler.js';
 import { UpdateHandler } from '../handlers/updateHandler.js'; 
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
+import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
 
 export type HandlerName =
     | 'NewPostHandler'
@@ -28,7 +29,8 @@ export type HandlerName =
     | 'ModAbuseHandler'
     | 'ModMailHandler'
     | 'ModQueueHandler'
-    | 'UpdateHandler';
+    | 'UpdateHandler'
+    | 'SpamRemovalHandler';
 
 export interface QueueTask {
     handler: HandlerName;
@@ -99,18 +101,26 @@ export class QueueManager {
 
                     if (payload.data.type === 'CommentDelete' && payload.data.commentId) {
                         itemId = payload.data.commentId;
-                    } else if (payload.data.type === 'PostDelete' && payload.data.postId) {
+                    }
+                    else if (payload.data.type === 'PostDelete' && payload.data.postId) {
                         itemId = payload.data.postId;
-                    } else if (payload.data.id) itemId = payload.data.id;
-                    else if (payload.data.itemId) itemId = payload.data.itemId;
-                    else if (payload.data.postId) itemId = payload.data.postId;
-                    else if (payload.data.commentId) itemId = payload.data.commentId;                   
+                    }
+                    else if (payload.data.id) {
+                        itemId = payload.data.id;
+                    }
+                    else if (payload.data.itemId) {
+                        itemId = payload.data.itemId;
+                    }
+                    else if (payload.data.postId) {
+                        itemId = payload.data.postId;
+                    }
+                    else if (payload.data.commentId) {
+                        itemId = payload.data.commentId;
+                    }
 
-                    // 2. ModAction Event
                     if (!itemId && payload.data.targetPost?.id) itemId = payload.data.targetPost.id;
                     if (!itemId && payload.data.targetComment?.id) itemId = payload.data.targetComment.id;
 
-                    // 3. Post/Comment Object
                     if (!itemId && payload.data.permalink) {
                         itemId = payload.data.id;
                     }
@@ -197,6 +207,9 @@ export class QueueManager {
                 break;
             case 'RemovalHandler':
                 await RemovalHandler.handle(data, ctx, preFetchedContent);
+                break;
+            case 'SpamRemovalHandler':
+                await SpamRemovalHandler.handle(data, ctx, preFetchedContent);
                 break;
             case 'RemovalReasonHandler':
                 await RemovalReasonHandler.handle(data, ctx, preFetchedContent);

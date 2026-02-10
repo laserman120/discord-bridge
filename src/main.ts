@@ -5,6 +5,7 @@ import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { QueueManager } from './managers/queueManager.js';
 import { checkModQueue } from './scheduledEvents/modQueueCheckJob.js';
 import { checkNewsUpdates } from './scheduledEvents/newsCheckJob.js';
+import { checkSpamQueue } from './scheduledEvents/spamQueueCheckJob.js';
 
 /*
 Devvit.configure({
@@ -176,6 +177,11 @@ Devvit.addSchedulerJob({
     onRun: checkNewsUpdates,
 });
 
+Devvit.addSchedulerJob({
+    name: 'check_spam_queue',
+    onRun: checkSpamQueue,
+})
+
 Devvit.addTrigger({
     events: ['AppInstall', 'AppUpgrade'],
     onEvent: async (_event, context) => {
@@ -215,6 +221,11 @@ Devvit.addTrigger({
                 cron: '*/1 * * * *', // Run every 1 hour 0 * * * *
             });
             console.log(`[Setup] Scheduled news check with ID: ${newsJobId}`);
+
+            const spamQueueJobId = await context.scheduler.runJob({
+                name: 'check_spam_queue',
+                cron: '*/15 * * * *', // Run every 15 minutes
+            });
 
         } catch (e) {
             console.error('[Setup] Failed to schedule cleanup job:', e);

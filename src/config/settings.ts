@@ -237,6 +237,13 @@ export const removalGroup = {
             onValidate: async ({ value }: { value?: string }) => {
                 return UtilityManager.validateWebhookUrl(value);
             }
+        },      
+        {
+            type: 'boolean' as const,
+            name: 'REMOVALS_SCAN_SPAM',
+            label: 'Scan for spam removals by reddit and send notifications of them',
+            defaultValue: true,
+            scope: 'installation' as const,
         },
         {
             type: 'string' as const,
@@ -261,6 +268,14 @@ export const removalGroup = {
             defaultValue: ' REMOVED by Reddit Admin (@here)',
             scope: 'installation' as const,
             helpText: 'Text displayed when content is removed by Reddit Administrators.',
+        },
+        {
+            type: 'string' as const,
+            name: 'REMOVE_MESSAGE_SPAM',
+            label: 'Spam Removal Message',
+            defaultValue: ' REMOVED automatically by Reddit',
+            scope: 'installation' as const,
+            helpText: 'Text displayed when content is removed by Reddits automated systems.',
         },
         {
             type: 'select' as const,

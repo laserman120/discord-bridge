@@ -9,7 +9,6 @@ export interface ContentDetails {
     body: string;
     url: string;
     permalink: string;
-    authorName: string;
     subredditName: string;
     createdAt: Date;
     flairText?: string;
@@ -19,6 +18,12 @@ export interface ContentDetails {
     isNSFW?: boolean;
     isSpoiler?: boolean;
 
+    authorName: string;
+    authorShadowbanned?: boolean;
+    authorLinkKarma?: number;
+    authorCommentKarma?: number;
+    authorSubredditLinkKarma?: number;
+    authorSubredditCommentKarma?: number;
 
     // Enriched Data
     removalReason?: string;
@@ -47,6 +52,14 @@ interface CachedModLogData {
     removalLog?: ModAction;
 }
 
+interface CachedUserStats {
+    linkKarma: number;
+    commentKarma: number;
+    subredditLinkKarma: number;
+    subredditCommentKarma: number;
+    authorShadowbanned?: boolean;
+}
+
 export class ContentDataManager {
     static async gatherDetails(item: Post | Comment, context: TriggerContext, crosspostItem?: Post): Promise<ContentDetails> {
         const isPost = 'title' in item;
@@ -73,6 +86,54 @@ export class ContentDataManager {
             isCrossPost: !!crosspostItem,
 
         };
+
+        if (details.authorName && details.authorName !== '[Deleted]') {
+            const userCacheKey = `user-stats:${details.authorName}:${details.subredditName}`;
+
+            try {
+                const cachedStats = await CacheManager.getCachedContent(userCacheKey, context as any) as CachedUserStats | null;
+
+                if (cachedStats) {
+                    details.authorLinkKarma = cachedStats.linkKarma;
+                    details.authorCommentKarma = cachedStats.commentKarma;
+                    details.authorSubredditLinkKarma = cachedStats.subredditLinkKarma;
+                    details.authorSubredditCommentKarma = cachedStats.subredditCommentKarma;
+                    details.authorShadowbanned = cachedStats.authorShadowbanned;
+                } else {
+
+                    const user = await item.getAuthor();
+                    const rawUser = await context.reddit.getUserByUsername(item.authorName);
+
+                    let isShadowbanned = false;
+                    if (!rawUser) {
+                        isShadowbanned = true;
+                    }
+
+                    details.authorShadowbanned = isShadowbanned;
+
+                    if (user) {
+                        const totalSubKarma = await user.getUserKarmaFromCurrentSubreddit() || undefined;
+
+                        details.authorLinkKarma = user.linkKarma;
+                        details.authorCommentKarma = user.commentKarma;
+                        details.authorSubredditLinkKarma = totalSubKarma?.fromPosts;
+                        details.authorSubredditCommentKarma = totalSubKarma?.fromComments;
+                        
+
+                        await CacheManager.cacheContent(userCacheKey, {
+                            linkKarma: user.linkKarma,
+                            commentKarma: user.commentKarma,
+                            subredditLinkKarma: totalSubKarma?.fromPosts,
+                            subredditCommentKarma: totalSubKarma?.fromComments,
+                            authorShadowbanned: isShadowbanned
+                        }, context as any);
+                    }
+                }
+            } catch {
+                console.warn(`[ContentDataManager] Failed to fetch user stats for ${details.authorName}`);
+            }
+        }
+
 
         if (isPost) {
             details.imageUrl = await UtilityManager.getBestImageUrl(item);

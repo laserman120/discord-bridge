@@ -76,7 +76,7 @@ export class RemovalHandler {
 
         if (notificationStrings) {
 
-            // 0=Mod, 1=Auto, 2=Admin
+            // 0=Mod, 1=Auto/Bot, 2=Admin, 3=Spam
             
             notificationString = notificationStrings[0];
 

@@ -64,7 +64,7 @@ export class ComponentManager {
                 };
             case ItemState.Spam:
                 return {
-                    statusText: '🔴 Removed',
+                    statusText: '🔴 Removed (Spam)',
                     actionText: `Identified as Spam`
                 };
             case ItemState.Awaiting_Review:
@@ -245,9 +245,13 @@ export class ComponentManager {
         } else {
             addField('Author', `u/${details.authorName}`);
         }
-        
+
 
         if (status !== ItemState.Public_Post) {
+            if (details.authorShadowbanned) {
+                addField('Author Status', 'Banned/Shadowbanned ⚠️', true)
+            }
+
             if (status === ItemState.Removed || status === ItemState.Awaiting_Review && details.removedBy) {
                 addField('Last Action', `${actionText} by ${details.removedBy}`);
             } else {

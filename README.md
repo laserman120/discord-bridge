@@ -69,6 +69,12 @@ Making at easy to keep track of anything related to your subreddit directly from
 ---
 
 ## Changelog
+- v0.0.XX
+  - Spam Detection
+	- If items are silently removed by reddit they can now be properly shown in the removal stream
+	- This can be toggled off in the removal settings.
+	- A scan only occurs once every 15 minutes.
+  - Ban detection. If a user is banned from reddit (or shadowbanned) this will be shown accordingly in the message
 - v0.0.63
   - Complete rework of the message system, to improve visibility and maintainability.
 	- This should generally also allow more customization as well as more fields.
