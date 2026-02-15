@@ -46,6 +46,7 @@ export class WebhookManager {
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             console.error(`[WEBHOOK] Exception during sendNewMessage: ${errorMessage}`);
+            console.error(`Payload was: ${JSON.stringify(payload)}`);
             return `failed_id_${Date.now()}`;
         }
     }

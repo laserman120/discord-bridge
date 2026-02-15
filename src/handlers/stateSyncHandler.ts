@@ -21,6 +21,10 @@ export class StateSyncHandler {
         const actionString = safeEvent.action;
         let newStatus = UtilityManager.getStateFromModAction(actionString);
 
+        if (event.targetState == ItemState.Spam) {
+            newStatus = ItemState.Spam;
+        }
+
         if (!newStatus) {
             return;
         }
@@ -78,23 +82,18 @@ export class StateSyncHandler {
             switch (entry.channelType) {
                 case ChannelType.NewPosts:
                     payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.Removals:
                     payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.Reports:
                     payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.FlairWatch:
                     payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 case ChannelType.ModActivity:
                     payload = await ComponentManager.createDefaultMessage(contentData, newStatus, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, newStatus, entry.channelType, context);
                     break;
                 default:
                     continue;

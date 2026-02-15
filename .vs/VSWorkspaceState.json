@@ -1,13 +1,13 @@
 {
   "ExpandedNodes": [
     "",
-    "\\assets",
     "\\src",
     "\\src\\config",
     "\\src\\handlers",
+    "\\src\\helpers",
     "\\src\\managers",
     "\\src\\scheduledEvents"
   ],
-  "SelectedNode": "\\src\\handlers\\silentRemovalHandler.ts",
+  "SelectedNode": "\\README.md",
   "PreviewInSolutionExplorer": false
 }

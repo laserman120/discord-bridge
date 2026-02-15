@@ -25,6 +25,17 @@ export class FlairWatchHandler {
         const configString = await context.settings.get('FLAIR_WATCH_CONFIG') as string;
         if (!configString) return;
 
+        const existingLogs = await StorageManager.getLinkedLogEntries(targetId, context as any);
+
+        const alreadyPosted = existingLogs.some(
+            entry => entry.channelType === ChannelType.FlairWatch || entry.channelType === ChannelType.PublicFlairWatch
+        );
+
+        if (alreadyPosted) {
+            console.log(`[FlairWatchHandler] Already found ${targetId}, skipping`);
+            return;
+        }
+
         let watchList: FlairConfigEntry[] = [];
         try {
             watchList = JSON.parse(configString);
@@ -72,18 +83,11 @@ export class FlairWatchHandler {
 
                 console.log(`[FlairWatchHandler] Match found for flair '${authorFlair}' on ${event.id}`);
 
-                const details = await ContentDataManager.gatherDetails(contentItem, context);
+                const details = await ContentDataManager.gatherDetails(contentItem, context, event);
 
                 // Determine style: Use Public state color if requested, otherwise standard Live
                 const state = entry.publicFormat ? ItemState.Public_Post : ItemState.Live;
                 const channelType = entry.publicFormat ? ChannelType.PublicFlairWatch : ChannelType.FlairWatch;
-
-                /*const payload = await EmbedManager.createDefaultEmbed(
-                    details,
-                    state,
-                    channelType,
-                    context
-                );*/
 
                 const payload = await ComponentManager.createDefaultMessage(details, state, channelType, context);
 

@@ -44,26 +44,13 @@ export class NewPostHandler {
                 return;
             }
         }
-        
-
-        let crosspostItem: Post | undefined;
-        if (event.crosspostParentId)
-        {
-            console.log(`[NewPostHandler] Post ${postId} is a crosspost, fetching parent post ${event.crosspostParentId}`)
-            try {
-                crosspostItem = await context.reddit.getPostById(event.crosspostParentId)
-            } catch (error) {
-                console.error(`[NewPostHandler] Failed to fetch full post ${postId}:`, error);
-                return;
-            }
-        }
 
         let status = ItemState.Live;
         if (contentItem.isApproved()) {
             status = ItemState.Approved;
         }
         
-        const contentData = await ContentDataManager.gatherDetails(contentItem, context, crosspostItem);
+        const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         
         const notificationString = await context.settings.get('NEW_POST_MESSAGE') as string | undefined;
 

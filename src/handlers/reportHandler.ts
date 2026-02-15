@@ -12,11 +12,10 @@ export class ReportHandler {
 
         const webhookUrl = await context.settings.get('WEBHOOK_REPORTS') as string | undefined;
 
-        if (!webhookUrl) {
-            return;
-        }
-
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
+
+        const existingLogs = await StorageManager.getLinkedLogEntries(targetId, context);
+        const alreadyLogged = existingLogs.some(entry => entry.channelType === ChannelType.Reports && entry.currentStatus === ItemState.Unhandled_Report);
 
         let contentItem: Post | Comment;
         if (preFetchedContent) {
@@ -54,18 +53,20 @@ export class ReportHandler {
 
         const notificationString = await context.settings.get('REPORT_MESSAGE') as string | undefined;
 
-        const payload = await ComponentManager.createDefaultMessage(contentData, status, ChannelType.Reports, context);
+        const payload = await ComponentManager.createDefaultMessage(contentData, status, ChannelType.Reports, context, notificationString);
 
-        const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
+        if (webhookUrl && !alreadyLogged) {
+            const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
 
-        if (discordMessageId && !discordMessageId.startsWith('failed_id')) {
-            await StorageManager.createLogEntry({
-                redditId: targetId,
-                discordMessageId: discordMessageId,
-                channelType: ChannelType.Reports,
-                currentStatus: status,
-                webhookUrl: webhookUrl
-            }, context as any);
+            if (discordMessageId && !discordMessageId.startsWith('failed_id')) {
+                await StorageManager.createLogEntry({
+                    redditId: targetId,
+                    discordMessageId: discordMessageId,
+                    channelType: ChannelType.Reports,
+                    currentStatus: status,
+                    webhookUrl: webhookUrl
+                }, context as any);
+            }
         }
 
         if (logEntries.length === 0) {

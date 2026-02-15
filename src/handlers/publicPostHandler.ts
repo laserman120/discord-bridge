@@ -40,20 +40,9 @@ export class PublicPostHandler {
             }
         }
 
-        let crosspostItem: Post | undefined;
-        if (event.crosspostParentId) {
-            console.log(`[PublicNewPostHandler] Post ${postId} is a crosspost, fetching parent post ${event.crosspostParentId}`)
-            try {
-                crosspostItem = await context.reddit.getPostById(event.crosspostParentId)
-            } catch (error) {
-                console.error(`[PublicNewPostHandler] Failed to fetch full post ${postId}:`, error);
-                return;
-            }
-        }
-
         console.log(`[PublicNewPostHandler] Processing new post: ${contentItem.title}`);
 
-        const contentData = await ContentDataManager.gatherDetails(contentItem, context, crosspostItem);
+        const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
 
         if (contentData.removalReason || contentData.removedBy) {
             console.log(`[PublicNewPostHandler] Post ${postId} appears to be removed, skipping.`);

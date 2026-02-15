@@ -56,7 +56,7 @@ export class ModQueueHandler {
 
         let state = ItemState.Live;
 
-        const contentData = await ContentDataManager.gatherDetails(contentItem, context);
+        const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
 
         if (contentItem.isApproved()) {
             return;
@@ -70,11 +70,7 @@ export class ModQueueHandler {
             state = ItemState.Awaiting_Review;
         }
 
-        
-
         console.log("[ModQueueHandler] Found new mod queue entry: " + targetId + " with state: " + state);
-
-        //const payload = await EmbedManager.createDefaultEmbed(contentData, status, ChannelType.Reports, context);
 
         let notificationString;
         if (state == ItemState.Unhandled_Report) {

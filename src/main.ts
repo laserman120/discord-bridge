@@ -218,7 +218,7 @@ Devvit.addTrigger({
 
             const newsJobId = await context.scheduler.runJob({
                 name: 'check_news',
-                cron: '*/1 * * * *', // Run every 1 hour 0 * * * *
+                cron: '0 * * * *', // Run every 1 hour 0 * * * *
             });
             console.log(`[Setup] Scheduled news check with ID: ${newsJobId}`);
 
@@ -226,6 +226,7 @@ Devvit.addTrigger({
                 name: 'check_spam_queue',
                 cron: '*/15 * * * *', // Run every 15 minutes
             });
+            console.log(`[Setup] Scheduled spam queue check with ID: ${spamQueueJobId}`);
 
         } catch (e) {
             console.error('[Setup] Failed to schedule cleanup job:', e);

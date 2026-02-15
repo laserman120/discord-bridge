@@ -15,6 +15,18 @@ export class ModActivityHandler {
         const webhookUrl = await context.settings.get('MOD_ACTIVITY_WEBHOOK') as string | undefined;
         if (!webhookUrl) return;
 
+        const existingLogs = await StorageManager.getLinkedLogEntries(targetId, context as any);
+
+        const alreadyPosted = existingLogs.some(
+            entry => entry.channelType === ChannelType.ModActivity
+        );
+
+        if (alreadyPosted) {
+            console.log("[ModActivityHandler] Already found " + targetId + ", skipping")
+            return;
+        }
+
+
         const checkPosts = await context.settings.get('MOD_ACTIVITY_CHECK_POSTS') as boolean ?? true;
         const checkComments = await context.settings.get('MOD_ACTIVITY_CHECK_COMMENTS') as boolean ?? true;
 
@@ -56,25 +68,13 @@ export class ModActivityHandler {
 
         if (!isMod) return;
 
-        const details = await ContentDataManager.gatherDetails(contentItem, context);
+        const details = await ContentDataManager.gatherDetails(contentItem, context, event);
 
         const state = ItemState.Live;
 
-        /*const payload = await EmbedManager.createDefaultEmbed(
-            details,
-            state,
-            ChannelType.ModActivity,
-            context
-        );*/
-
         const customMessage = await context.settings.get('MOD_ACTIVITY_MESSAGE') as string | undefined;
-        /*if (customMessage) {
-            payload.content = customMessage;
-        }*/
 
         const payload = await ComponentManager.createDefaultMessage(details, state, ChannelType.ModActivity, context, customMessage);
-
-        
 
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
 

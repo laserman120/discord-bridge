@@ -24,6 +24,8 @@ export interface ContentDetails {
     authorCommentKarma?: number;
     authorSubredditLinkKarma?: number;
     authorSubredditCommentKarma?: number;
+    authorCreatedAt?: Date;
+    authorFlair?: string;
 
     // Enriched Data
     removalReason?: string;
@@ -58,10 +60,12 @@ interface CachedUserStats {
     subredditLinkKarma: number;
     subredditCommentKarma: number;
     authorShadowbanned?: boolean;
+    authorCreatedAt?: Date;
+    authorFlair?: string;
 }
 
 export class ContentDataManager {
-    static async gatherDetails(item: Post | Comment, context: TriggerContext, crosspostItem?: Post): Promise<ContentDetails> {
+    static async gatherDetails(item: Post | Comment, context: TriggerContext, event?: any): Promise<ContentDetails> {
         const isPost = 'title' in item;
 
         const details: ContentDetails = {
@@ -80,14 +84,25 @@ export class ContentDataManager {
             removedBy: undefined,
             removalReason: undefined,
             reportReasons: undefined,
-            crossPostBody: crosspostItem ? crosspostItem.body : undefined,
-            crossPostPermalink: crosspostItem ? `https://reddit.com${crosspostItem.permalink}` : undefined,
-            crossPostSubredditName: crosspostItem ? crosspostItem.subredditName : undefined,
-            isCrossPost: !!crosspostItem,
-
+            isCrossPost: false,
         };
 
-        if (details.authorName && details.authorName !== '[Deleted]') {
+        let crosspostItem: Post | undefined;
+        if (event?.crosspostParentId) {
+            try {
+                console.log("[ContentDataManager] Item is a crosspost, fetching parent post " + item.id)
+                crosspostItem = await context.reddit.getPostById(event.crosspostParentId)
+            } catch (error) {
+                console.error(`[ContentDataManager] Failed to fetch full post ${item.id}:`, error);
+            }
+        }
+
+        details.crossPostBody = crosspostItem ? crosspostItem.body : undefined;
+        details.crossPostPermalink = crosspostItem ? `https://reddit.com${crosspostItem.permalink}` : undefined;
+        details.crossPostSubredditName = crosspostItem ? crosspostItem.subredditName : undefined;
+        details.isCrossPost = !!crosspostItem;
+
+        if (details.authorName && !details.authorName.toLowerCase().includes("[deleted]")) {
             const userCacheKey = `user-stats:${details.authorName}:${details.subredditName}`;
 
             try {
@@ -99,6 +114,8 @@ export class ContentDataManager {
                     details.authorSubredditLinkKarma = cachedStats.subredditLinkKarma;
                     details.authorSubredditCommentKarma = cachedStats.subredditCommentKarma;
                     details.authorShadowbanned = cachedStats.authorShadowbanned;
+                    details.authorCreatedAt = cachedStats.authorCreatedAt ? new Date(cachedStats.authorCreatedAt) : undefined;
+                    details.authorFlair = cachedStats.authorFlair;
                 } else {
 
                     const user = await item.getAuthor();
@@ -118,14 +135,20 @@ export class ContentDataManager {
                         details.authorCommentKarma = user.commentKarma;
                         details.authorSubredditLinkKarma = totalSubKarma?.fromPosts;
                         details.authorSubredditCommentKarma = totalSubKarma?.fromComments;
-                        
+
+                        const flair = await user.getUserFlairBySubreddit(details.subredditName);
+                        details.authorFlair = flair?.flairText || undefined;
+
+                        details.authorCreatedAt = user.createdAt;
 
                         await CacheManager.cacheContent(userCacheKey, {
                             linkKarma: user.linkKarma,
                             commentKarma: user.commentKarma,
                             subredditLinkKarma: totalSubKarma?.fromPosts,
                             subredditCommentKarma: totalSubKarma?.fromComments,
-                            authorShadowbanned: isShadowbanned
+                            authorShadowbanned: isShadowbanned,
+                            authorCreatedAt: user.createdAt,
+                            authorFlair: flair?.flairText || undefined,
                         }, context as any);
                     }
                 }

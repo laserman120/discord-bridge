@@ -161,6 +161,62 @@ export class UtilityManager {
         return undefined;
     }
 
+    static escapeMarkdown(text: string): string {
+        return text.replace(/([_*~`|<>])/g, '\\$1');
+    }
+
+    static cleanBodyText(text: string): string {
+        if (!text) return "";
+
+        return text
+            // Spoilers
+            .replace(/>!(.*?)!</g, "||$1||")
+
+            //Images and Videos
+            .replace(/!\[video\]\(.*?\)/gi, "[Video]")
+            .replace(/!\[img\]\(.*?\)/gi, "[Image]")
+            .replace(/!\[gif\]\(.*?\)/gi, "[GIF]")
+            // Titles
+            .replace(/^(?:#|##)\s+(.+)$/gm, "**$1**")
+            .replace(/^###\s+(.+)$/gm, "**$1**")
+
+            // Superscript to italics
+            .replace(/\^\((.*?)\)/g, "*$1*")
+            .replace(/\^(\S+)/g, "*$1*")
+
+            // Quotes
+            .replace(/^>(?!\s)(.*)$/gm, "> $1")
+
+            // Code blocks
+            .replace(/^ {4,}(.*)$/gm, "```\n$1\n```")
+            .replace(/```\n```/g, "")
+
+            // General Trimming
+            .trim();
+    }
+
+    static getAccountAgeString(createdAt: Date): string {
+
+        const dateObj = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+
+        if (!dateObj || isNaN(dateObj.getTime())) return "Unknown";
+
+        const now = new Date();
+        const diffInMs = now.getTime() - dateObj.getTime();
+
+        // Convert MS to total days
+        const totalDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+        if (totalDays < 365) {
+            return `Days: ${totalDays}`;
+        }
+
+        const years = Math.floor(totalDays / 365);
+        const remainingDays = totalDays % 365;
+
+        return `Years: ${years}, Days: ${remainingDays}`;
+    }
+
     static validateHexColor(hex: string | undefined): string | undefined {
         if (!hex) return undefined;
 

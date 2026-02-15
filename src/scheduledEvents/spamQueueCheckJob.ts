@@ -47,26 +47,36 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
                 entry.currentStatus === ItemState.Spam || entry.currentStatus === ItemState.Removed
             );
 
-            if (hasConflictingLog) {
+            const mockEvent = {
+                targetId: item.id,
+                targetState: ItemState.Spam,
+                id: item.id
+            };
+
+            if (hasConflictingLog && !alreadyLogged) {
+                //Logs do exist, but not in removals
                 console.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other.`);
                 await QueueManager.enqueue({
+                    handler: 'SpamRemovalHandler',
+                    data: mockEvent
+                }, context);
+
+                await QueueManager.enqueue({
                     handler: 'StateSyncHandler',
-                    data: {
-                        targetId: item.id,
-                        targetState: ItemState.Spam,
-                        id: item.id
-                    }
+                    data: mockEvent
+                }, context);
+            } else if (hasConflictingLog && alreadyLogged) {
+                // Logs exist and are in removals, but not marked as spam/removed
+                await QueueManager.enqueue({
+                    handler: 'StateSyncHandler',
+                    data: mockEvent
                 }, context);
             } else if (alreadyLogged) {
                 // It's in the spam queue and we already logged it as removed.
                 console.log(`[SpamCheck] ${item.id} is correctly logged as removed.`);
             } else {
+                // no logs exist for the item
                 console.log(`[SpamCheck] New silent removal detected: ${item.id}.`);
-                const mockEvent = {
-                    targetId: item.id,
-                    targetState: ItemState.Spam,
-                    id: item.id
-                };
 
                 await QueueManager.enqueue({
                     handler: 'SpamRemovalHandler',

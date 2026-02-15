@@ -69,82 +69,65 @@ Making at easy to keep track of anything related to your subreddit directly from
 ---
 
 ## Changelog
-- v0.0.XX
+
+**Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
+
+- v0.X.XX
   - Spam Detection
 	- If items are silently removed by reddit they can now be properly shown in the removal stream
 	- This can be toggled off in the removal settings.
 	- A scan only occurs once every 15 minutes.
   - Ban detection. If a user is banned from reddit (or shadowbanned) this will be shown accordingly in the message
+  - Adjusted message layout. Now grouping up fields to decrease overall size and increase readability.
+	- For example the layout is now grouped up into:
+	  - Author information
+	  - Post/Comment information
+	  - Karma information
+	  - Moderation and status information
+  - Adjusted the way message details are configured. 
+	- All settings are now by default setup so enabled in the settings also correlates to enabled in the notification.
+	- This is to streamline the configuration process and avoid confusion about what is enabled or not.
+  - Added new options for private messages.
+	- You can now show the amount of karma the author has
+	  - This is split up into seperate fields for: Total Karma, Total Subreddit Karma, Post Karma, Subreddit Post Karma, Comment Karma, Subreddit Comment Karma
+	  - Each can be toggled individually
+	- Added the option to show the account age of the author.
+	- Added the option to show the user flair of the author.
+  - Fixed issue in which messages would not update if no webhook was provided for the report feed.
+	- Now even if no webhook is provided for the report feed, all related messages will still be updated to reflect the reported state.
+  - Fixed usernames getting incorrect formatting applied when they included two underscores
+  - Improved overall formatting by converting reddit formatting styles to discord formatting styles where possible.
+	
 - v0.0.63
-  - Complete rework of the message system, to improve visibility and maintainability.
-	- This should generally also allow more customization as well as more fields.
-	- The title hyperlink was replaced with dedicated buttons
-  - Added Update and News notification systems.
-	- These will create a new modmail conversation to notify users of new update or general news regarding the app
-	- These can be disabled in the settings if desired.
-  - Added new ModQueue stream, which will mirror the mod queue of your subreddit.
-	- Unlike the other streams, items that have been handled will be completely deleted from the discord channel.
-  - Improved Mod Mail handling, which will now update to show messages sent back to back
-	- This has a character limit to avoid hitting discords size constraints.
-  - Added settings to further adjust how public messages are displayed.
-  - Added setting to add an additional button to open a user profile with Arctic-Shifts User Info.
-  - Added a setting to remove the author button.
-  - Added setting to ignore specific authors of modmails, useful for bot messages that are less important.
-  - Added setting to ignore moderator removals in the removal stream.
-  - Added setting to ignore removals of specific authors. (For example when a comment by AutoModerator is removed by a moderator)
-  - Fixed message data not updating if the author changes a post to or from spoiler or nsfw.
-  - Fixed message data not updating if the author changes a post flair. 
-  - Fixed messages not updating correctly in certain situations if the action was performed too quickly after automatic removal.
-- v0.0.50
-  - Reduced reddit api usage
-  - Fixed an issue that could lead to missed deletions
-- v0.0.48
-  - Removed Anti-Evil Ops from the list of automatic removal users. These can never be marked as automatic as these are admin removals.
-  - Reworked admin removals to now pull from a static list instead of checking for actions by non moderator accounts.
-	- This should help avoid false positives. If you want a reliable notification for admin removals use an app like AdminTattler.
-  - Potential fix for certain removals not creating a notification
+  - System Rework: Complete overhaul of the message system for improved UI, maintainability, and field customization; replaced title hyperlinks with buttons.
+  - ModQueue Stream: New stream that mirrors the subreddit mod queue and auto-deletes handled items from Discord.
+  - Notifications: Added opt-out system for app updates and general news delivered via Modmail.
+  - Enhanced Filtering: Added ignore settings for specific Modmail authors, moderator-initiated removals, and specific user removals (e.g., AutoMod).
+  - UI/UX: Improved Modmail thread handling and added Arctic-Shift user info integration.
+
+-v0.0.50
+  - Admin Removals: Reworked logic to use a static list for Admin removals to eliminate false positives.
+  - Performance: Reduced Reddit API overhead and optimized deletion tracking.
+
 - v0.0.37
-  - Fixed an issue which lead to certain removals not creating notifications.
-  - Fixed an issue that lead to certain reports appearing twice.
-- v0.0.30
-  - Added Queue system to hopefully avoid rate limiting as well as issues with the order of execution.
-  - Adjusted execution timing to improve stability.
-  - Fixed issue with incorrect removal reason being shown.
-  - Added more options for automatic removals.
-  - Minor fix for mod watching and flair watching not updating correctly upon deletion.
-  - Updated Devvit
+  - Stability: Implemented a Queue System to prevent rate-limiting and ensure correct execution order.
+  - Logic Updates: Added more automatic removal options and updated to the latest Devvit version.
+  - Bug Fixes: Resolved duplicate report notifications and incorrect removal reason displays.
+
 - v0.0.26
-  - Fixed an issue which lead to removal reasons not showing up correctly in certain situations.
-  - Added custom user entry field for marking additional apps for automatic removals
-- v0.0.25
-  - Added caching for certain reddit data to improve performance.
-  - Added customizable messages for mod log messages.
-  - Added Moderator Abuse warning system.
-  - Added Moderator Watching system.
-  - Added content warning configurations for public new post feed.
-  - Added content warning information to messages.
-  - Improved mod mail archival handling.
-  - Added update system to update messages when necessary.
-	- this includes body updates by the author
-	- as well as changes if flair or content warnings
+  - Monitoring Systems: Introduced Moderator Watching and Moderator Abuse warning systems.
+  - Dynamic Updates: Added real-time message updates for author body edits, flair changes, and content warnings.
+  - Customization: Added support for custom mod log messages and a user-defined list for automatic removal apps.
+  - Performance: Implemented caching for frequently accessed Reddit data.
+
 - v0.0.23
-  - Hotfix due to an issue with deletions .
-- v0.0.21
-  - Added Flair Watching feature.
-  - Minor fixes and improvements.
-  - Updated dependencies.
-- v0.0.16
-  - Added an additional delay during old message removal to prevent rate limiting on discords end.
-  - Added support for crossposts, now displaying if a post is a crosspost and from which subreddit, as well as linking to the original post.
-	- It will now also fetch the post body from the original post.
-  - Removed the "No Body" text in cases without a message body attached.
-  - Hotfix for reports not sending notifications when reported by AutoModerator.
-  - Fixed edge case in which a removed comment would be marked as Administrator removal incorrectly.
-  - Fixed edge case in which report reasons were not shown correctly in certain situations.
-  - Fixed an issue which lead the comment removals showing no moderator name.
-  - Fixed issue in which a removed post/comment would be marked as Admin removal if the bot user was deselected from automatic removals.
+  - Flair Watching: New feature to track specific post flair changes.
+  - Crosspost Support: Added detailed crosspost metadata, including original subreddit links and body text fetching.
+  - Rate Limiting: Added delays to Discord message deletions to prevent webhook throttling.
+  - Fixes: Resolved issues with "No Body" text displays and incorrect Admin removal tagging on comments.
+
 - v0.0.14
-  -	Initial Release.
+  - Initial Release.
 
 ---
 

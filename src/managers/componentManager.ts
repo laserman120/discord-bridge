@@ -92,8 +92,8 @@ export class ComponentManager {
         }
     }
 
-    private static generateRandomId(): number {
-        return Math.floor(Math.random() * 1000000000);
+    private static generateRandomId(): string {
+        return Math.floor(Math.random() * 1000000000).toString();
     }
 
     private static createDivider(): ComponentV2 {
@@ -131,18 +131,277 @@ export class ComponentManager {
         };
     }
 
-
     static async createDefaultMessage(details: ContentDetails, status: ItemState, channelType: ChannelType, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
-        const hideNsfwBody = await context.settings.get('NEW_PUBLIC_POST_HIDE_NSFW_BODY') as boolean || false;
-        const hideSpoilerBody = await context.settings.get('NEW_PUBLIC_POST_HIDE_SPOILER_BODY') as boolean || false;
-        const hideNsfwImage = await context.settings.get('NEW_PUBLIC_POST_HIDE_NSFW_IMAGE') as boolean || false;
-        const hideSpoilerImage = await context.settings.get('NEW_PUBLIC_POST_HIDE_SPOILER_IMAGE') as boolean || false;
-        const hideAuthorPublic = await context.settings.get('PUBLIC_POST_HIDE_AUTHOR') as boolean || false;
-        const hideFlairPublic = await context.settings.get('PUBLIC_POST_HIDE_FLAIR') as boolean || false;
-        const hideContentWarningPublic = await context.settings.get('PUBLIC_POST_HIDE_CONTENT_WARNING') as boolean || false;
+        // --- SETTINGS FETCHING ---
+        const publicShowMoreBody = await context.settings.get('PUBLIC_DISPLAY_MORE_BODY')
+        const publicShowNsfwBody = await context.settings.get('PUBLIC_SHOW_NSFW_BODY') as boolean || false;
+        const publicShowSpoilerBody = await context.settings.get('PUBLIC_SHOW_SPOILER_BODY') as boolean || false;
+        const publicShowNsfwImage = await context.settings.get('PUBLIC_SHOW_NSFW_IMAGES') as boolean || false;
+        const publicShowSpoilerImage = await context.settings.get('PUBLIC_SHOW_SPOILER_IMAGE') as boolean || false;
+        const publicShowAuthor = await context.settings.get('PUBLIC_SHOW_AUTHOR') as boolean || false;
+        const publicShowFlair = await context.settings.get('PUBLIC_SHOW_FLAIR') as boolean || false;
+        const publicShowContentWarning = await context.settings.get('PUBLIC_SHOW_CONTENT_WARNING') as boolean || false;
 
-        const addArcticShift = await context.settings.get('PRIVATE_POST_ADD_ARCTIC_SHIFT') as boolean || false;
-        const hideAuthorButton = await context.settings.get('PRIVATE_HIDE_DEFAULT_AUTHOR') as boolean || false;
+        const showModQueueButton = await context.settings.get('MOD_QUEUE_BUTTON') as boolean || false;
+
+        const privateShowMoreBody = await context.settings.get('PRIVATE_DISPLAY_MORE_BODY');
+        const showArcticShift = await context.settings.get('PRIVATE_SHOW_ARCTIC_SHIFT_BUTTON') as boolean || false;
+        const showAuthorButton = await context.settings.get('PRIVATE_SHOW_DEFAULT_AUTHOR_BUTTON') as boolean || false;
+
+        const showAuthorAge = await context.settings.get('PRIVATE_SHOW_AUTHOR_AGE') as boolean || false;
+
+        const showAuthorFlair = await context.settings.get('PRIVATE_SHOW_AUTHOR_FLAIR') as boolean || false;
+        const showPostFlair = await context.settings.get('PRIVATE_SHOW_POST_FLAIR') as boolean || false;
+
+        const showTotalKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_KARMA') as boolean || false;
+        const showLinkKarma = await context.settings.get('PRIVATE_SHOW_LINK_KARMA') as boolean || false;
+        const showCommentKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_KARMA') as boolean || false;
+        const showTotalSubKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_SUB_KARMA') as boolean || false;
+        const showLinkSubKarma = await context.settings.get('PRIVATE_SHOW_LINK_SUB_KARMA') as boolean || false;
+        const showCommentSubKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_SUB_KARMA') as boolean || false;
+
+        const { statusText, actionText } = this.getStatusDetails(status);
+        const color = await UtilityManager.getColorFromState(status, context);
+        const isPublic = status === ItemState.Public_Post;
+
+        const rootComponents: ComponentV2[] = [];
+        const cardComponents: ComponentV2[] = [];
+
+        // PING MESSAGE
+        if (pingableMessage) {
+            rootComponents.push(this.createText(pingableMessage));
+        }
+
+        // TITLE & IMAGE HANDLING
+        let titleText = details.type === 'post' ? details.title.substring(0, 256) : `Comment by ${details.authorName}`;
+        const titleMarkdown = `### ${titleText}`;
+
+        let imageUrl: string | undefined = details.imageUrl;
+        if ((details.isNSFW && !publicShowNsfwImage && isPublic) || (details.isSpoiler && !publicShowSpoilerImage && isPublic)) {
+            imageUrl = undefined;
+        }
+
+        // BODY CONTENT & SNIPPET
+        let bodyContent = '';
+        if (details.isNSFW && !publicShowNsfwBody && isPublic) {
+            bodyContent = '*[Hidden due to potential NSFW content]*';
+        } else if (details.isSpoiler && !publicShowSpoilerBody && isPublic) {
+            bodyContent = '*[Hidden due to potential Spoilers]*';
+        } else {
+            const rawBodyContent = details.body || (details.isCrossPost ? details.crossPostBody : '') || '';
+            bodyContent = UtilityManager.cleanBodyText(rawBodyContent);
+        }
+
+        const isMoreBody = !!(isPublic ? publicShowMoreBody : privateShowMoreBody);
+        const bodyLimit = isMoreBody ? 1000 : 400;
+
+        const snippet = bodyContent.length > bodyLimit
+            ? bodyContent.substring(0, bodyLimit - 3) + '...'
+            : bodyContent;
+            
+        // Combined text for the top of the card
+        const headerContent = `${titleMarkdown}\n${snippet}`.trim();
+
+        if (imageUrl) {
+            cardComponents.push({
+                id: this.generateRandomId().toString(),
+                type: 9, // Section
+                components: [this.createText(headerContent || "_Image post_")],
+                accessory: {
+                    id: this.generateRandomId().toString(),
+                    type: 11, // Thumbnail
+                    media: { url: imageUrl },
+                    spoiler: isPublic && (details.isSpoiler || details.isNSFW)
+                }
+            });
+        } else {
+            if (headerContent) {
+                cardComponents.push(this.createText(headerContent));
+            } else {
+                cardComponents.push(this.createText(titleMarkdown));
+            }
+        }
+
+        cardComponents.push(this.createDivider());
+
+        // --- THEMED GROUPING BLOCKS ---
+
+        // --- Author Identity ---
+        const authorLines: string[] = [];
+
+        // Author Name & Status
+        if (publicShowAuthor || !isPublic) {
+            const safeAuthorName = UtilityManager.escapeMarkdown(details.authorName);
+            let authorStr = `**Author:** u/${safeAuthorName}`;
+            if (details.authorShadowbanned && !isPublic) authorStr += ` ⚠️ (Banned)`;
+            authorLines.push(authorStr);
+        }
+
+        // Account Age
+        if (!isPublic && showAuthorAge && status !== ItemState.Deleted && details.authorCreatedAt) {
+            authorLines.push(`**Age:** ${UtilityManager.getAccountAgeString(details.authorCreatedAt)}`);
+        }
+
+        // Author Flair (User's flair in the sub)
+        if (!isPublic && showAuthorFlair && status !== ItemState.Deleted && details.authorFlair) {
+            authorLines.push(`**User Flair:** ${details.authorFlair}`);
+        }
+
+        if (authorLines.length > 0) {
+            cardComponents.push(this.createText(authorLines.join(' • ')));
+        }
+
+        // --- SECTION B: Content Meta ---
+        const contentLines: string[] = [];
+
+        // Post Flair (The tag on the post)
+        const canShowFlair = isPublic ? publicShowFlair : showPostFlair;
+        if (details.flairText && canShowFlair) {
+            contentLines.push(`**Post Flair:** ${details.flairText}`);
+        }
+
+        // Content Warnings (NSFW/Spoiler)
+        if (details.contentWarning && (publicShowContentWarning || !isPublic)) {
+            contentLines.push(`**Warning:** ${details.contentWarning}`);
+        }
+
+        // Crosspost Info
+        if (details.isCrossPost) {
+            contentLines.push(`**Crosspost From:** [r/${details.crossPostSubredditName}](${details.crossPostPermalink})`);
+        }
+
+        if (contentLines.length > 0) {
+            // Only add a divider if there was an author block above it
+            if (authorLines.length > 0) {
+                cardComponents.push(this.createDivider());
+            }
+            cardComponents.push(this.createText(contentLines.join(' • ')));
+        }
+
+        // Always add a divider after the metadata blocks before moving to Karma/Mod info
+        if (authorLines.length > 0 || contentLines.length > 0) {
+            cardComponents.push(this.createDivider());
+        }
+
+
+        // Karma
+        if (!isPublic && status !== ItemState.Deleted) {
+            const karmaParts: string[] = [];
+            if (showTotalKarma || showLinkKarma || showCommentKarma) {
+                const parts = [];
+                if (showTotalKarma) parts.push(`Total: ${((details.authorLinkKarma || 0) + (details.authorCommentKarma || 0))}`);
+                if (showLinkKarma) parts.push(`P: ${details.authorLinkKarma || 0}`);
+                if (showCommentKarma) parts.push(`C: ${details.authorCommentKarma || 0}`);
+                karmaParts.push(`**Global Karma:** ${parts.join(' / ')}`);
+            }
+            if (showTotalSubKarma || showLinkSubKarma || showCommentSubKarma) {
+                const parts = [];
+                if (showTotalSubKarma) parts.push(`Total: ${((details.authorSubredditLinkKarma || 0) + (details.authorSubredditCommentKarma || 0))}`);
+                if (showLinkSubKarma) parts.push(`P: ${details.authorSubredditLinkKarma || 0}`);
+                if (showCommentSubKarma) parts.push(`C: ${details.authorSubredditCommentKarma || 0}`);
+                karmaParts.push(`**Subreddit Karma:** ${parts.join(' / ')}`);
+            }
+
+            if (karmaParts.length > 0) {
+                cardComponents.push(this.createText(karmaParts.join('\n')));
+                cardComponents.push(this.createDivider());
+            }
+        }
+
+        // Moderation (Status & Actions)
+        if (!isPublic) {
+            const modLines: string[] = [];
+            modLines.push(`**Status:** ${statusText} • **Action:** ${actionText}${details.removedBy ? ` by ${details.removedBy}` : ''}`);
+
+            if (details.reportCount || (details.reportReasons && details.reportReasons.length > 0)) {
+                let reportStr = `**Reports:** ${details.reportCount || 0}`;
+                if (details.reportReasons?.length) reportStr += ` (${details.reportReasons.join(', ').substring(0, 100)})`;
+                modLines.push(reportStr);
+            }
+
+            if (details.removalReason) modLines.push(`**Removal Reason:** ${details.removalReason.substring(0, 200)}`);
+            if (modLines.length > 0) {
+                cardComponents.push(this.createText(modLines.join('\n')));
+                cardComponents.push(this.createDivider());
+            }
+        }
+
+        // FOOTER: Subreddit & Time
+        const timestamp = Math.floor(new Date(details.createdAt).getTime() / 1000);
+        cardComponents.push(this.createText(`r/${details.subredditName} • <t:${timestamp}:f>`));
+
+        // WRAP IN CONTAINER
+        if (cardComponents.length > 0) {
+            rootComponents.push({
+                type: 17,
+                id: this.generateRandomId(),
+                accent_color: color,
+                components: cardComponents
+            });
+        }
+
+        // BUTTONS
+        const buttons: ComponentV2[] = [];
+        buttons.push({
+            id: this.generateRandomId(),
+            type: 2, style: 5,
+            label: details.type === 'comment' ? "Comment" : "Post",
+            url: details.permalink
+        });
+
+        if (!isPublic && status !== ItemState.Deleted) {
+            if (showAuthorButton) buttons.push({
+                id: this.generateRandomId(), type: 2, style: 5,
+                label: "Author", url: `https://www.reddit.com/user/${details.authorName}`
+            });
+            if (showArcticShift) buttons.push({
+                id: this.generateRandomId(), type: 2, style: 5,
+                label: "Author A-S", url: `https://arctic-shift.photon-reddit.com/search?fun=posts_search&author=${details.authorName}&limit=10&sort=desc`
+            });
+        }
+
+        if (channelType == ChannelType.ModQueue && showModQueueButton) {
+            buttons.push({
+                id: this.generateRandomId(),
+                type: 2, style: 5,
+                label: "Open Queue",
+                url: `https://www.reddit.com/mod/${details.subredditName}/queue`
+            });
+        }
+
+        rootComponents.push({
+            type: 1,
+            id: this.generateRandomId(),
+            components: buttons
+        });
+
+        return {
+            flags: 32768,
+            components: rootComponents,
+            embeds: [],
+            content: ''
+        };
+    }
+
+    /*
+    static async createDefaultMessage(details: ContentDetails, status: ItemState, channelType: ChannelType, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
+        const publicShowNsfwBody = await context.settings.get('PUBLIC_SHOW_NSFW_BODY') as boolean || false;
+        const publicShowSpoilerBody = await context.settings.get('PUBLIC_SHOW_SPOILER_BODY') as boolean || false;
+        const publicShowNsfwImage = await context.settings.get('PUBLIC_SHOW_NSFW_IMAGES') as boolean || false;
+        const publicShowSpoilerImage = await context.settings.get('PUBLIC_SHOW_SPOILER_IMAGE') as boolean || false;
+        const publicShowAuthor = await context.settings.get('PUBLIC_SHOW_AUTHOR') as boolean || false;
+        const publicShowFlair = await context.settings.get('PUBLIC_SHOW_FLAIR') as boolean || false;
+        const publicShowContentWarning = await context.settings.get('PUBLIC_SHOW_CONTENT_WARNING') as boolean || false;
+
+        const showArcticShift = await context.settings.get('PRIVATE_SHOW_ARCTIC_SHIFT_BUTTON') as boolean || false;
+        const showAuthorButton = await context.settings.get('PRIVATE_SHOW_DEFAULT_AUTHOR_BUTTON') as boolean || false;
+
+        const showTotalKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_KARMA') as boolean || false;
+        const showLinkKarma = await context.settings.get('PRIVATE_SHOW_LINK_KARMA') as boolean || false;
+        const showCommentKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_KARMA') as boolean || false;
+        const showTotalSubKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_SUB_KARMA') as boolean || false;
+        const showLinkSubKarma = await context.settings.get('PRIVATE_SHOW_LINK_SUB_KARMA') as boolean || false;
+        const showCommentSubKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_SUB_KARMA') as boolean || false;
 
         const { statusText, actionText } = this.getStatusDetails(status);
         const color = await UtilityManager.getColorFromState(status, context);
@@ -165,15 +424,15 @@ export class ComponentManager {
         const titleMarkdown = `${titleText}`;
 
         let imageUrl: string | undefined = details.imageUrl;
-        const shouldHideImage = (details.isNSFW && hideNsfwImage && isPublic) || (details.isSpoiler && hideSpoilerImage && isPublic);
+        const shouldHideImage = (details.isNSFW && !publicShowNsfwImage && isPublic) || (details.isSpoiler && !publicShowSpoilerImage && isPublic);
         if (shouldHideImage) {
             imageUrl = undefined;
         }
 
         let bodyContent = '';
-        if (details.isNSFW && hideNsfwBody && isPublic) {
+        if (details.isNSFW && !publicShowNsfwBody && isPublic) {
             bodyContent = '*[Hidden due to potential NSFW content]*';
-        } else if (details.isSpoiler && hideSpoilerBody && isPublic) {
+        } else if (details.isSpoiler && !publicShowSpoilerBody && isPublic) {
             bodyContent = '*[Hidden due to potential Spoilers]*';
         } else {
             if (details.body) {
@@ -240,18 +499,46 @@ export class ComponentManager {
             addField('Status', statusText);
         }
 
-        if (hideAuthorPublic && status == ItemState.Public_Post) {
+        if (!publicShowAuthor && status == ItemState.Public_Post) {
             // Skipped due to hidden
         } else {
             addField('Author', `u/${details.authorName}`);
         }
 
 
-        if (status !== ItemState.Public_Post) {
+        if (status !== ItemState.Public_Post && status !== ItemState.Deleted) {
             if (details.authorShadowbanned) {
                 addField('Author Status', 'Banned/Shadowbanned ⚠️', true)
             }
 
+            // User Karma Fields
+            if (showTotalKarma && details.authorCommentKarma !== undefined && details.authorLinkKarma !== undefined) {
+                const totalKarma = details.authorCommentKarma + details.authorLinkKarma;
+                addField('Total Karma', totalKarma.toString());
+            }
+
+            if (showLinkKarma && details.authorLinkKarma !== undefined) {
+                addField('Post Karma', details.authorLinkKarma.toString());
+            }
+
+            if (showCommentKarma && details.authorCommentKarma !== undefined) {
+                addField('Comment Karma', details.authorCommentKarma.toString());
+            }
+
+            if (showTotalSubKarma && details.authorSubredditCommentKarma !== undefined && details.authorSubredditLinkKarma !== undefined) {
+                const totalSubKarma = details.authorSubredditCommentKarma + details.authorSubredditLinkKarma;
+                addField('Total Sub Karma', totalSubKarma.toString());
+            }
+
+            if (showLinkSubKarma && details.authorSubredditLinkKarma !== undefined) {
+                addField('Post Sub Karma', details.authorSubredditLinkKarma.toString());
+            }
+
+            if (showCommentSubKarma && details.authorSubredditCommentKarma !== undefined) {
+                addField('Comment Sub Karma', details.authorSubredditCommentKarma.toString());
+            }
+
+            // Action Details
             if (status === ItemState.Removed || status === ItemState.Awaiting_Review && details.removedBy) {
                 addField('Last Action', `${actionText} by ${details.removedBy}`);
             } else {
@@ -260,7 +547,7 @@ export class ComponentManager {
         }
 
         if (details.flairText) {
-            if (hideFlairPublic && status == ItemState.Public_Post) {
+            if (!publicShowFlair && status == ItemState.Public_Post) {
                 // Skipped due to hidden
             } else {
                 addField('Flair', details.flairText);
@@ -268,7 +555,7 @@ export class ComponentManager {
         }
 
         if (details.contentWarning) {
-            if(hideContentWarningPublic && status == ItemState.Public_Post) {
+            if (!publicShowContentWarning && status == ItemState.Public_Post) {
                 // Skipped due to hidden
             } else {
                 addField('Content Warning', details.contentWarning);
@@ -343,7 +630,7 @@ export class ComponentManager {
             url: details.permalink
         });
 
-        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && !hideAuthorButton) {
+        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && showAuthorButton) {
             buttons.push({
                 id: this.generateRandomId(),
                 type: 2,
@@ -353,7 +640,7 @@ export class ComponentManager {
             });
         }
 
-        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && addArcticShift) {
+        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && showArcticShift) {
             buttons.push({
                 id: this.generateRandomId(),
                 type: 2,
@@ -377,7 +664,7 @@ export class ComponentManager {
             embeds: [],
             content: ''
         };
-    }
+    } */
 
     static async createModMailMessage(subject: string, conversationId: string, initialMessage: any, status: ItemState, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
         const color = await UtilityManager.getColorFromState(status, context);
