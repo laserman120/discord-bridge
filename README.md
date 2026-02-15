@@ -105,7 +105,7 @@ Making at easy to keep track of anything related to your subreddit directly from
   - Enhanced Filtering: Added ignore settings for specific Modmail authors, moderator-initiated removals, and specific user removals (e.g., AutoMod).
   - UI/UX: Improved Modmail thread handling and added Arctic-Shift user info integration.
 
--v0.0.50
+- v0.0.50
   - Admin Removals: Reworked logic to use a static list for Admin removals to eliminate false positives.
   - Performance: Reduced Reddit API overhead and optimized deletion tracking.
 
