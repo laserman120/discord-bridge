@@ -168,31 +168,53 @@ export class UtilityManager {
     static cleanBodyText(text: string): string {
         if (!text) return "";
 
-        return text
+        let cleaned = text
+            // Fix Reddit's Pre-Escaped Links & Flatten Redundant URLs
+            // This looks for [URL_with_backslashes](URL_clean)
+            .replace(/\[(https?:\/\/[^\]]+)\]\((https?:\/\/[^\)]+)\)/gi, (match, label, url) => {
+                // If the label is just the URL (even with backslashes), 
+                // return the clean URL part to keep Discord happy.
+                if (label.replaceAll("\\", "").trim() === url.trim() || label.startsWith("http")) {
+                    return url;
+                }
+                // If it's a real hyperlink like [Google](http...), remove backslashes from the label
+                return `[${label.replaceAll("\\", "")}](${url})`;
+            })
+
             // Spoilers
             .replace(/>!(.*?)!</g, "||$1||")
 
-            //Images and Videos
+            // Media
             .replace(/!\[video\]\(.*?\)/gi, "[Video]")
             .replace(/!\[img\]\(.*?\)/gi, "[Image]")
             .replace(/!\[gif\]\(.*?\)/gi, "[GIF]")
-            // Titles
-            .replace(/^(?:#|##)\s+(.+)$/gm, "**$1**")
-            .replace(/^###\s+(.+)$/gm, "**$1**")
 
-            // Superscript to italics
+            // Remove Zero Width Spaces and other invisible formatting artifacts
+            // \u200b is the unicode for &#8203;
+            .replace(/\u200b|&#8203;/g, "")
+
+            // Headers (H1, H2, H3 -> Bold)
+            .replace(/^(?:#{1,3})\s+(.+)$/gm, "**$1**")
+
+            // Superscript to Italics
             .replace(/\^\((.*?)\)/g, "*$1*")
             .replace(/\^(\S+)/g, "*$1*")
 
-            // Quotes
+            // Quote Fix
             .replace(/^>(?!\s)(.*)$/gm, "> $1")
 
-            // Code blocks
+            // Indented Code Blocks
             .replace(/^ {4,}(.*)$/gm, "```\n$1\n```")
             .replace(/```\n```/g, "")
 
-            // General Trimming
-            .trim();
+            // Clean up any other random backslashes Reddit added to basic Markdown 
+            // Only if they precede characters that don't need escaping in links/etc.
+            .replace(/\\([_~*])/g, "$1")
+
+            // Collapses 3 or more newlines into exactly 2
+            .replace(/\n{3,}/g, "\n\n");
+
+        return cleaned.trim();
     }
 
     static getAccountAgeString(createdAt: Date): string {
@@ -208,13 +230,13 @@ export class UtilityManager {
         const totalDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
         if (totalDays < 365) {
-            return `Days: ${totalDays}`;
+            return `${totalDays} Days`;
         }
 
         const years = Math.floor(totalDays / 365);
         const remainingDays = totalDays % 365;
 
-        return `Years: ${years}, Days: ${remainingDays}`;
+        return `${years} Years, ${remainingDays} Days`;
     }
 
     static validateHexColor(hex: string | undefined): string | undefined {

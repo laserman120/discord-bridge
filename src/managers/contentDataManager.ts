@@ -88,15 +88,36 @@ export class ContentDataManager {
         };
 
         let crosspostItem: Post | undefined;
+        let crosspostParentId: string | undefined;
         if (event?.crosspostParentId) {
+            crosspostParentId = event.crosspostParentId;
+        }
+
+        const redditIdRegex = /(?:\/comments\/|\/gallery\/|\/s\/)([a-z0-9]+)/i;
+
+        if (!crosspostParentId && isPost && item.url) {
+            const match = item.url.match(redditIdRegex);
+
+            if (match) {
+                const extractedId = match[1];
+
+                // Ensure the ID found in the URL isn't just the ID of the current post
+                if (!item.id.includes(extractedId)) {
+                    crosspostParentId = 't3_' + extractedId;
+                }
+            }
+        }
+
+        if (crosspostParentId) {
             try {
                 console.log("[ContentDataManager] Item is a crosspost, fetching parent post " + item.id)
-                crosspostItem = await context.reddit.getPostById(event.crosspostParentId)
+                crosspostItem = await context.reddit.getPostById(crosspostParentId)
             } catch (error) {
                 console.error(`[ContentDataManager] Failed to fetch full post ${item.id}:`, error);
             }
         }
 
+        
         details.crossPostBody = crosspostItem ? crosspostItem.body : undefined;
         details.crossPostPermalink = crosspostItem ? `https://reddit.com${crosspostItem.permalink}` : undefined;
         details.crossPostSubredditName = crosspostItem ? crosspostItem.subredditName : undefined;

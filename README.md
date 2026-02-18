@@ -33,6 +33,8 @@ Making at easy to keep track of anything related to your subreddit directly from
   - If a post is approved/removed/deleted or similar all private messages related to the post or comment will update to reflect the current state
   - ModMail notifications will update when replied or when archived
 
+  - Read Only by design, the App will never perform actions on your subreddit, it will only ever read the current state of posts, comments, and ModMail and update messages accordingly.
+
 | New Post Notification | Same Message after removal |
 | :---: | :---: |
 | ![New Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPost.png) | ![Same Message after removal](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostUpdated.png) |
@@ -60,11 +62,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 ---
 
-# This app is still in development!
+## The App is still in aktive development.
 
-- It is likely that bugs or incorrectly identified events may occur.
-- If you run into any issues feel free to let me know.
-- The app will never perform any action on your subreddit, it is read-only by design.
+- If you encounter issues or have suggestions feel free to reach out to me, or to make a post on my subreddit [r/Discord_Bridge](https://www.reddit.com/r/Discord_Bridge/).
+- I always appreciate feedback and suggestions, and I try my best to respond to everyone in a timely manner.
 
 ---
 
@@ -93,10 +94,16 @@ Making at easy to keep track of anything related to your subreddit directly from
 	  - Each can be toggled individually
 	- Added the option to show the account age of the author.
 	- Added the option to show the user flair of the author.
+  - Improved ModMail Layout
+	- Added option to show an Arctic Shift user Button on ModMail messages.
+	- Improved handling of ModMail messages sent in quick succession. 
+  - Improved overall formatting by converting reddit formatting styles to discord formatting styles where possible.
+	- This generally improves readability and tries its best to remove incorrect formatting
+  - Improved Crosspost handling:
+	- The system should now be able to detect way more crossposts than previously, even in removed or approved messages.
   - Fixed issue in which messages would not update if no webhook was provided for the report feed.
 	- Now even if no webhook is provided for the report feed, all related messages will still be updated to reflect the reported state.
   - Fixed usernames getting incorrect formatting applied when they included two underscores
-  - Improved overall formatting by converting reddit formatting styles to discord formatting styles where possible.
 	
 - v0.0.63
   - System Rework: Complete overhaul of the message system for improved UI, maintainability, and field customization; replaced title hyperlinks with buttons.

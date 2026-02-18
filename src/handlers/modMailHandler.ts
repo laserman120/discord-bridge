@@ -93,7 +93,10 @@ export class ModMailHandler {
             console.log(`[ModMailHandler] Creating NEW notification for ${cleanId} (State: ${state})`);
 
             const messageToShow = (!latestLogEntry) ? messageList[messageList.length - 1] : latestMessage;
-
+            if (!messageToShow.id) {
+                console.log("[ModMailHandler] No valid message found to show for new notification, aborting.");
+                return;
+            }
             const notificationString = await context.settings.get('MODMAIL_MESSAGE') as string | undefined;
 
             const payload = await ComponentManager.createModMailMessage(
@@ -117,38 +120,59 @@ export class ModMailHandler {
                 }, context as any);
 
                 await StorageManager.trackActiveModmail(cleanId, context as any);
+                await StorageManager.markMessageAsProcessed(cleanId, messageToShow.id, context);
             }
 
         } else {
             console.log(`[ModMailHandler] Updating EXISTING ${cleanId} (State: ${state})`);
-
             if (latestLogEntry) {
-                const currentMessage = await WebhookManager.getMessage(latestLogEntry.webhookUrl, latestLogEntry.discordMessageId);
-                if (!currentMessage) {
-                    console.error(`[ModMailHandler] Could not fetch message ${latestLogEntry.discordMessageId} to append/update.`);
+                // 1. Get IDs we already sent
+                const processedIds = await StorageManager.getProcessedMessageIds(cleanId, context);
+
+                // 2. Filter Reddit messages for things we HAVEN'T sent yet
+                // Filter out messages that are in processedIds, then sort Oldest -> Newest
+                const messagesToBridge = Object.values(messages)
+                    .filter((msg: any) => !processedIds.includes(msg.id))
+                    .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                if (messagesToBridge.length === 0) {
+                    console.log(`[ModMailHandler] No new messages to append for ${cleanId}`);
                     return;
                 }
+
+                const currentMessage = await WebhookManager.getMessage(latestLogEntry.webhookUrl, latestLogEntry.discordMessageId);
+                if (!currentMessage) return;
 
                 let components = currentMessage.components || [];
                 let needsUpdate = false;
 
                 if (latestLogEntry.currentStatus !== state) {
                     components = await ComponentManager.updateModMailState(components, state, context);
-                    await StorageManager.updateLogStatus(latestLogEntry.discordMessageId, state, context);
                     needsUpdate = true;
                 }
 
-                if (isModAuthor) {
-                    if (latestLogEntry.currentStatus == ItemState.Answered_Modmail) {
-                        console.log(`[ModMailHandler] Skipping append for Mod Reply (Already Answered).`);
+                // 3. Process each unsent message in order
+                for (const msg of messagesToBridge) {
+                    if (!msg.id) { continue; }
+                    const isMsgMod = msg.participatingAs === 'moderator' || msg.author?.isMod;
+
+                    if (isMsgMod) {
+                        // Move buttons logic (same as before)
+                        const buttonRowIndex = components.findIndex((c: any) => c.type === 1);
+                        let buttonRow = buttonRowIndex !== -1 ? components.splice(buttonRowIndex, 1)[0] : null;
+
+                        const replyComponents = ComponentManager.createModMailReply(msg, true);
+                        components.push(...replyComponents);
+                        if (buttonRow) components.push(buttonRow);
+                        needsUpdate = true;
                     } else {
-                        const replyComponents = ComponentManager.createModMailReply(latestMessage, true);
-                        components = [...components, ...replyComponents];
+                        // Append to main body logic
+                        components = await ComponentManager.updateModMailBody(components, msg.bodyMarkdown || "...");
                         needsUpdate = true;
                     }
-                } else {
-                    components = await ComponentManager.updateModMailBody(components, latestMessage.bodyMarkdown || "...");
-                    needsUpdate = true;
+
+                    // 4. Mark this specific message ID as processed
+                    await StorageManager.markMessageAsProcessed(cleanId, msg.id, context);
                 }
 
                 if (needsUpdate) {
@@ -160,6 +184,10 @@ export class ModMailHandler {
                             components: components
                         }
                     );
+
+                    if (latestLogEntry.currentStatus !== state) {
+                        await StorageManager.updateLogStatus(latestLogEntry.discordMessageId, state, context);
+                    }
                 }
             }
         }

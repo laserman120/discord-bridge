@@ -325,7 +325,7 @@ export const removalGroup = {
         {
             type: 'boolean' as const,
             name: 'REMOVALS_SCAN_SPAM',
-            label: 'Scan for spam removals by reddit and send notifications of them',
+            label: 'Send a new Removal Notification when something is silently removed by reddit. See Wiki for more information.',
             defaultValue: true,
             scope: 'installation' as const,
         },
@@ -356,8 +356,8 @@ export const removalGroup = {
         {
             type: 'string' as const,
             name: 'REMOVE_MESSAGE_SPAM',
-            label: 'Spam Removal Message',
-            defaultValue: ' REMOVED automatically by Reddit',
+            label: 'Silent Removal Messages',
+            defaultValue: 'Silently REMOVED by Reddit',
             scope: 'installation' as const,
             helpText: 'Text displayed when content is removed by Reddits automated systems.',
         },
@@ -470,6 +470,13 @@ export const modmailGroup = {
             onValidate: async ({ value }: { value?: string }) => {
                 return UtilityManager.validateUsernameList(value)
             }
+        },
+        {
+            type: 'boolean' as const,
+            name: 'MODMAIL_SHOW_ARCTIC_SHIFT_BUTTON',
+            label: 'Add an additional button to open a user profile in Arctic-Shift',
+            defaultValue: false,
+            scope: 'installation' as const,
         },
     ]
 };

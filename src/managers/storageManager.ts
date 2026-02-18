@@ -166,6 +166,25 @@ export class StorageManager {
         return scoreMembers.map((item: { member: any; }) => item.member);
     }
 
+    private static getProcessedMessagesKey(redditId: string): string {
+        return `processed:messages:${redditId}`;
+    }
+
+    static async markMessageAsProcessed(redditId: string, messageId: string, context: any): Promise<void> {
+        await context.redis.zAdd(
+            this.getProcessedMessagesKey(redditId),
+            { score: Date.now(), member: messageId }
+        );
+    }
+
+    static async getProcessedMessageIds(redditId: string, context: any): Promise<string[]> {
+        const scoreMembers = await context.redis.zRange(
+            this.getProcessedMessagesKey(redditId),
+            0, -1
+        );
+        return scoreMembers.map((item: any) => item.member);
+    }
+
     static async getRecentLogEntries(limit: number, context: any): Promise<LogEntry[]> {
         const { redis } = context;
 

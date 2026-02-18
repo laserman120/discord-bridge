@@ -383,290 +383,8 @@ export class ComponentManager {
         };
     }
 
-    /*
-    static async createDefaultMessage(details: ContentDetails, status: ItemState, channelType: ChannelType, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
-        const publicShowNsfwBody = await context.settings.get('PUBLIC_SHOW_NSFW_BODY') as boolean || false;
-        const publicShowSpoilerBody = await context.settings.get('PUBLIC_SHOW_SPOILER_BODY') as boolean || false;
-        const publicShowNsfwImage = await context.settings.get('PUBLIC_SHOW_NSFW_IMAGES') as boolean || false;
-        const publicShowSpoilerImage = await context.settings.get('PUBLIC_SHOW_SPOILER_IMAGE') as boolean || false;
-        const publicShowAuthor = await context.settings.get('PUBLIC_SHOW_AUTHOR') as boolean || false;
-        const publicShowFlair = await context.settings.get('PUBLIC_SHOW_FLAIR') as boolean || false;
-        const publicShowContentWarning = await context.settings.get('PUBLIC_SHOW_CONTENT_WARNING') as boolean || false;
-
-        const showArcticShift = await context.settings.get('PRIVATE_SHOW_ARCTIC_SHIFT_BUTTON') as boolean || false;
-        const showAuthorButton = await context.settings.get('PRIVATE_SHOW_DEFAULT_AUTHOR_BUTTON') as boolean || false;
-
-        const showTotalKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_KARMA') as boolean || false;
-        const showLinkKarma = await context.settings.get('PRIVATE_SHOW_LINK_KARMA') as boolean || false;
-        const showCommentKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_KARMA') as boolean || false;
-        const showTotalSubKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_SUB_KARMA') as boolean || false;
-        const showLinkSubKarma = await context.settings.get('PRIVATE_SHOW_LINK_SUB_KARMA') as boolean || false;
-        const showCommentSubKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_SUB_KARMA') as boolean || false;
-
-        const { statusText, actionText } = this.getStatusDetails(status);
-        const color = await UtilityManager.getColorFromState(status, context);
-
-        const rootComponents: ComponentV2[] = [];
-
-        const cardComponents: ComponentV2[] = [];
-
-        const isPublic = status === ItemState.Public_Post;
-
-        let titleText = details.type === 'post' ? details.title.substring(0, 256) : `Comment by ${details.authorName}`;
-
-        if (pingableMessage) {
-            rootComponents.push(this.createText(pingableMessage));
-        }
-
-        titleText = `### ${titleText}`;
-        
-
-        const titleMarkdown = `${titleText}`;
-
-        let imageUrl: string | undefined = details.imageUrl;
-        const shouldHideImage = (details.isNSFW && !publicShowNsfwImage && isPublic) || (details.isSpoiler && !publicShowSpoilerImage && isPublic);
-        if (shouldHideImage) {
-            imageUrl = undefined;
-        }
-
-        let bodyContent = '';
-        if (details.isNSFW && !publicShowNsfwBody && isPublic) {
-            bodyContent = '*[Hidden due to potential NSFW content]*';
-        } else if (details.isSpoiler && !publicShowSpoilerBody && isPublic) {
-            bodyContent = '*[Hidden due to potential Spoilers]*';
-        } else {
-            if (details.body) {
-                bodyContent = details.body;
-            } else if (details.isCrossPost && details.crossPostBody) {
-                bodyContent = details.crossPostBody;
-            }
-        }
-
-        if (!bodyContent && imageUrl) {
-            cardComponents.push({
-                id: this.generateRandomId(),
-                type: 9,
-                components: [
-                    this.createText(titleMarkdown)
-                ],
-                accessory: {
-                    id: this.generateRandomId(),
-                    type: 11, 
-                    media: { url: imageUrl },
-                    spoiler: isPublic && (details.isSpoiler || details.isNSFW) || false
-                }
-            });
-            imageUrl = undefined;
-        } else {
-            cardComponents.push(this.createText(titleMarkdown));
-        }
-
-        cardComponents.push(this.createInvisDivider());
-
-        if (bodyContent) {
-            const snippet = bodyContent.substring(0, 400) + (bodyContent.length > 400 ? '...' : '');
-
-            if (imageUrl) {
-                cardComponents.push({
-                    id: this.generateRandomId(),
-                    type: 9, 
-                    components: [
-                        this.createText(snippet)
-                    ],
-                    accessory: {
-                        id: this.generateRandomId(),
-                        type: 11, 
-                        media: { url: imageUrl },
-                        spoiler: isPublic && (details.isSpoiler || details.isNSFW) || false
-                    }
-                });
-                imageUrl = undefined; 
-            } else {
-                cardComponents.push(this.createText(snippet));
-            }
-            cardComponents.push(this.createBigDivider());
-        } else {
-            cardComponents.push(this.createDivider());
-        }
-
-        const fields: { label: string, value: string, fullWidth: boolean }[] = [];
-
-        const addField = (label: string, value: string, fullWidth: boolean = false) => {
-            fields.push({ label, value, fullWidth });
-        };
-
-        if (status !== ItemState.Public_Post) {
-            addField('Status', statusText);
-        }
-
-        if (!publicShowAuthor && status == ItemState.Public_Post) {
-            // Skipped due to hidden
-        } else {
-            addField('Author', `u/${details.authorName}`);
-        }
-
-
-        if (status !== ItemState.Public_Post && status !== ItemState.Deleted) {
-            if (details.authorShadowbanned) {
-                addField('Author Status', 'Banned/Shadowbanned ⚠️', true)
-            }
-
-            // User Karma Fields
-            if (showTotalKarma && details.authorCommentKarma !== undefined && details.authorLinkKarma !== undefined) {
-                const totalKarma = details.authorCommentKarma + details.authorLinkKarma;
-                addField('Total Karma', totalKarma.toString());
-            }
-
-            if (showLinkKarma && details.authorLinkKarma !== undefined) {
-                addField('Post Karma', details.authorLinkKarma.toString());
-            }
-
-            if (showCommentKarma && details.authorCommentKarma !== undefined) {
-                addField('Comment Karma', details.authorCommentKarma.toString());
-            }
-
-            if (showTotalSubKarma && details.authorSubredditCommentKarma !== undefined && details.authorSubredditLinkKarma !== undefined) {
-                const totalSubKarma = details.authorSubredditCommentKarma + details.authorSubredditLinkKarma;
-                addField('Total Sub Karma', totalSubKarma.toString());
-            }
-
-            if (showLinkSubKarma && details.authorSubredditLinkKarma !== undefined) {
-                addField('Post Sub Karma', details.authorSubredditLinkKarma.toString());
-            }
-
-            if (showCommentSubKarma && details.authorSubredditCommentKarma !== undefined) {
-                addField('Comment Sub Karma', details.authorSubredditCommentKarma.toString());
-            }
-
-            // Action Details
-            if (status === ItemState.Removed || status === ItemState.Awaiting_Review && details.removedBy) {
-                addField('Last Action', `${actionText} by ${details.removedBy}`);
-            } else {
-                addField('Last Action', `${actionText}`);
-            }
-        }
-
-        if (details.flairText) {
-            if (!publicShowFlair && status == ItemState.Public_Post) {
-                // Skipped due to hidden
-            } else {
-                addField('Flair', details.flairText);
-            } 
-        }
-
-        if (details.contentWarning) {
-            if (!publicShowContentWarning && status == ItemState.Public_Post) {
-                // Skipped due to hidden
-            } else {
-                addField('Content Warning', details.contentWarning);
-            }
-        }
-
-        if (status !== ItemState.Public_Post) {
-            if (details.removalReason) {
-                addField('Removal Reason', details.removalReason.substring(0, 200));
-            }
-
-            if (details.reportReasons && details.reportReasons.length > 0) {
-                addField('Report Reason', details.reportReasons.join(', ').substring(0, 200));
-            }
-
-            if (details.reportCount) {
-                addField('Report Count', details.reportCount.toString());
-            }
-        }
-        if (details.isCrossPost) {
-            addField('Crosspost From', `r/${details.crossPostSubredditName}`);
-        }
-
-        while (fields.length > 0) {
-            const current = fields.shift()!;
-
-            if (current.fullWidth || fields.length === 0) {
-                cardComponents.push(this.createText(`**${current.label}:** ${current.value}`));
-                cardComponents.push(this.createDivider());
-                continue;
-            }
-
-            const next = fields[0];
-            if (next.fullWidth) {
-                cardComponents.push(this.createText(`**${current.label}:** ${current.value}`));
-                cardComponents.push(this.createDivider());
-                continue;
-            }
-
-            fields.shift();
-
-            const separator = `\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0`;
-            const combinedText = `**${current.label}:** ${current.value}${separator}**${next.label}:** ${next.value}`;
-
-            cardComponents.push(this.createText(combinedText));
-            cardComponents.push(this.createDivider());
-        }
-
-        const timestamp = Math.floor(new Date(details.createdAt).getTime() / 1000);
-        cardComponents.push(this.createText(`r/${details.subredditName} • <t:${timestamp}:f>`));
-
-        rootComponents.push({
-            type: 17,
-            id: this.generateRandomId(),
-            accent_color: color,
-            components: cardComponents
-        });
-
-        // --- BUTTON ROW (Type 1 - Action Row) ---
-        const buttons: ComponentV2[] = [];
-
-        let buttonLabel = "Post";
-        if (details.type === 'comment') {
-            buttonLabel = "Comment"
-        }
-
-        buttons.push({
-            id: this.generateRandomId(),
-            type: 2, 
-            style: 5, 
-            label: buttonLabel,
-            url: details.permalink
-        });
-
-        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && showAuthorButton) {
-            buttons.push({
-                id: this.generateRandomId(),
-                type: 2,
-                style: 5,
-                label: "Author",
-                url: `https://www.reddit.com/user/${details.authorName}`
-            });
-        }
-
-        if (status !== ItemState.Public_Post && status !== ItemState.Deleted && showArcticShift) {
-            buttons.push({
-                id: this.generateRandomId(),
-                type: 2,
-                style: 5,
-                label: "Author A-S",
-                url: `https://arctic-shift.photon-reddit.com/search?fun=posts_search&author=${details.authorName}&limit=10&sort=desc`
-                
-            });
-        }
-
-        rootComponents.push({
-            type: 1, 
-            id: this.generateRandomId(),
-            components: buttons
-        });
-
-        // Return Final Payload
-        return {
-            flags: this.FLAGS_COMPONENTS_V2, // 32768
-            components: rootComponents,
-            embeds: [],
-            content: ''
-        };
-    } */
-
     static async createModMailMessage(subject: string, conversationId: string, initialMessage: any, status: ItemState, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
+        const showArcticShift = await context.settings.get('MODMAIL_SHOW_ARCTIC_SHIFT_BUTTON') as boolean || false;
         const color = await UtilityManager.getColorFromState(status, context);
         const statusText = UtilityManager.getStatusTextModMail(status);
 
@@ -714,6 +432,17 @@ export class ComponentManager {
             url: `https://www.reddit.com/user/${initialMessage?.author?.name}`
         });
 
+        if (showArcticShift) {
+            buttons.push({
+                id: this.generateRandomId(),
+                type: 2,
+                style: 5,
+                label: "Author A-S",
+                url: `https://arctic-shift.photon-reddit.com/search?fun=posts_search&author=${initialMessage?.author?.name}&limit=10&sort=desc`
+            });
+
+        }
+        
         rootComponents.push({
             type: 1,
             id: this.generateRandomId(),
@@ -800,7 +529,7 @@ export class ComponentManager {
             let additionalContent = newBodyText || "No content.";
 
             // Separator for the appended message
-            const separator = "\n\n**New Message:**\n";
+            const separator = "\n\n";
             let newTotalContent = bodyComponent.content + separator + additionalContent;
 
             // Enforce limit of 500 chars total for the body field

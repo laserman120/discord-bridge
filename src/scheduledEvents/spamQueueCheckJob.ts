@@ -6,10 +6,6 @@ import { QueueManager } from '../managers/queueManager.js';
 export async function checkSpamQueue(event: any, context: JobContext): Promise<void> {
     const scanEnabled = await context.settings.get('REMOVALS_SCAN_SPAM') as boolean || false;
 
-    if (!scanEnabled) {
-        return;
-    }
-
     console.log('[SpamCheck] Starting Spam Queue Check...');
 
     const PRUNE_AGE_SECONDS = 13 * 86400;
@@ -56,10 +52,12 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
             if (hasConflictingLog && !alreadyLogged) {
                 //Logs do exist, but not in removals
                 console.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other.`);
-                await QueueManager.enqueue({
-                    handler: 'SpamRemovalHandler',
-                    data: mockEvent
-                }, context);
+                if (!scanEnabled) {
+                    await QueueManager.enqueue({
+                        handler: 'SpamRemovalHandler',
+                        data: mockEvent
+                    }, context);
+                }
 
                 await QueueManager.enqueue({
                     handler: 'StateSyncHandler',
@@ -78,10 +76,12 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
                 // no logs exist for the item
                 console.log(`[SpamCheck] New silent removal detected: ${item.id}.`);
 
-                await QueueManager.enqueue({
-                    handler: 'SpamRemovalHandler',
-                    data: mockEvent
-                }, context);
+                if (!scanEnabled) {
+                    await QueueManager.enqueue({
+                        handler: 'SpamRemovalHandler',
+                        data: mockEvent
+                    }, context);
+                }
 
                 await QueueManager.enqueue({
                     handler: 'StateSyncHandler',
