@@ -62,7 +62,7 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 ---
 
-## The App is still in aktive development.
+## The App is still in active development.
 
 - If you encounter issues or have suggestions feel free to reach out to me, or to make a post on my subreddit [r/Discord_Bridge](https://www.reddit.com/r/Discord_Bridge/).
 - I always appreciate feedback and suggestions, and I try my best to respond to everyone in a timely manner.
