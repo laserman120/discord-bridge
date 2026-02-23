@@ -13,7 +13,6 @@ export enum ItemState {
     Archived_Modmail = 'ARCHIVED_MODMAIL',
 }
 
-
 export enum ChannelType {
     PublicNewPosts = 'PUBLIC_NEW_POSTS_CHANNEL',
     NewPosts = 'NEW_POSTS_CHANNEL',

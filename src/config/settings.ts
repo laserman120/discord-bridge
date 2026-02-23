@@ -61,6 +61,13 @@ export const publicMessageCustomizationGroup = {
     fields: [
         {
             type: 'boolean' as const,
+            name: 'PUBLIC_SHOW_DEFAULT_ICON',
+            label: 'Will use the default Discord Bridge icon for the Webhook Avatar ( Overrides manually set icons )',
+            defaultValue: true,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
             name: 'PUBLIC_DISPLAY_MORE_BODY',
             label: 'Will increase the maximum size of the body preview text (From 400 characters to 1000)',
             defaultValue: false,
@@ -150,6 +157,13 @@ export const privateMessageCustomizationGroup = {
     label: 'Private Message Configuration',
     helpText: 'Configure how notifications intended for private viewing are displayed.',
     fields: [
+        {
+            type: 'boolean' as const,
+            name: 'PRIVATE_SHOW_DEFAULT_ICON',
+            label: 'Will use the default Discord Bridge icon for the Webhook Avatar ( Overrides manually set icons )',
+            defaultValue: true,
+            scope: 'installation' as const,
+        },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_DISPLAY_MORE_BODY',
@@ -450,6 +464,13 @@ export const modmailGroup = {
             onValidate: async ({ value }: { value?: string }) => {
                 return UtilityManager.validateWebhookUrl(value);
             }
+        },
+        {
+            type: 'boolean' as const,
+            name: 'MODMAIL_SHOW_DEFAULT_ICON',
+            label: 'Will use the default Discord Bridge icon for the Webhook Avatar ( Overrides manually set icons )',
+            defaultValue: true,
+            scope: 'installation' as const,
         },
         {
             type: 'string' as const,

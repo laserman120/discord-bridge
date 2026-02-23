@@ -2,6 +2,7 @@
 import { ItemState, ChannelType } from '../config/enums.js';
 import { UtilityManager } from './utilityManager.js';
 import { ContentDetails } from './contentDataManager.js';
+import { APP_ICON_URL } from '../config/constants.js';
 
 interface MediaItem {
     url: string;
@@ -40,6 +41,7 @@ interface ComponentPayload {
     components: ComponentV2[];
     embeds: any[];
     content: string;
+    avatar_url?: string;
 }
 
 export class ComponentManager {
@@ -133,6 +135,10 @@ export class ComponentManager {
 
     static async createDefaultMessage(details: ContentDetails, status: ItemState, channelType: ChannelType, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
         // --- SETTINGS FETCHING ---
+
+        const publicShowIcon = await context.settings.get('PUBLIC_SHOW_DEFAULT_ICON') as boolean || false;
+        const privateShowIcon = await context.settings.get('PRIVATE_SHOW_DEFAULT_ICON') as boolean || false;
+
         const publicShowMoreBody = await context.settings.get('PUBLIC_DISPLAY_MORE_BODY')
         const publicShowNsfwBody = await context.settings.get('PUBLIC_SHOW_NSFW_BODY') as boolean || false;
         const publicShowSpoilerBody = await context.settings.get('PUBLIC_SHOW_SPOILER_BODY') as boolean || false;
@@ -311,7 +317,9 @@ export class ComponentManager {
         // Moderation (Status & Actions)
         if (!isPublic) {
             const modLines: string[] = [];
-            modLines.push(`**Status:** ${statusText} • **Action:** ${actionText}${details.removedBy ? ` by ${details.removedBy}` : ''}`);
+
+            const showRemovedBy = status === ItemState.Removed || status === ItemState.Awaiting_Review || status === ItemState.Spam;
+            modLines.push(`**Status:** ${statusText} • **Action:** ${actionText}${details.removedBy && showRemovedBy ? ` by ${details.removedBy}` : ''}`);
 
             if (details.reportCount || (details.reportReasons && details.reportReasons.length > 0)) {
                 let reportStr = `**Reports:** ${details.reportCount || 0}`;
@@ -375,16 +383,26 @@ export class ComponentManager {
             components: buttons
         });
 
+        let finalAvatarUrl: string | undefined;
+
+        if (isPublic && publicShowIcon) {
+            finalAvatarUrl = APP_ICON_URL;
+        } else if (!isPublic && privateShowIcon) {
+            finalAvatarUrl = APP_ICON_URL;
+        }
+
         return {
             flags: 32768,
             components: rootComponents,
             embeds: [],
-            content: ''
+            content: '',
+            avatar_url: finalAvatarUrl
         };
     }
 
     static async createModMailMessage(subject: string, conversationId: string, initialMessage: any, status: ItemState, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
         const showArcticShift = await context.settings.get('MODMAIL_SHOW_ARCTIC_SHIFT_BUTTON') as boolean || false;
+        const showIcon = await context.settings.get('MODMAIL_SHOW_DEFAULT_ICON') as boolean || false;
         const color = await UtilityManager.getColorFromState(status, context);
         const statusText = UtilityManager.getStatusTextModMail(status);
 
@@ -449,11 +467,18 @@ export class ComponentManager {
             components: buttons
         });
 
+        let finalAvatarUrl: string | undefined;
+
+        if (showIcon) {
+            finalAvatarUrl = APP_ICON_URL;
+        }
+
         return {
             flags: this.FLAGS_COMPONENTS_V2,
             components: rootComponents,
             embeds: [],
-            content: ''
+            content: '',
+            avatar_url: finalAvatarUrl
         };
     }
 

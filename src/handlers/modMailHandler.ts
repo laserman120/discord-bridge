@@ -7,8 +7,8 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { UtilityManager } from '../managers/utilityManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { PublicPostHandler } from '../handlers/publicPostHandler.js';
+import { APP_USERNAME } from '../config/constants.js'
 
-const APP_NAME = "discord-bridge";
 export class ModMailHandler {
 
     static async handle(event: any, context: TriggerContext): Promise<void> {
@@ -72,7 +72,7 @@ export class ModMailHandler {
 
         if (state == ItemState.New_Modmail && isModAuthor) {
             const allowNews = await context.settings.get('ALLOW_NOTIFICATIONS_IN_DISCORD') as boolean;
-            if (allowNews && latestMessage.author?.name && latestMessage.author?.name.toLowerCase() == APP_NAME) {
+            if (allowNews && latestMessage.author?.name && latestMessage.author?.name.toLowerCase() == APP_USERNAME) {
                 console.log(`[ModMailHandler] New conversation started by discord bridge app, creating notification...`)
             } else {
                 console.log(`[ModMailHandler] New conversation started by Moderator, ignoring`)

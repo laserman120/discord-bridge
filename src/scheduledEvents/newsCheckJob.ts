@@ -1,7 +1,5 @@
 import { JobContext } from '@devvit/public-api';
-
-const NEWS_SOURCE_SUBREDDIT = 'Discord_Bridge';
-const NEWS_SOURCE_AUTHOR = '_GLAD0S_';
+import { NEWS_SOURCE_SUBREDDIT, NEWS_SOURCE_AUTHOR } from '../config/constants.js';
 
 export async function checkNewsUpdates(event: any, context: JobContext): Promise<void> {
 
