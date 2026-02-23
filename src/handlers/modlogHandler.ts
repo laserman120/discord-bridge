@@ -20,7 +20,7 @@ export class ModLogHandler {
 
         const contentData = await ContentDataManager.gatherModActionTarget(event, context);
 
-        let payload = EmbedManager.createModLogEmbed(event, contentData, ChannelType.ModLog);
+        let payload = await EmbedManager.createModLogEmbed(event, contentData, ChannelType.ModLog, context);
 
         const notificationString = await UtilityManager.getMessageFromChannelType(ChannelType.ModLog, context);
 

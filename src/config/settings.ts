@@ -519,6 +519,13 @@ export const modlogGroup = {
             }
         },
         {
+            type: 'boolean' as const,
+            name: 'MODLOG_SHOW_DEFAULT_ICON',
+            label: 'Will use the default Discord Bridge icon for the Webhook Avatar ( Overrides manually set icons )',
+            defaultValue: true,
+            scope: 'installation' as const,
+        },
+        {
             type: 'string' as const,
             name: 'MODLOG_MESSAGE',
             label: 'Pingable ModLog Message',
