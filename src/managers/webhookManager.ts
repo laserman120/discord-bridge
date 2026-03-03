@@ -1,7 +1,7 @@
 import { Devvit, Post, Context } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { LogEntry } from './storageManager.js';
-import { UtilityManager } from './utilityManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 const DISCORD_API_BASE = 'https://discord.com/api/webhooks';
 

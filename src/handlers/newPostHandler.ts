@@ -1,71 +1,74 @@
-import { Devvit, Post, Comment, TriggerContext } from '@devvit/public-api';
+import { Post, Comment, TriggerContext } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
+import { BaseHandler } from './baseHandler.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
-import { EmbedManager } from '../managers/embedManager.js';
+import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
-import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 
-export class NewPostHandler {
+/**
+ * Handles the initial bridging of newly submitted posts to a private Discord channel.
+ * Used for moderator feeds to track submittals in real-time.
+ */
+export class NewPostHandler extends BaseHandler {
+    /**
+     * Processes a new post and sends a notification to the configured Discord webhook.
+     * @param event - The PostSubmit event data.
+     * @param context - The Devvit execution context.
+     * @param preFetchedContent - Optional post object from the QueueManager's batch fetch.
+     */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        const postId = event.id;
+        // 1. Resolve ID using BaseHandler
+        const postId = this.getRedditId(event);
+        if (!postId) return;
 
-        if (!postId) {
-            console.log(`[NewPostHandler] No post ID found in event.`)
-            return;
-        }
-
+        // 2. Load Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_NEW_POSTS') as string | undefined;
+        if (!webhookUrl) return;
 
-        if (!webhookUrl) {
+        // 3. Prevent Duplicate Logging
+        // Uses the standardized isAlreadyLogged method from BaseHandler
+        if (await this.isAlreadyLogged(postId, ChannelType.NewPosts, context)) {
+            console.log(`[NewPostHandler] Post ${postId} already sent to New Posts channel. Skipping.`);
             return;
         }
 
-        const existingLogs = await StorageManager.getLinkedLogEntries(postId, context as any);
-
-        const alreadyPosted = existingLogs.some(
-            entry => entry.channelType === ChannelType.NewPosts
-        );
-
-        if (alreadyPosted) {
-            console.log(`[NewPostHandler] Skipped ${postId}: Already sent to New Posts channel.`);
+        // 4. Resolve Content (respecting pre-fetched data)
+        const contentItem = await this.fetchContent(postId, context, preFetchedContent);
+        if (!contentItem || !(contentItem instanceof Post)) {
             return;
         }
 
-        let contentItem: Post;
-        if (preFetchedContent) {
-            contentItem = preFetchedContent as Post;
-        } else {
-            try {
-                contentItem = await context.reddit.getPostById(postId);
-                console.warn(`[NewPostHandler] No pre-fetched data found, running manual fetch for ${postId}`);
-            } catch (error) {
-                console.error(`[NewPostHandler] Failed to fetch full post ${postId}:`, error);
-                return;
-            }
-        }
-
+        // 5. Determine Initial Status
+        // New posts are usually 'Live', but could be 'Approved' if submitted by a mod/approved user
         let status = ItemState.Live;
         if (contentItem.isApproved()) {
             status = ItemState.Approved;
         }
         
+        // 6. Data Gathering & Payload Construction
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
-        
         const notificationString = await context.settings.get('NEW_POST_MESSAGE') as string | undefined;
 
-        const payload = await ComponentManager.createDefaultMessage(contentData, status, ChannelType.NewPosts, context, notificationString);
+        const payload = await ComponentManager.createDefaultMessage(
+            contentData, 
+            status, 
+            ChannelType.NewPosts, 
+            context, 
+            notificationString
+        );
 
-        const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
+        // 7. Dispatch to Discord & Record in Storage
+        const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 
-        if (discordMessageId && !discordMessageId.startsWith('failed_id')) {
+        if (discordMessageId && !discordMessageId.startsWith('failed')) {
             await StorageManager.createLogEntry({
                 redditId: postId,
                 discordMessageId: discordMessageId,
                 channelType: ChannelType.NewPosts,
                 currentStatus: status,
                 webhookUrl: webhookUrl
-            }, context as any);
+            }, context);
         }
     }
 }

@@ -1,9 +1,7 @@
 import { Devvit, JobContext } from '@devvit/public-api';
 import { StorageManager, LogEntry } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
-
-// 13 days in seconds (13 * 24 * 60 * 60)
-const PRUNE_AGE_SECONDS = 13 * 86400;
+import { PRUNE_AGE_SECONDS } from '../config/constants.js';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

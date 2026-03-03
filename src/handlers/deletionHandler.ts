@@ -3,104 +3,73 @@ import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
-import { UtilityManager } from '../managers/utilityManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { PublicPostHandler } from '../handlers/publicPostHandler.js';
 import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
 import { ComponentManager } from '../managers/componentManager.js';
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
-export class DeletionHandler {
+import { BaseHandler } from './baseHandler.js';
 
+
+export class DeletionHandler extends BaseHandler {
+    /**
+     * Processes deletion events and updates linked Discord messages.
+     * @param event - The PostDelete or CommentDelete event data.
+     * @param context - The Devvit execution context.
+     * @param preFetchedContent - Optional pre-fetched content from the QueueManager.
+     */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
 
-        let targetId;
-        if (event.type == 'PostDelete')
-        {
-            targetId = event.postId;
-        } else if (event.type == 'CommentDelete')
-        {
-            targetId = event.commentId;
-        }
-
+        const targetId = this.getRedditId(event);
         if (!targetId) return;
 
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
-
         if (logEntries.length === 0) {
-            console.log(`[DeletionHandler] No tracked messages found for ${targetId}. Skipping update.`);
+            console.log(`[DeletionHandler] No tracked messages for ${targetId}. Skipping.`);
             return;
         }
         
-        let contentItem: any;
-        let isPost = targetId.startsWith('t3_');
-        if (preFetchedContent) {
-            contentItem = preFetchedContent;
-        } else {
-            try {
-                console.warn(`[[DeletionHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
-                if (targetId.startsWith('t3_')) {
-                    contentItem = await context.reddit.getPostById(targetId);
-                } else {
-                    contentItem = await context.reddit.getCommentById(targetId);
-                }
-            } catch (e) {
-                console.error(`[[DeletionHandler] Failed to fetch content: ${e}`);
-                return;
-            }
-        }
-
+        const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
-        if (isPost && contentItem.removedByCategory == 'deleted' || !isPost && contentItem.authorName == '[deleted]')
-        {
-            console.log("[DeletionHandler] Post/Comment was deleted. Updating entries...");
+        const isPost = targetId.startsWith('t3_');
+        const isActuallyDeleted = isPost 
+            ? (contentItem as Post).removedByCategory === 'deleted'
+            : (contentItem as Comment).authorName === '[deleted]';
 
-            await PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
-            await FlairWatchHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
-            await ModQueueHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem);
+        if (!isActuallyDeleted) return;
 
+        console.log("[DeletionHandler] Post/Comment was deleted. Updating entries...");
 
-            for (const entry of logEntries) {
+        await Promise.all([
+            PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem),
+            FlairWatchHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem),
+            ModQueueHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem)
+        ]);
 
-                if (entry.currentStatus === ItemState.Deleted) {
-                    console.log(`[StateSync] Msg ${entry.discordMessageId} already in state ${ItemState.Deleted}. Skipping.`);
-                    continue;
-                }
+        const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-                const contentData = await ContentDataManager.gatherDetails(contentItem, context);
+        for (const entry of logEntries) {
+            if (entry.currentStatus === ItemState.Deleted) continue;
 
-                let payload;
-                switch (entry.channelType) {
-                    case ChannelType.NewPosts:
-                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
-                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
-                        break;
-                    case ChannelType.Removals:
-                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
-                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
-                        break;
-                    case ChannelType.Reports:
-                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
-                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
-                        break;
-                    case ChannelType.FlairWatch:
-                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
-                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
-                        break;
-                    case ChannelType.ModActivity:
-                        //payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Deleted, entry.channelType, context);
-                        payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Deleted, ChannelType.NewPosts, context);
-                        break;
-                    default:
-                        continue;
-                }
+            // Define which channels receive a 'Deleted' status update
+            const syncableChannels = [
+                ChannelType.NewPosts,
+                ChannelType.Removals,
+                ChannelType.Reports,
+                ChannelType.FlairWatch,
+                ChannelType.ModActivity
+            ];
 
-                await WebhookManager.editMessage(
-                    entry.webhookUrl,
-                    entry.discordMessageId,
-                    payload
+            if (syncableChannels.includes(entry.channelType)) {
+                const payload = await ComponentManager.createDefaultMessage(
+                    contentData, 
+                    ItemState.Deleted, 
+                    entry.channelType, 
+                    context
                 );
 
+                await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
                 await StorageManager.updateLogStatus(entry.discordMessageId, ItemState.Deleted, context);
             }
         }

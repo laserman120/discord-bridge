@@ -10,6 +10,9 @@ const ADMIN_ACCOUNTS = new Set([
     '[ redacted ]',
 ]);
 
+/**
+ * Checks if the given username is in the list of known admin accounts.
+ */
 export function isAdminAccount(username?: string): boolean {
     if (!username) return false;
     return ADMIN_ACCOUNTS.has(username.toLowerCase());

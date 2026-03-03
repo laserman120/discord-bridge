@@ -2,13 +2,13 @@ import { Devvit, JobContext, Post } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { QueueManager } from '../managers/queueManager.js';
+import { PRUNE_AGE_SECONDS } from '../config/constants.js';
 
 export async function checkSpamQueue(event: any, context: JobContext): Promise<void> {
     const scanEnabled = await context.settings.get('REMOVALS_SCAN_SPAM') as boolean || false;
 
     console.log('[SpamCheck] Starting Spam Queue Check...');
 
-    const PRUNE_AGE_SECONDS = 13 * 86400;
     const subreddit = await context.reddit.getCurrentSubreddit();
 
     const spamQueue = await subreddit.getSpam({ limit: 100, type: "all" }).all();

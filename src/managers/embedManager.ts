@@ -1,6 +1,6 @@
 ﻿import { Post, Comment, ModAction, TriggerContext } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
-import { UtilityManager } from './utilityManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 import { ContentDetails, ModActionDetails } from './contentDataManager.js';
 import { APP_ICON_MODLOG_BLUE, APP_ICON_MODLOG_GREEN, APP_ICON_MODLOG_GREY, APP_ICON_MODLOG_RED } from '../config/constants.js';
 

@@ -43,8 +43,5 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
         }
     }
 
-
-
-
     console.log(`[ModQueueCheckJob] Check completed. Cleaned up ${deletedCount} messages.`);
 }

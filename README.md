@@ -72,8 +72,13 @@ Making at easy to keep track of anything related to your subreddit directly from
 ## Changelog
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
-
-- v0.X.XX
+- v0.XX.X
+  - Fixed minor issue with silent removal check.
+  - Refactored codebase
+  - Added Translation setting ( See Wiki for more information on translation )
+- v0.14.6
+  - Hotfix: Fixed incorrectly labeled setting to show the default author button in private messages.
+- v0.14.4
   - Spam Detection
 	- If items are silently removed by reddit they can now be properly shown in the removal stream
 	- This can be toggled off in the removal settings.

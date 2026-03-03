@@ -1,5 +1,6 @@
 ﻿import { ItemState, ChannelType, ContentType } from '../config/enums.js';
-import { UtilityManager } from '../managers/utilityManager.js';
+import { TranslationHelper } from '../helpers/translationHelper.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 const modActionOptions = [
     "banuser", "unbanuser", "spamlink", "removelink", "approvelink", "spamcomment",
@@ -173,78 +174,78 @@ export const privateMessageCustomizationGroup = {
         },
         {
             type: 'boolean' as const,
-            name: 'PRIVATE_SHOW_ARCTIC_SHIFT_BUTTON',
-            label: 'Add an additional button to open a user profile in Arctic-Shift',
-            defaultValue: false,
-            scope: 'installation' as const,
-        },
-        {
-            type: 'boolean' as const,
             name: 'PRIVATE_SHOW_DEFAULT_AUTHOR_BUTTON',
-            label: 'Hide the default Author button which links to the reddit profile',
+            label: 'Add an Author button which links to the reddit profile',
             defaultValue: true,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
+            name: 'PRIVATE_SHOW_ARCTIC_SHIFT_BUTTON',
+            label: 'Add a button to open a user profile in Arctic-Shift',
+            defaultValue: false,
+            scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
             name: 'PRIVATE_SHOW_AUTHOR_AGE',
-            label: 'Adds the account age of the author to the messages',
+            label: 'Add the account age of the author to the messages',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_AUTHOR_FLAIR',
-            label: 'Adds the applied flair of the author to the message',
+            label: 'Add the applied flair of the author to the message',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_POST_FLAIR',
-            label: 'Adds the post flair to the message',
+            label: 'Add the post flair to the message',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_TOTAL_KARMA',
-            label: 'Adds the total Karma of the Author.',
+            label: 'Add the total Karma of the Author.',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_LINK_KARMA',
-            label: 'Adds the post (link) Karma of the Author.',
+            label: 'Add the post (link) Karma of the Author.',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_COMMENT_KARMA',
-            label: 'Adds the comment Karma of the Author.',
+            label: 'Add the comment Karma of the Author.',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_TOTAL_SUB_KARMA',
-            label: 'Adds the total Subreddit Karma of the Author.',
+            label: 'Add the total Subreddit Karma of the Author.',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_LINK_SUB_KARMA',
-            label: 'Adds the post (link) Subreddit Karma of the Author.',
+            label: 'Add the post (link) Subreddit Karma of the Author.',
             defaultValue: false,
             scope: 'installation' as const,
         },
         {
             type: 'boolean' as const,
             name: 'PRIVATE_SHOW_COMMENT_SUB_KARMA',
-            label: 'Adds the comment Subreddit Karma of the Author.',
+            label: 'Add the comment Subreddit Karma of the Author.',
             defaultValue: false,
             scope: 'installation' as const,
         },
@@ -765,6 +766,24 @@ export const customizationGroup = {
             helpText: 'Color code for content which has been REPORTED and not yet reviewed.',
             onValidate: async ({ value }: { value?: string }) => {
                 return UtilityManager.validateHexColor(value);
+            }
+        },
+    ]
+};
+
+export const translationOverridesGroup = {
+    type: 'group' as const,
+    label: 'Translation Overrides',
+    fields: [
+        {
+            type: 'paragraph' as const,
+            name: 'TRANSLATION_OVERRIDES_JSON',
+            label: 'Translation Overrides (JSON)',
+            helpText: 'Override default English strings with your own. Copy the default block as a template. See Wiki for more information',
+            defaultValue: JSON.stringify(TranslationHelper.getDefaults(), null, 2),
+            scope: 'installation' as const,
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateTranslationConfig(value);
             }
         },
     ]

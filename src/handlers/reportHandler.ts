@@ -1,108 +1,98 @@
-import { Devvit, Post, Comment, TriggerContext } from '@devvit/public-api';
+import { Post, Comment, TriggerContext } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
+import { BaseHandler } from './baseHandler.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
-import { EmbedManager } from '../managers/embedManager.js';
-import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
+import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 
-export class ReportHandler {
+/**
+ * Handles Reddit report events. 
+ * Dispatches new notifications to the Reports channel and synchronizes 
+ * updated report counts to all other existing Discord logs for the same item.
+ */
+export class ReportHandler extends BaseHandler {
+    /**
+     * Processes report triggers and syncs report data across Discord.
+     * @param triggerPost - Object containing the Reddit ID.
+     * @param context - The Devvit execution context.
+     * @param preFetchedContent - Optional pre-fetched content to save API calls.
+     */
     static async handle(triggerPost: { id: string }, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const targetId = triggerPost.id;
+        if (!targetId) return;
 
-        const webhookUrl = await context.settings.get('WEBHOOK_REPORTS') as string | undefined;
-
-        const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
-
-        const existingLogs = await StorageManager.getLinkedLogEntries(targetId, context);
-        const alreadyLogged = existingLogs.some(entry => entry.channelType === ChannelType.Reports && entry.currentStatus === ItemState.Unhandled_Report);
-
-        let contentItem: Post | Comment;
-        if (preFetchedContent) {
-            contentItem = preFetchedContent;
-        } else {
-            try {
-                console.warn(`[ReportHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
-                if (targetId.startsWith('t3_')) {
-                    contentItem = await context.reddit.getPostById(targetId);
-                } else {
-                    contentItem = await context.reddit.getCommentById(targetId);
-                }
-            } catch (e) {
-                console.error(`[ReportHandler] Failed to fetch content: ${e}`);
-                return;
-            }
-        }
-
-        let status = ItemState.Unhandled_Report;
+        // 1. Resolve Content and Stats
+        const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
+        if (!contentItem) return;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
-
-        if (contentData.reportCount === undefined || contentData.reportCount == 0) {
+        
+        // Safety: If there are no reports, there's nothing for this handler to do.
+        if (!contentData.reportCount || contentData.reportCount <= 0) {
             return;
         }
 
-        if (!contentData.reportCount) {
-            console.log("[ReportHandler] Report already hidden and handled, no message will be sent")
-            return;
+        // 2. Load all existing logs for this item
+        const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
+        const status = ItemState.Unhandled_Report;
+
+        // 3. Handle the dedicated Reports Channel
+        await this.handleReportsChannel(targetId, contentData, status, logEntries, context);
+
+        // 4. Broadcast Updates to other channels
+        // We update New Posts, Removals, etc., so the report count is visible everywhere.
+        const syncableChannels = [
+            ChannelType.NewPosts,
+            ChannelType.Removals,
+            ChannelType.FlairWatch,
+            ChannelType.ModActivity
+        ];
+
+        console.log(`[ReportHandler] Broadcasting report count (${contentData.reportCount}) to ${logEntries.length} logs.`);
+
+        for (const entry of logEntries) {
+            if (syncableChannels.includes(entry.channelType)) {
+                const payload = await ComponentManager.createDefaultMessage(
+                    contentData, 
+                    status, 
+                    entry.channelType, 
+                    context
+                );
+
+                await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
+            }
         }
+    }
 
-        console.log("[ReportHandler] Found new report for item: " + targetId);
+    /**
+     * Specific logic for the Reports feed. Creates a new message if one doesn't exist.
+     * @private
+     */
+    private static async handleReportsChannel(id: string, data: any, status: ItemState, logs: any[], context: TriggerContext): Promise<void> {
+        const webhookUrl = await context.settings.get('WEBHOOK_REPORTS') as string | undefined;
+        if (!webhookUrl) return;
 
-        //const payload = await EmbedManager.createDefaultEmbed(contentData, status, ChannelType.Reports, context);
+        const alreadyLogged = logs.some(entry => 
+            entry.channelType === ChannelType.Reports && 
+            entry.currentStatus === ItemState.Unhandled_Report
+        );
 
-        const notificationString = await context.settings.get('REPORT_MESSAGE') as string | undefined;
+        if (!alreadyLogged) {
+            const notificationString = await context.settings.get('REPORT_MESSAGE') as string | undefined;
+            const payload = await ComponentManager.createDefaultMessage(data, status, ChannelType.Reports, context, notificationString);
+            
+            const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 
-        const payload = await ComponentManager.createDefaultMessage(contentData, status, ChannelType.Reports, context, notificationString);
-
-        if (webhookUrl && !alreadyLogged) {
-            const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
-
-            if (discordMessageId && !discordMessageId.startsWith('failed_id')) {
+            if (messageId && !messageId.startsWith('failed')) {
                 await StorageManager.createLogEntry({
-                    redditId: targetId,
-                    discordMessageId: discordMessageId,
+                    redditId: id,
+                    discordMessageId: messageId,
                     channelType: ChannelType.Reports,
                     currentStatus: status,
                     webhookUrl: webhookUrl
-                }, context as any);
+                }, context);
             }
         }
-
-        if (logEntries.length === 0) {
-            console.log(`[ReportHandler] No tracked messages found for ${targetId}. None to update`);
-            return;
-        }
-
-        for (const entry of logEntries) {
-            let payload;
-            switch (entry.channelType) {
-                case ChannelType.NewPosts:
-                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
-                    break;
-                case ChannelType.Removals:
-                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
-                    break;
-                case ChannelType.FlairWatch:
-                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
-                    break;
-                case ChannelType.ModActivity:
-                    payload = await ComponentManager.createDefaultMessage(contentData, status, entry.channelType, context);
-                    //payload = await EmbedManager.createDefaultEmbed(contentData, status, entry.channelType, context);
-                    break;
-                default:
-                    continue;
-            }
-
-            await WebhookManager.editMessage(
-                entry.webhookUrl,
-                entry.discordMessageId,
-                payload
-            );
-        }
-
     }
 }

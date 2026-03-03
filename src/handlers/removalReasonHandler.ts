@@ -1,79 +1,86 @@
-import { Devvit, TriggerContext, Post, Comment } from '@devvit/public-api';
+import { TriggerContext, Post, Comment } from '@devvit/public-api';
 import { ItemState } from '../config/enums.js';
+import { BaseHandler } from './baseHandler.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
-import { EmbedManager } from '../managers/embedManager.js';
-import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
+import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 
-export class RemovalReasonHandler {
+/**
+ * Handles the 'addremovalreason' moderator action.
+ * Updates existing Discord log entries with the removal reason text and 
+ * adjusts the message state based on who performed the removal.
+ */
+export class RemovalReasonHandler extends BaseHandler {
+    /**
+     * Entry point for removal reason events.
+     * @param event - The ModAction event data.
+     * @param context - The Devvit execution context.
+     * @param preFetchedContent - Optional pre-fetched content to save API calls.
+     */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        const actionString = event.action;
+        // 1. Action Filter: We only care about adding removal reasons
+        if (event.action !== 'addremovalreason') return;
 
-        if (actionString !== 'addremovalreason') {
-            return;
-        }
-
-        const targetId = event.targetPost?.id || event.targetComment?.id || event.targetId;
-
+        // 2. Resolve ID
+        const targetId = this.getRedditId(event);
         if (!targetId) return;
 
+        // 3. Fetch log entries early. If we aren't tracking this item, stop immediately.
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
-
         if (logEntries.length === 0) {
-            console.log(`[RemovalReasonHandler] No tracked messages found for ${targetId}.`);
+            console.log(`[RemovalReasonHandler] No tracked messages for ${targetId}. skipping.`);
             return;
         }
 
-        let contentItem;
-        if (preFetchedContent) {
-            contentItem = preFetchedContent;
-        } else {
-            try {
-                console.warn(`[RemovalReasonHandler] No pre-fetched data found, running manual fetch for ${targetId}`);
-                if (typeof targetId === 'string' && targetId.startsWith('t3_')) {
-                    contentItem = await context.reddit.getPostById(targetId);
-                } else if (typeof targetId === 'string' && targetId.startsWith('t1_')) {
-                    contentItem = await context.reddit.getCommentById(targetId);
-                }
-            } catch (error) {
-                console.error(`[RemovalReasonHandler] Failed to fetch content: ${error}`);
-                return;
-            }
-        }
-
-        if (!contentItem) return;
-
-        if (!context.subredditName) return;
+        // 4. Resolve Content
+        const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
+        if (!contentItem || !context.subredditName) return;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-        if (!contentData.removalReason) {
-            return;
-        }
+        // 5. Verification: Ensure a reason actually exists
+        if (!contentData.removalReason) return;
 
+        console.log(`[RemovalReasonHandler] Syncing removal reason for ${targetId} across ${logEntries.length} entries.`);
+
+        // 6. Loop and Update existing messages
         for (const entry of logEntries) {
-            let state;
+            // Determine effective state (Awaiting Review vs Removed)
+            const state = await this.getEffectiveState(contentData.removedBy, context);
 
-            const automatedRemovalUsers = await context.settings.get('AUTOMATIC_REMOVALS_USERS') as string[] || [];
-            if (automatedRemovalUsers.includes(contentData.removedBy || '')) {
-                state = ItemState.Awaiting_Review;
-            } else {
-                state = ItemState.Removed;
-            }
+            const payload = await ComponentManager.createDefaultMessage(
+                contentData, 
+                state, 
+                entry.channelType, 
+                context
+            );
 
-            const payload = await ComponentManager.createDefaultMessage(contentData, state, entry.channelType, context);
-            //const payload = await EmbedManager.createDefaultEmbed(contentData, state, entry.channelType, context);
-
+            // Update the Discord message with the new reason text
             await WebhookManager.editMessage(
                 entry.webhookUrl,
                 entry.discordMessageId,
                 payload
             );
 
-            if (entry.currentStatus !== ItemState.Removed) {
-                await StorageManager.updateLogStatus(entry.discordMessageId, ItemState.Removed, context);
+            // Update DB status if it's currently lagging behind
+            if (entry.currentStatus !== state) {
+                await StorageManager.updateLogStatus(entry.discordMessageId, state, context);
             }
         }
+    }
+
+    /**
+     * Determines the state based on whether the remover is an automated user.
+     * @private
+     */
+    private static async getEffectiveState(removedBy: string | undefined, context: TriggerContext): Promise<ItemState> {
+        const automatedRemovalUsers = await context.settings.get('AUTOMATIC_REMOVALS_USERS') as string[] || [];
+        
+        if (removedBy && automatedRemovalUsers.includes(removedBy)) {
+            return ItemState.Awaiting_Review;
+        }
+        
+        return ItemState.Removed;
     }
 }

@@ -8,6 +8,6 @@
     "\\src\\managers",
     "\\src\\scheduledEvents"
   ],
-  "SelectedNode": "\\README.md",
+  "SelectedNode": "\\src\\managers\\queueManager.ts",
   "PreviewInSolutionExplorer": false
 }

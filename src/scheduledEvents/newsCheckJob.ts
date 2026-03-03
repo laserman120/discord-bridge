@@ -1,6 +1,6 @@
 import { JobContext } from '@devvit/public-api';
 import { NEWS_SOURCE_SUBREDDIT, NEWS_SOURCE_AUTHOR } from '../config/constants.js';
-
+import { NEWS_MAX_AGE_MS } from '../config/constants.js';
 export async function checkNewsUpdates(event: any, context: JobContext): Promise<void> {
 
     // 1. Check Settings
@@ -21,8 +21,7 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
 
         const currentSub = await context.reddit.getCurrentSubreddit();
 
-        const MAX_AGE_MS = 3 * 60 * 60 * 1000;
-        const cutoffTime = Date.now() - MAX_AGE_MS;
+        const cutoffTime = Date.now() - NEWS_MAX_AGE_MS;
 
         for (const post of recentPosts) {
 

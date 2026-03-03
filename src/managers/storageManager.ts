@@ -1,5 +1,6 @@
 import { Devvit } from '@devvit/public-api';
-import { ItemState, ChannelType, ContentType } from '../config/enums.js';
+import { ItemState, ChannelType } from '../config/enums.js';
+import { DevvitContext } from '../types/context.js';
 
 export interface LogEntry {
     redditId: string;
@@ -11,7 +12,12 @@ export interface LogEntry {
     unixTimestamp: number;
 }
 
+/**
+ * Manages all Redis persistence logic. 
+ * Uses HASH for log storage and Sorted Sets (ZSET) for indexing and chronological ordering.
+ */
 export class StorageManager {
+    // #region Key Generators
     private static getLogKey(discordMessageId: string): string {
         return `log:d:${discordMessageId}`;
     }
@@ -28,217 +34,191 @@ export class StorageManager {
         return `index:modmail:active`;
     }
 
-    static async createLogEntry(entry: Omit<LogEntry, 'createdAt' | 'unixTimestamp'>, context: Devvit.Context): Promise<void> {
+    private static getProcessedMessagesKey(redditId: string): string {
+        return `processed:messages:${redditId}`;
+    }
+    // #endregion
+
+    /**
+     * Creates a new log entry and updates all relevant indexes.
+     */
+    static async createLogEntry(entry: Omit<LogEntry, 'createdAt' | 'unixTimestamp'>, context: DevvitContext): Promise<void> {
         const { redis } = context;
         const now = new Date();
         const unixTimestamp = Math.floor(now.getTime() / 1000);
 
-        const fullEntry: LogEntry = {
-            ...entry,
-            createdAt: now.toISOString(),
-            unixTimestamp: unixTimestamp
-        };
-
         const redisPayload: Record<string, string> = {
-            redditId: fullEntry.redditId,
-            discordMessageId: fullEntry.discordMessageId,
-            channelType: fullEntry.channelType,
-            currentStatus: fullEntry.currentStatus,
-            webhookUrl: fullEntry.webhookUrl,
-            createdAt: fullEntry.createdAt,
-            unixTimestamp: fullEntry.unixTimestamp.toString()
+            redditId: entry.redditId,
+            discordMessageId: entry.discordMessageId,
+            channelType: entry.channelType,
+            currentStatus: entry.currentStatus,
+            webhookUrl: entry.webhookUrl,
+            createdAt: now.toISOString(),
+            unixTimestamp: unixTimestamp.toString()
         };
 
-        await redis.hSet(
-            StorageManager.getLogKey(fullEntry.discordMessageId),
-            redisPayload
-        );
-
-        await redis.zAdd(
-            StorageManager.getIndexKey(fullEntry.redditId),
-            { score: 1, member: fullEntry.discordMessageId }
-        );
-
-        await redis.zAdd(
-            StorageManager.getChronoIndexKey(),
-            { score: unixTimestamp, member: fullEntry.discordMessageId }
-        );
+        await redis.hSet(this.getLogKey(entry.discordMessageId), redisPayload);
+        
+        // Index by Reddit ID (for finding messages linked to a post)
+        await redis.zAdd(this.getIndexKey(entry.redditId), { score: 1, member: entry.discordMessageId });
+        
+        // Index by Time (for cleanup and "Recent" queries)
+        await redis.zAdd(this.getChronoIndexKey(), { score: unixTimestamp, member: entry.discordMessageId });
     }
 
-    static async getLogEntry(discordMessageId: string, context: any): Promise<LogEntry | null> {
-        const record = await context.redis.hGetAll(StorageManager.getLogKey(discordMessageId));
-        if (Object.keys(record).length === 0) {
-            return null;
-        }
+    /**
+     * Retrieves a single log entry.
+     */
+    static async getLogEntry(discordMessageId: string, context: DevvitContext): Promise<LogEntry | null> {
+        const record = await context.redis.hGetAll(this.getLogKey(discordMessageId));
+        if (!record || Object.keys(record).length === 0) return null;
 
         return {
-            ...record,
+            redditId: record.redditId,
+            discordMessageId: record.discordMessageId,
+            channelType: record.channelType as ChannelType,
+            currentStatus: record.currentStatus as ItemState,
+            webhookUrl: record.webhookUrl,
+            createdAt: record.createdAt,
             unixTimestamp: parseInt(record.unixTimestamp || '0', 10)
-        } as unknown as LogEntry;
+        };
     }
 
-    static async getLinkedMessageIds(redditId: string, context: any): Promise<string[]> {
-        const scoreMembers = await context.redis.zRange(
-            StorageManager.getIndexKey(redditId),
-            0,
-            -1
-        );
-        return scoreMembers.map((item: { member: any; }) => item.member);
+    /**
+     * Updates the status of an existing log.
+     */
+    static async updateLogStatus(discordMessageId: string, newStatus: ItemState, context: DevvitContext): Promise<void> {
+        await context.redis.hSet(this.getLogKey(discordMessageId), { currentStatus: newStatus });
     }
 
-    static async getLinkedLogEntries(redditId: string, context: any): Promise<LogEntry[]> {
-        const messageIds = await this.getLinkedMessageIds(redditId, context);
+    /**
+     * Deletes a log and removes it from all indexes.
+     */
+    static async deleteLogEntry(entry: LogEntry, context: DevvitContext): Promise<void> {
+        const { redis } = context;
+        await redis.del(this.getLogKey(entry.discordMessageId));
+        await redis.zRem(this.getIndexKey(entry.redditId), [entry.discordMessageId]);
+        await redis.zRem(this.getChronoIndexKey(), [entry.discordMessageId]);
 
+        if (await redis.zCard(this.getIndexKey(entry.redditId)) === 0) {
+            await redis.del(this.getIndexKey(entry.redditId));
+        }
+    }
+
+    /**
+     * Returns all full log entries associated with a specific Reddit ID.
+     */
+    static async getLinkedLogEntries(redditId: string, context: DevvitContext): Promise<LogEntry[]> {
+        const messageIds = await context.redis.zRange(this.getIndexKey(redditId), 0, -1);
         const entries: LogEntry[] = [];
 
-        for (const discordMessageId of messageIds) {
-            const entry = await this.getLogEntry(discordMessageId, context);
-            if (entry) {
-                entries.push(entry);
-            } else {
-                await context.redis.zRem(this.getIndexKey(redditId), [discordMessageId]);
-            }
-        }
-
-        return entries;
-    }
-
-    static async updateLogStatus(discordMessageId: string, newStatus: ItemState, context: any): Promise<void> {
-        await context.redis.hSet(
-            StorageManager.getLogKey(discordMessageId),
-            { 'currentStatus': newStatus }
-        );
-    }
-
-    static async getExpiredLogKeys(ageInSeconds: number, context: any): Promise<string[]> {
-        const { redis } = context;
-        const cutoffTimestamp = Math.floor(Date.now() / 1000) - ageInSeconds;
-
-        const scoreMembers = await redis.zRange(
-            StorageManager.getChronoIndexKey(),
-            '-inf',
-            cutoffTimestamp.toString(),
-            { by: 'score' as const, limit: { offset: 0, count: 1000 } }
-        );
-
-        return scoreMembers.map((item: { member: any; }) => item.member);
-    }
-
-    static async deleteLogEntry(entry: LogEntry, context: Devvit.Context): Promise<void> {
-        const { redis } = context;
-        const logKey = StorageManager.getLogKey(entry.discordMessageId);
-        const indexKey = StorageManager.getIndexKey(entry.redditId);
-        const chronoKey = StorageManager.getChronoIndexKey();
-
-        await redis.del(logKey);
-
-        await redis.zRem(indexKey, [entry.discordMessageId]);
-
-        await redis.zRem(chronoKey, [entry.discordMessageId]);
-
-        const remainingMembers = await redis.zCard(indexKey);
-        if (remainingMembers === 0) {
-            await redis.del(indexKey);
-        }
-
-        console.log(`[DB] Deleted log and index reference for Msg ID ${entry.discordMessageId}`);
-    }
-
-    static async trackActiveModmail(conversationId: string, context: Devvit.Context): Promise<void> {
-        await context.redis.zAdd(
-            StorageManager.getActiveModmailIndexKey(),
-            { score: Date.now(), member: conversationId }
-        );
-    }
-
-    static async untrackActiveModmail(conversationId: string, context: Devvit.Context): Promise<void> {
-        await context.redis.zRem(
-            StorageManager.getActiveModmailIndexKey(),
-            [conversationId]
-        );
-    }
-
-    static async getActiveModmailIds(context: Devvit.Context): Promise<string[]> {
-        const scoreMembers = await context.redis.zRange(
-            StorageManager.getActiveModmailIndexKey(),
-            0, -1
-        );
-        return scoreMembers.map((item: { member: any; }) => item.member);
-    }
-
-    private static getProcessedMessagesKey(redditId: string): string {
-        return `processed:messages:${redditId}`;
-    }
-
-    static async markMessageAsProcessed(redditId: string, messageId: string, context: any): Promise<void> {
-        await context.redis.zAdd(
-            this.getProcessedMessagesKey(redditId),
-            { score: Date.now(), member: messageId }
-        );
-    }
-
-    static async getProcessedMessageIds(redditId: string, context: any): Promise<string[]> {
-        const scoreMembers = await context.redis.zRange(
-            this.getProcessedMessagesKey(redditId),
-            0, -1
-        );
-        return scoreMembers.map((item: any) => item.member);
-    }
-
-    static async getRecentLogEntries(limit: number, context: any): Promise<LogEntry[]> {
-        const { redis } = context;
-
-        // Use global chronological index
-        // Correct syntax for rank-based query: start=0, stop=limit-1
-        const scoreMembers = await redis.zRange(
-            StorageManager.getChronoIndexKey(),
-            0,
-            limit - 1,
-            { reverse: true }
-        );
-
-        const entries: LogEntry[] = [];
-        for (const item of scoreMembers) {
+        for (const item of messageIds) {
             const entry = await this.getLogEntry(item.member, context);
             if (entry) {
                 entries.push(entry);
+            } else {
+                await context.redis.zRem(this.getIndexKey(redditId), [item.member]);
             }
         }
         return entries;
     }
 
-    // Unused until necessary to double check posts/comments
-    static async getRecentTrackedPostIds(limit: number, context: any): Promise<string[]> {
+    /**
+     * Fetches the most recent log entries across the entire subreddit.
+     */
+    static async getRecentLogEntries(limit: number, context: DevvitContext): Promise<LogEntry[]> {
+        const scoreMembers = await context.redis.zRange(
+            this.getChronoIndexKey(), 
+            0, 
+            limit - 1, 
+            { by: 'rank', reverse: true } // Added by: 'rank'
+        );
+        const entries: LogEntry[] = [];
+        
+        for (const item of scoreMembers) {
+            const entry = await this.getLogEntry(item.member, context);
+            if (entry) entries.push(entry);
+        }
+        return entries;
+    }
+
+
+    /**
+     * Finds unique Reddit IDs that have been tracked recently, filtering for Posts/Comments.
+     */
+    static async getRecentTrackedPostIds(limit: number, context: DevvitContext): Promise<string[]> {
         const uniqueIds = new Set<string>();
         let cursor = 0;
         const batchSize = 50;
 
         while (uniqueIds.size < limit) {
             const scoreMembers = await context.redis.zRange(
-                StorageManager.getChronoIndexKey(),
-                0,
-                -1,
-                { reverse: true, limit: { offset: cursor, count: batchSize } }
+                this.getChronoIndexKey(), 
+                0, 
+                -1, 
+                { 
+                    by: 'rank', // Added by: 'rank'
+                    reverse: true, 
+                    limit: { offset: cursor, count: batchSize } 
+                }
             );
 
             if (scoreMembers.length === 0) break;
 
             for (const item of scoreMembers) {
-                const discordId = item.member;
-                const logEntry = await this.getLogEntry(discordId, context);
-
-                if (logEntry && logEntry.currentStatus !== ItemState.Deleted && (logEntry.redditId.startsWith('t3_') || logEntry.redditId.startsWith('t1_')))
-                {
-                    uniqueIds.add(logEntry.redditId);
+                const logEntry = await this.getLogEntry(item.member, context);
+                if (logEntry && logEntry.currentStatus !== ItemState.Deleted) {
+                    if (logEntry.redditId.startsWith('t3_') || logEntry.redditId.startsWith('t1_')) {
+                        uniqueIds.add(logEntry.redditId);
+                    }
                 }
-
                 if (uniqueIds.size >= limit) break;
             }
-
             cursor += batchSize;
             if (cursor > 2000) break;
         }
-
         return Array.from(uniqueIds);
     }
+
+    /**
+     * Returns Discord message IDs older than a certain age for cleanup.
+     */
+    static async getExpiredLogKeys(ageInSeconds: number, context: DevvitContext): Promise<string[]> {
+        const cutoff = Math.floor(Date.now() / 1000) - ageInSeconds;
+        const results = await context.redis.zRange(this.getChronoIndexKey(), '-inf', cutoff.toString(), { by: 'score' });
+        return results.map(item => item.member);
+    }
+
+    /**
+     * Retrieves all conversation IDs currently tracked as "Active" Modmail.
+     * Used by scheduled sync jobs to check for new replies in open threads.
+     */
+    static async getActiveModmailIds(context: DevvitContext): Promise<string[]> {
+        const results = await context.redis.zRange(
+            this.getActiveModmailIndexKey(), 
+            0, 
+            -1, 
+            { by: 'rank' } // Explicitly defined for type safety
+        );
+        return results.map(item => item.member);
+    }
+
+    // #region Modmail & Processed Message Tracking
+    static async trackActiveModmail(id: string, context: DevvitContext) {
+        await context.redis.zAdd(this.getActiveModmailIndexKey(), { score: Date.now(), member: id });
+    }
+
+    static async untrackActiveModmail(id: string, context: DevvitContext) {
+        await context.redis.zRem(this.getActiveModmailIndexKey(), [id]);
+    }
+
+    static async markMessageAsProcessed(redditId: string, messageId: string, context: DevvitContext) {
+        await context.redis.zAdd(this.getProcessedMessagesKey(redditId), { score: Date.now(), member: messageId });
+    }
+
+    static async getProcessedMessageIds(redditId: string, context: DevvitContext): Promise<string[]> {
+        const results = await context.redis.zRange(this.getProcessedMessagesKey(redditId), 0, -1);
+        return results.map(item => item.member);
+    }
+    // #endregion
 }

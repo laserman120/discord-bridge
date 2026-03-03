@@ -1,103 +1,102 @@
-import { Devvit, Post, Comment, TriggerContext } from '@devvit/public-api';
+import { Post, Comment, TriggerContext } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
+import { BaseHandler } from './baseHandler.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
-import { EmbedManager } from '../managers/embedManager.js';
-import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
+import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 
-export class PublicPostHandler {
+/**
+ * Handles mirroring public posts to a dedicated Discord channel.
+ * Includes logic to auto-delete Discord messages if the post is removed on Reddit.
+ */
+export class PublicPostHandler extends BaseHandler {
+    /**
+     * Bridges a post to the public Discord channel if it hasn't been posted yet
+     * and isn't currently removed.
+     * @param event - The event data containing the post ID.
+     * @param context - The Devvit execution context.
+     * @param preFetchedContent - Optional pre-fetched post data.
+     */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        const postId = event.id;
+        const postId = this.getRedditId(event);
+        if (!postId) return;
 
+        // 1. Resolve Settings
         const webhookUrl = await context.settings.get('WEBHOOK_PUBLIC_NEW_POSTS') as string | undefined;
+        if (!webhookUrl) return;
 
-        if (!webhookUrl) {
+        // 2. Duplicate Check
+        if (await this.isAlreadyLogged(postId, ChannelType.PublicNewPosts, context)) {
+            console.log(`[PublicPostHandler] Already mirrored ${postId}, skipping.`);
             return;
         }
 
-        const existingLogs = await StorageManager.getLinkedLogEntries(postId, context as any);
+        // 3. Resolve Content
+        const contentItem = await this.fetchContent(postId, context, preFetchedContent);
+        if (!contentItem || !(contentItem instanceof Post)) return;
 
-        const alreadyPosted = existingLogs.some(
-            entry => entry.channelType === ChannelType.PublicNewPosts
+        // 4. Pre-Publication Verification
+        // We gather details to check if the post was already removed by filters/mods before we mirror it.
+        const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
+        if (contentData.removalReason || contentData.removedBy) {
+            console.log(`[PublicPostHandler] Post ${postId} is removed/spam. Aborting mirror.`);
+            return;
+        }
+
+        console.log(`[PublicPostHandler] Mirroring post: ${contentItem.title}`);
+
+        // 5. Build and Send
+        const notificationString = await context.settings.get('NEW_PUBLIC_POST_MESSAGE') as string | undefined;
+        const payload = await ComponentManager.createDefaultMessage(
+            contentData, 
+            ItemState.Public_Post, 
+            ChannelType.PublicNewPosts, 
+            context, 
+            notificationString
         );
 
-        if (alreadyPosted) {
-            console.log(`[PublicNewPostHandler] Already found ${postId}, skipping`);
-            return;
-        }
+        const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 
-        let contentItem: Post;
-        if (preFetchedContent) {
-            contentItem = preFetchedContent as Post;
-        } else {
-            try {
-                console.warn(`[PublicNewPostHandler] No pre-fetched data found, running manual fetch for ${postId}`);
-                contentItem = await context.reddit.getPostById(postId);
-            } catch (error) {
-                console.error(`[PublicNewPostHandler] Failed to fetch full post ${postId}:`, error);
-                return;
-            }
-        }
-
-        console.log(`[PublicNewPostHandler] Processing new post: ${contentItem.title}`);
-
-        const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
-
-        if (contentData.removalReason || contentData.removedBy) {
-            console.log(`[PublicNewPostHandler] Post ${postId} appears to be removed, skipping.`);
-            return;
-        }
-
-        //const payload = await EmbedManager.createDefaultEmbed(contentData, ItemState.Public_Post, ChannelType.PublicNewPosts, context);
-
-        const notificationString = await context.settings.get('NEW_PUBLIC_POST_MESSAGE') as string | undefined;
-
-        const payload = await ComponentManager.createDefaultMessage(contentData, ItemState.Public_Post, ChannelType.PublicNewPosts, context, notificationString);
-
-        const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context as any);
-
-        if (discordMessageId && !discordMessageId.startsWith('failed_id')) {
+        if (messageId && !messageId.startsWith('failed')) {
             await StorageManager.createLogEntry({
                 redditId: postId,
-                discordMessageId: discordMessageId,
+                discordMessageId: messageId,
                 channelType: ChannelType.PublicNewPosts,
                 currentStatus: ItemState.Public_Post,
                 webhookUrl: webhookUrl
-            }, context as any);
+            }, context);
         }
     }
 
+    /**
+     * Watches for state changes (Removal, Approval) to keep the Discord mirror in sync.
+     * Logic: If a post is removed/deleted, delete the Discord message. 
+     * If a previously removed post is approved, mirror it.
+     */
     static async handlePossibleStateChange(postId: string, state: ItemState, context: TriggerContext, contentItem: Post | Comment): Promise<void> {
-        if (!postId) return;
-
-        if (postId.startsWith('t1_')) {
-            // Public posts are only for posts, not comments
-            return;
-        }
+        if (!postId || postId.startsWith('t1_')) return; // Mirrors only support posts
 
         const logEntries = await StorageManager.getLinkedLogEntries(postId, context);
+        const publicLog = logEntries.find(entry => entry.channelType === ChannelType.PublicNewPosts);
 
-        const alreadyPosted = logEntries.some(
-            entry => entry.channelType === ChannelType.PublicNewPosts
-        );
+        // Scenario A: Post is mirrored but now needs to be deleted (Removed/Spam/Deleted)
+        const needsDeletion = [
+            ItemState.Removed, 
+            ItemState.Awaiting_Review, 
+            ItemState.Spam, 
+            ItemState.Deleted
+        ].includes(state);
 
-        if (alreadyPosted && (state == ItemState.Removed || state == ItemState.Awaiting_Review || state == ItemState.Spam || state == ItemState.Deleted))
-        {
-            // remove discord message and delete from database
-            for (const entry of logEntries)
-            {
-                if (entry.channelType === ChannelType.PublicNewPosts)
-                {
-                    await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId, context as any);
-                    await StorageManager.deleteLogEntry(entry, context as any);
-                    console.log(`[PublicNewPostHandler] Deleted Discord message ${entry.discordMessageId} for post ${postId} due to state change to ${state}`);
-                }
-            }
-        }
-        else if (!alreadyPosted && (state == ItemState.Live || state == ItemState.Approved))
-        {
-            PublicPostHandler.handle({ id: postId }, context, contentItem);
+        if (publicLog && needsDeletion) {
+            await WebhookManager.deleteMessage(publicLog.webhookUrl, publicLog.discordMessageId, context);
+            await StorageManager.deleteLogEntry(publicLog, context);
+            console.log(`[PublicPostHandler] Deleted mirror for ${postId} due to state: ${state}`);
+        } 
+        
+        // Scenario B: Post isn't mirrored but just became visible (Live/Approved)
+        else if (!publicLog && (state === ItemState.Live || state === ItemState.Approved)) {
+            await this.handle({ id: postId }, context, contentItem);
         }
     }
 }

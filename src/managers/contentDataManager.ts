@@ -1,7 +1,9 @@
-import { Post, Comment, Context, TriggerContext, ModAction } from '@devvit/public-api';
-import { UtilityManager } from './utilityManager.js';
+import { Post, Comment, TriggerContext, ModAction } from '@devvit/public-api';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 import { CacheManager } from '../managers/cacheManager.js';
+import { DevvitContext } from '../types/context.js';
 
+// #region Interfaces
 export interface ContentDetails {
     id: string;
     type: 'post' | 'comment';
@@ -63,9 +65,17 @@ interface CachedUserStats {
     authorCreatedAt?: Date;
     authorFlair?: string;
 }
+// #endregion
 
+/**
+ * Normalizes and enriches data from various Reddit objects (Posts, Comments, ModActions).
+ */
 export class ContentDataManager {
-    static async gatherDetails(item: Post | Comment, context: TriggerContext, event?: any): Promise<ContentDetails> {
+    /**
+     * Gathers extensive details from a Reddit Post or Comment, including crosspost parent info,
+     * user karma stats, and moderation history.
+     */
+    static async gatherDetails(item: Post | Comment, context: DevvitContext, event?: any): Promise<ContentDetails> {
         const isPost = 'title' in item;
 
         const details: ContentDetails = {
@@ -87,230 +97,50 @@ export class ContentDataManager {
             isCrossPost: false,
         };
 
-        let crosspostItem: Post | undefined;
-        let crosspostParentId: string | undefined;
-        if (event?.crosspostParentId) {
-            crosspostParentId = event.crosspostParentId;
-        }
+        // 1. Handle Crosspost Logic
+        await this.enrichCrosspostData(details, item, context, event);
 
-        const redditIdRegex = /(?:\/comments\/|\/gallery\/|\/s\/)([a-z0-9]+)/i;
+        // 2. Handle User Stats & Karma (Cached)
+        await this.enrichUserStats(details, item, context);
 
-        if (!crosspostParentId && isPost && item.url) {
-            const match = item.url.match(redditIdRegex);
-
-            if (match) {
-                const extractedId = match[1];
-
-                // Ensure the ID found in the URL isn't just the ID of the current post
-                if (!item.id.includes(extractedId)) {
-                    crosspostParentId = 't3_' + extractedId;
-                }
-            }
-        }
-
-        if (crosspostParentId) {
-            try {
-                console.log("[ContentDataManager] Item is a crosspost, fetching parent post " + item.id)
-                crosspostItem = await context.reddit.getPostById(crosspostParentId)
-            } catch (error) {
-                console.error(`[ContentDataManager] Failed to fetch full post ${item.id}:`, error);
-            }
-        }
-
-        
-        details.crossPostBody = crosspostItem ? crosspostItem.body : undefined;
-        details.crossPostPermalink = crosspostItem ? `https://reddit.com${crosspostItem.permalink}` : undefined;
-        details.crossPostSubredditName = crosspostItem ? crosspostItem.subredditName : undefined;
-        details.isCrossPost = !!crosspostItem;
-
-        if (details.authorName && !details.authorName.toLowerCase().includes("[deleted]")) {
-            const userCacheKey = `user-stats:${details.authorName}:${details.subredditName}`;
-
-            try {
-                const cachedStats = await CacheManager.getCachedContent(userCacheKey, context as any) as CachedUserStats | null;
-
-                if (cachedStats) {
-                    details.authorLinkKarma = cachedStats.linkKarma;
-                    details.authorCommentKarma = cachedStats.commentKarma;
-                    details.authorSubredditLinkKarma = cachedStats.subredditLinkKarma;
-                    details.authorSubredditCommentKarma = cachedStats.subredditCommentKarma;
-                    details.authorShadowbanned = cachedStats.authorShadowbanned;
-                    details.authorCreatedAt = cachedStats.authorCreatedAt ? new Date(cachedStats.authorCreatedAt) : undefined;
-                    details.authorFlair = cachedStats.authorFlair;
-                } else {
-
-                    const user = await item.getAuthor();
-                    const rawUser = await context.reddit.getUserByUsername(item.authorName);
-
-                    let isShadowbanned = false;
-                    if (!rawUser) {
-                        isShadowbanned = true;
-                    }
-
-                    details.authorShadowbanned = isShadowbanned;
-
-                    if (user) {
-                        const totalSubKarma = await user.getUserKarmaFromCurrentSubreddit() || undefined;
-
-                        details.authorLinkKarma = user.linkKarma;
-                        details.authorCommentKarma = user.commentKarma;
-                        details.authorSubredditLinkKarma = totalSubKarma?.fromPosts;
-                        details.authorSubredditCommentKarma = totalSubKarma?.fromComments;
-
-                        const flair = await user.getUserFlairBySubreddit(details.subredditName);
-                        details.authorFlair = flair?.flairText || undefined;
-
-                        details.authorCreatedAt = user.createdAt;
-
-                        await CacheManager.cacheContent(userCacheKey, {
-                            linkKarma: user.linkKarma,
-                            commentKarma: user.commentKarma,
-                            subredditLinkKarma: totalSubKarma?.fromPosts,
-                            subredditCommentKarma: totalSubKarma?.fromComments,
-                            authorShadowbanned: isShadowbanned,
-                            authorCreatedAt: user.createdAt,
-                            authorFlair: flair?.flairText || undefined,
-                        }, context as any);
-                    }
-                }
-            } catch {
-                console.warn(`[ContentDataManager] Failed to fetch user stats for ${details.authorName}`);
-            }
-        }
-
-
+        // 3. Handle Visual Warnings (NSFW/Spoiler)
         if (isPost) {
-            details.imageUrl = await UtilityManager.getBestImageUrl(item);
-
-            if (item.isNsfw() && !item.isSpoiler()) {
-                details.contentWarning = "NSFW"
-                details.isNSFW = true;
-                details.isSpoiler = false;
-            }
-            else if (item.isSpoiler() && !item.isNsfw()) {
-                details.contentWarning = "Spoilers"
-                details.isNSFW = false;
-                details.isSpoiler = true;
-            }
-            else if (item.isSpoiler() && item.isNsfw()) {
-                details.contentWarning = "NSFW & Spoilers"
-                details.isNSFW = true;
-                details.isSpoiler = true;
-            }
+            details.imageUrl = await UtilityManager.getBestImageUrl(item as Post);
+            this.setVisualWarnings(details, item as Post);
         }
 
-        if (item.userReportReasons && item.userReportReasons.length > 0) {
-            details.reportReasons = item.userReportReasons;
-        } else if (item.modReportReasons && item.modReportReasons.length > 0) {
-            details.reportReasons = item.modReportReasons;
-        }
+        // 4. Handle Reports
+        this.enrichReportData(details, item);
 
-        if (isPost && item.numberOfReports && item.numberOfReports > 0)
-        {
-            details.reportCount = item.numberOfReports;
-        }
-        else if (!isPost && item.numReports && item.numReports > 0)
-        {
-            details.reportCount = item.numReports;
-        }
-
-        if (item.isRemoved() || item.isSpam() || isPost && item.removedByCategory || !isPost) {
-
-            const cachedModLogs = await CacheManager.getCachedContent(`modlog:${details.id}`, context as any) as CachedModLogData | null;
-
-            let reasonLog = cachedModLogs?.reasonLog;
-            let removalLog = cachedModLogs?.removalLog;
-            let cacheMiss = false;
-
-            if (!reasonLog) {
-                cacheMiss = true;
-                try {
-                    const modLogEntries = await context.reddit.getModerationLog({
-                        subredditName: item.subredditName,
-                        type: 'addremovalreason',
-                        limit: 10,
-                        more: {
-                            parentId: item.id,
-                            children: [],
-                            depth: 1
-                        }
-                    }).all();
-                    reasonLog = modLogEntries.find(entry => entry.target?.id === details.id);
-                } catch {
-                    console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
-                }
-            }
-
-            if (!removalLog) {
-                cacheMiss = true;
-                try {
-                    const removalActionType = isPost ? 'removelink' : 'removecomment';
-
-
-                    const modLogEntries = await context.reddit.getModerationLog({
-                        subredditName: item.subredditName,
-                        type: removalActionType,
-                        limit: 10,
-                        more: {
-                            parentId: item.id,
-                            children: [],
-                            depth: 1
-                        }
-                    }).all();
-
-                    removalLog = modLogEntries.find(entry => entry.target?.id === details.id);
-                } catch {
-                    console.error(`[ContentDataManager] Failed to fetch ModLog for ${details.id}:`);
-                }
-            }
-
-            if (cacheMiss && (reasonLog || removalLog)) {
-                await CacheManager.cacheContent(`modlog:${details.id}`, {
-                    reasonLog,
-                    removalLog
-                }, context as any);
-            }
-
-            if (reasonLog) {
-                details.removalReason = reasonLog.description || undefined;
-                if (details.removalReason) {
-                    console.log(`[ContentDataManager] Found removal reason: ${details.removalReason}`);
-                }
-            }
-
-            if (removalLog) {
-                if (removalLog.moderatorName && !details.removedBy) {
-                    details.removedBy = removalLog.moderatorName;
-                }
-                // Sometimes the reason is in the removal action details themselves
-                if (!details.removalReason && removalLog.description) {
-                    details.removalReason = removalLog.description;
-                    console.log(`[ContentDataManager] Found removal reason from removal log: ${details.removalReason}`);
-                }
-            }
+        // 5. Handle Moderation Logs (Removal Reason/Mod)
+        const needsModLogs = item.isRemoved() || item.isSpam() || (isPost && (item as Post).removedByCategory) || !isPost;
+        if (needsModLogs) {
+            await this.enrichModLogData(details, item, context);
         }
 
         return details;
     }
 
-    static async gatherModActionTarget(event: any, context: TriggerContext): Promise<ModActionDetails> {
+    /**
+     * Resolves target details for a ModAction event.
+     */
+    static async gatherModActionTarget(event: any, context: DevvitContext): Promise<ModActionDetails> {
         const result: ModActionDetails = {
             targetType: 'unknown',
             targetName: 'Unknown Target',
         };
 
         const targetId = event.targetPost?.id || event.targetComment?.id;
-        if (targetId != "") {
+        
+        // Scenario A: Content Target (Post/Comment)
+        if (targetId) {
             result.targetType = 'content';
             result.targetName = event.target?.title || `Comment in ${event.subreddit?.name}`;
 
             try {
-                let item: Post | Comment | undefined;
-                if (targetId.startsWith('t3_')) {
-                    item = await context.reddit.getPostById(targetId);
-                } else if (targetId.startsWith('t1_')) {
-                    item = await context.reddit.getCommentById(targetId);
-                }
+                const item = targetId.startsWith('t3_') 
+                    ? await context.reddit.getPostById(targetId) 
+                    : await context.reddit.getCommentById(targetId);
 
                 if (item) {
                     result.contentDetails = await this.gatherDetails(item, context);
@@ -318,23 +148,161 @@ export class ContentDataManager {
                     result.targetUrl = result.contentDetails.permalink;
                 }
             } catch (e) {
-                console.warn(`[ContentDataManager] Could not fetch full content for mod log: ${targetId}`);
+                console.warn(`[ContentDataManager] Could not fetch content for mod log: ${targetId}`);
                 result.targetUrl = event.targetPost?.permalink ? `https://reddit.com${event.targetPost.permalink}` : undefined;
             }
             return result;
         }
 
-        if (event.targetUser.id != "") {
+        // Scenario B: User Target
+        if (event.targetUser?.id) {
             result.targetType = 'user';
             result.targetName = `u/${event.targetUser.name}`;
             result.targetUrl = `https://www.reddit.com/user/${event.targetUser.name}`;
             return result;
         }
 
+        // Scenario C: Subreddit Target
         result.targetType = 'subreddit';
         result.targetName = `r/${event.subreddit?.name || 'Subreddit'}`;
         result.targetUrl = `https://www.reddit.com/r/${event.subreddit?.name}`;
 
         return result;
     }
+
+    // #region Private Helpers
+
+    private static async enrichCrosspostData(details: ContentDetails, item: Post | Comment, context: DevvitContext, event?: any) {
+        let crosspostParentId = event?.crosspostParentId;
+        const redditIdRegex = /(?:\/comments\/|\/gallery\/|\/s\/)([a-z0-9]+)/i;
+
+        if (!crosspostParentId && 'title' in item && (item as Post).url) {
+            const match = (item as Post).url.match(redditIdRegex);
+            if (match && !item.id.includes(match[1])) {
+                crosspostParentId = 't3_' + match[1];
+            }
+        }
+
+        if (crosspostParentId) {
+            try {
+                const crosspostItem = await context.reddit.getPostById(crosspostParentId);
+                details.crossPostBody = crosspostItem.body;
+                details.crossPostPermalink = `https://reddit.com${crosspostItem.permalink}`;
+                details.crossPostSubredditName = crosspostItem.subredditName;
+                details.isCrossPost = true;
+            } catch (error) {
+                console.error(`[ContentDataManager] Failed to fetch crosspost parent:`, error);
+            }
+        }
+    }
+
+    private static async enrichUserStats(details: ContentDetails, item: Post | Comment, context: DevvitContext) {
+        if (!details.authorName || details.authorName.toLowerCase().includes("[deleted]")) return;
+
+        const userCacheKey = `user-stats:${details.authorName}:${details.subredditName}`;
+        try {
+            const cachedStats = await CacheManager.getCachedContent(userCacheKey, context) as CachedUserStats | null;
+
+            if (cachedStats) {
+                details.authorLinkKarma = cachedStats.linkKarma;
+                details.authorCommentKarma = cachedStats.commentKarma;
+                details.authorSubredditLinkKarma = cachedStats.subredditLinkKarma;
+                details.authorSubredditCommentKarma = cachedStats.subredditCommentKarma;
+                details.authorShadowbanned = cachedStats.authorShadowbanned;
+                details.authorCreatedAt = cachedStats.authorCreatedAt ? new Date(cachedStats.authorCreatedAt) : undefined;
+                details.authorFlair = cachedStats.authorFlair;
+            } else {
+                const [user, rawUser] = await Promise.all([
+                    item.getAuthor(),
+                    context.reddit.getUserByUsername(item.authorName)
+                ]);
+
+                details.authorShadowbanned = !rawUser;
+
+                if (user) {
+                    const totalSubKarma = await user.getUserKarmaFromCurrentSubreddit();
+                    details.authorLinkKarma = user.linkKarma;
+                    details.authorCommentKarma = user.commentKarma;
+                    details.authorSubredditLinkKarma = totalSubKarma?.fromPosts;
+                    details.authorSubredditCommentKarma = totalSubKarma?.fromComments;
+                    
+                    const flair = await user.getUserFlairBySubreddit(details.subredditName);
+                    details.authorFlair = flair?.flairText || undefined;
+                    details.authorCreatedAt = user.createdAt;
+
+                    await CacheManager.cacheContent(userCacheKey, {
+                        linkKarma: user.linkKarma,
+                        commentKarma: user.commentKarma,
+                        subredditLinkKarma: totalSubKarma?.fromPosts,
+                        subredditCommentKarma: totalSubKarma?.fromComments,
+                        authorShadowbanned: details.authorShadowbanned,
+                        authorCreatedAt: user.createdAt,
+                        authorFlair: details.authorFlair,
+                    }, context);
+                }
+            }
+        } catch {
+            console.warn(`[ContentDataManager] Failed user stats for ${details.authorName}`);
+        }
+    }
+
+    private static setVisualWarnings(details: ContentDetails, item: Post) {
+        const nsfw = item.isNsfw();
+        const spoiler = item.isSpoiler();
+
+        details.isNSFW = nsfw;
+        details.isSpoiler = spoiler;
+
+        if (nsfw && spoiler) details.contentWarning = "NSFW & Spoilers";
+        else if (nsfw) details.contentWarning = "NSFW";
+        else if (spoiler) details.contentWarning = "Spoilers";
+    }
+
+    private static enrichReportData(details: ContentDetails, item: Post | Comment) {
+        const raw = item as any;
+        details.reportReasons = (item.userReportReasons?.length) ? item.userReportReasons : item.modReportReasons;
+        details.reportCount = ('title' in item) ? raw.numberOfReports : raw.numReports;
+    }
+
+    private static async enrichModLogData(details: ContentDetails, item: Post | Comment, context: DevvitContext) {
+        const cacheKey = `modlog:${details.id}`;
+        const cached = await CacheManager.getCachedContent(cacheKey, context) as CachedModLogData | null;
+
+        let reasonLog = cached?.reasonLog;
+        let removalLog = cached?.removalLog;
+        let cacheMiss = false;
+
+        // Fetch Removal Reason
+        if (!reasonLog) {
+            cacheMiss = true;
+            reasonLog = (await context.reddit.getModerationLog({
+                subredditName: item.subredditName,
+                type: 'addremovalreason',
+                limit: 10,
+                more: { parentId: item.id, children: [], depth: 1 }
+            }).all()).find(e => e.target?.id === details.id);
+        }
+
+        // Fetch Removal Action
+        if (!removalLog) {
+            cacheMiss = true;
+            removalLog = (await context.reddit.getModerationLog({
+                subredditName: item.subredditName,
+                type: ('title' in item) ? 'removelink' : 'removecomment',
+                limit: 10,
+                more: { parentId: item.id, children: [], depth: 1 }
+            }).all()).find(e => e.target?.id === details.id);
+        }
+
+        if (cacheMiss && (reasonLog || removalLog)) {
+            await CacheManager.cacheContent(cacheKey, { reasonLog, removalLog }, context);
+        }
+
+        if (reasonLog) details.removalReason = reasonLog.description || undefined;
+        if (removalLog) {
+            details.removedBy = details.removedBy || removalLog.moderatorName;
+            details.removalReason = details.removalReason || removalLog.description || undefined;
+        }
+    }
+    // #endregion
 }

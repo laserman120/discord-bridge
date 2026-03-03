@@ -1,95 +1,93 @@
 import { Post, Comment, TriggerContext } from '@devvit/public-api';
-import { ChannelType, ItemState } from '../config/enums.js';
+import { ChannelType, ItemState, TranslationKey } from '../config/enums.js';
+import { BaseHandler } from './baseHandler.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
-import { UtilityManager } from '../managers/utilityManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
+import { TranslationHelper } from '../helpers/translationHelper.js';
 
-export class SpamRemovalHandler {
-
+/**
+ * Handles items flagged as Spam or silently removed by Reddit's internal filters.
+ * Routes these notifications to the Removals channel with specific "Reddit Filter" attribution.
+ */
+export class SpamRemovalHandler extends BaseHandler {
+    /**
+     * Processes spam triggers and dispatches Discord notifications.
+     * @param event - The event data containing the target ID.
+     * @param context - The Devvit execution context.
+     * @param preFetchedContent - Optional pre-fetched content to save API calls.
+     */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        const targetId = event.targetId || event.id;
-
+        const targetId = this.getRedditId(event);
         if (!targetId) return;
 
+        // 1. Resolve Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_REMOVALS') as string | undefined;
         if (!webhookUrl) return;
 
-        const existingLogs = await StorageManager.getLinkedLogEntries(targetId, context);
-        const alreadyLogged = existingLogs.some(entry => entry.channelType === ChannelType.Removals);
-
-        if (alreadyLogged) {
-            console.log(`[SpamRemovalHandler] Log already exists for ${targetId}. Skipping.`);
+        // 2. Prevent Duplicate Logging
+        if (await this.isAlreadyLogged(targetId, ChannelType.Removals, context)) {
+            console.log(`[SpamRemovalHandler] Item ${targetId} already logged in removals. Skipping.`);
             return;
         }
 
-        let contentItem: Post | Comment | undefined;
-        if (preFetchedContent) {
-            contentItem = preFetchedContent;
-        } else {
-            try {
-                if (targetId.startsWith('t3_')) {
-                    contentItem = await context.reddit.getPostById(targetId);
-                } else {
-                    contentItem = await context.reddit.getCommentById(targetId);
-                }
-            } catch (e) {
-                console.error(`[SpamRemovalHandler] Failed to fetch content: ${e}`);
-                return;
-            }
-        }
-
+        // 3. Resolve Content
+        const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
+        // 4. Fallback attribution for silent removals
         if (!contentData.removedBy) {
-            contentData.removedBy = "Reddit Filter";
-            if (!contentData.removalReason) {
-                contentData.removalReason = "Item was silently removed or marked as spam by Reddit.";
-            }
+            contentData.removedBy = await TranslationHelper.t(TranslationKey.TEXT_REMOVED_SILENTLY_BY_REDDIT, context);
+            contentData.removalReason = contentData.removalReason || await TranslationHelper.t(TranslationKey.TEXT_REMOVED_SILENTLY_BY_REDDIT_REASON, context);
         }
 
-        const state = ItemState.Spam;
-
-        const ignoredAuthorsList = await context.settings.get('REMOVAL_IGNORE_AUTHOR') as string || "";
-        const ignoredAuthors = ignoredAuthorsList.split(";").map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
-
-        if (contentData.authorName && ignoredAuthors.includes(contentData.authorName.toLowerCase())) {
-            console.log(`[SpamRemovalHandler] Author ${contentData.authorName} is ignored.`);
+        // 5. Ignore Author Filter
+        if (await this.isAuthorIgnored(contentData.authorName, context)) {
             return;
         }
 
-        // 8. Determine Notification String
-        // 0=Mod, 1=Auto/Bot, 2=Admin, 3=Spam
+        // 6. Resolve Notification String (Index 3 is reserved for Spam)
         const notificationStrings = await UtilityManager.getMessageFromChannelType(ChannelType.Removals, context);
-        let notificationString: string | undefined;
+        const notificationString = (notificationStrings && notificationStrings.length > 3) 
+            ? notificationStrings[3] 
+            : undefined;
 
-        if (notificationStrings && notificationStrings.length > 1) {
-            notificationString = notificationStrings[3];
-        }
+        console.log(`[SpamRemovalHandler] Dispatching spam notification for ${targetId}`);
 
-        // 9. Build & Send Message
+        // 7. Build and Send
         const payload = await ComponentManager.createDefaultMessage(
             contentData,
-            state,
+            ItemState.Spam,
             ChannelType.Removals,
             context,
             notificationString
         );
 
-        console.log(`[SpamRemovalHandler] Sending notification for ${targetId}`);
-        const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload);
+        const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 
         if (messageId && !messageId.startsWith('failed')) {
             await StorageManager.createLogEntry({
                 redditId: targetId,
                 discordMessageId: messageId,
                 channelType: ChannelType.Removals,
-                currentStatus: state,
+                currentStatus: ItemState.Spam,
                 webhookUrl: webhookUrl
-            }, context as any);
+            }, context);
         }
+    }
+
+    /**
+     * Checks if the content author should be ignored based on subreddit settings.
+     * @private
+     */
+    private static async isAuthorIgnored(authorName: string | undefined, context: TriggerContext): Promise<boolean> {
+        if (!authorName) return false;
+        const ignoredList = await context.settings.get('REMOVAL_IGNORE_AUTHOR') as string || "";
+        const ignoredAuthors = ignoredList.split(";").map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
+        return ignoredAuthors.includes(authorName.toLowerCase());
     }
 }
