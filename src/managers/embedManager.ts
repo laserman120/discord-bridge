@@ -1,8 +1,9 @@
 ﻿import { Post, Comment, ModAction, TriggerContext } from '@devvit/public-api';
-import { ItemState, ChannelType } from '../config/enums.js';
+import { ItemState, ChannelType, TranslationKey } from '../config/enums.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { ContentDetails, ModActionDetails } from './contentDataManager.js';
 import { APP_ICON_MODLOG_BLUE, APP_ICON_MODLOG_GREEN, APP_ICON_MODLOG_GREY, APP_ICON_MODLOG_RED } from '../config/constants.js';
+import { TranslationHelper } from '../helpers/translationHelper.js';
 
 export class EmbedManager {
     private static getModActionColor(action: string): [number, string] {
@@ -34,33 +35,33 @@ export class EmbedManager {
 
         let description = event.details || event.description || "";
 
-        if (!description) {
-            if (event.action === 'sticky') description = "Stickied content";
-            if (event.action === 'unsticky') description = "Unstickied content";
-            if (event.action === 'lock') description = "Locked content";
-            if (event.action === 'unlock') description = "Unlocked content";
-        }
+        const cleanModerator = UtilityManager.escapeMarkdown(moderatorName)
+        const moderatorText = await TranslationHelper.t(TranslationKey.MODLOG_MODERATOR, context);
+        const actionText = await TranslationHelper.t(TranslationKey.MODLOG_ACTION, context);
+        const targetText = await TranslationHelper.t(TranslationKey.MODLOG_TARGET, context);
+        const targetTextUser = await TranslationHelper.t(TranslationKey.MODLOG_TARGET_USER, context);
+
 
         const fields = [
-            { name: 'Moderator', value: `u/${moderatorName}`, inline: true },
-            { name: 'Action', value: `\`${event.action}\``, inline: true },
+            { name: moderatorText, value: `u/${cleanModerator}`, inline: true },
+            { name: actionText, value: `\`${event.action}\``, inline: true },
         ];
 
         if (targetData.targetType === 'content' && targetData.contentDetails) {
-            fields.push({ name: 'Target', value: `[${targetData.targetName}](${targetData.targetUrl})`, inline: true });
+            fields.push({ name: targetText, value: `[${targetData.targetName}](${targetData.targetUrl})`, inline: true });
 
             if (targetData.contentDetails.body) {
                 const snippet = targetData.contentDetails.body.substring(0, 150).replace(/\n/g, ' ');
                 description = description ? `${description}\n\n> ${snippet}...` : `> ${snippet}...`;
             }
         } else if (targetData.targetType === 'user') {
-            fields.push({ name: 'User', value: `[${targetData.targetName}](${targetData.targetUrl})`, inline: true });
+            fields.push({ name: targetTextUser, value: `[${targetData.targetName}](${targetData.targetUrl})`, inline: true });
         } else {
-            fields.push({ name: 'Target', value: targetData.targetName, inline: true });
+            fields.push({ name: targetText, value: targetData.targetName, inline: true });
         }
 
         const embed: any = {
-            title: `Mod Action: ${event.action}`,
+            title: await TranslationHelper.t(TranslationKey.MODLOG_TITLE, context, {action: event.action}),
             description: description || undefined,
             color: color,
             fields: fields,

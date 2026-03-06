@@ -6,6 +6,7 @@ import { QueueManager } from './managers/queueManager.js';
 import { checkModQueue } from './scheduledEvents/modQueueCheckJob.js';
 import { checkNewsUpdates } from './scheduledEvents/newsCheckJob.js';
 import { checkSpamQueue } from './scheduledEvents/spamQueueCheckJob.js';
+import { TranslationHelper } from './helpers/translationHelper.js';
 
 Devvit.addSettings([
     appNotificationGroup,
@@ -27,6 +28,8 @@ Devvit.addSettings([
 ]);
 
 const ActionsRequiringUpdate = ["marknsfw", "lock", "unlock", "sticky", "unsticky", "spoiler", "unspoiler", "editflair"];
+const isDevMode = false;
+
 
 Devvit.addTrigger({
     event: 'ModAction',
@@ -210,6 +213,10 @@ Devvit.addTrigger({
 
         } catch (e) {
             console.error('[Setup] Failed to schedule cleanup job:', e);
+        }
+
+        if (isDevMode) {
+            TranslationHelper.logCurrentDefaults();
         }
     },
 });

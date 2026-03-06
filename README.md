@@ -73,9 +73,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
 - v0.XX.X
-  - Fixed minor issue with silent removal check.
   - Refactored codebase
   - Added Translation setting ( See Wiki for more information on translation )
+  - Fixed minor issue with silent removal check.
+  - Minor fixes for unescaped markdown
 - v0.14.6
   - Hotfix: Fixed incorrectly labeled setting to show the default author button in private messages.
 - v0.14.4

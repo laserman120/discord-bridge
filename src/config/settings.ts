@@ -48,7 +48,7 @@ export const appNotificationGroup = {
         {
             type: 'boolean' as const,
             name: 'ALLOW_NOTIFICATIONS_IN_DISCORD',
-            label: 'If enabled the notifications can create a discord message in the ModMail channel (If enabled)',
+            label: 'If enabled the notifications can create a discord message in the ModMail channel if one has been setup',
             defaultValue: true,
             scope: 'installation' as const,
         },

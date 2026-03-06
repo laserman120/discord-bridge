@@ -181,7 +181,7 @@ export class ComponentManager {
         }
 
         // TITLE & IMAGE HANDLING
-        let titleText = details.type === 'post' ? details.title.substring(0, 256) : await TranslationHelper.t(TranslationKey.TEXT_COMMENT_BY, context, { author: details.authorName });
+        let titleText = details.type === 'post' ? details.title.substring(0, 256) : await TranslationHelper.t(TranslationKey.TEXT_COMMENT_BY, context, { author: details.authorName }, isPublic);
         const titleMarkdown = `### ${titleText}`;
 
         let imageUrl: string | undefined = details.imageUrl;
@@ -192,9 +192,9 @@ export class ComponentManager {
         // BODY CONTENT & SNIPPET
         let bodyContent = '';
         if (details.isNSFW && !publicShowNsfwBody && isPublic) {
-            bodyContent = await TranslationHelper.t(TranslationKey.TEXT_HIDDEN_NSFW, context);
+            bodyContent = await TranslationHelper.t(TranslationKey.TEXT_HIDDEN_NSFW_PUBLIC, context);
         } else if (details.isSpoiler && !publicShowSpoilerBody && isPublic) {
-            bodyContent = await TranslationHelper.t(TranslationKey.TEXT_HIDDEN_SPOILER, context);
+            bodyContent = await TranslationHelper.t(TranslationKey.TEXT_HIDDEN_SPOILER_PUBLIC, context);
         } else {
             const rawBodyContent = details.body || (details.isCrossPost ? details.crossPostBody : '') || '';
             bodyContent = UtilityManager.cleanBodyText(rawBodyContent);
@@ -240,7 +240,7 @@ export class ComponentManager {
         // Author Name & Status
         if (publicShowAuthor || !isPublic) {
             const safeAuthorName = UtilityManager.escapeMarkdown(details.authorName);
-            let authorStr = await TranslationHelper.t(TranslationKey.LABEL_AUTHOR, context, { author: safeAuthorName });
+            let authorStr = await TranslationHelper.t(TranslationKey.LABEL_AUTHOR, context, { author: safeAuthorName }, isPublic);
             if (details.authorShadowbanned && !isPublic) authorStr += await TranslationHelper.t(TranslationKey.LABEL_BANNED, context);
             authorLines.push(authorStr);
         }
@@ -265,20 +265,22 @@ export class ComponentManager {
         // Post Flair (The tag on the post)
         const canShowFlair = isPublic ? publicShowFlair : showPostFlair;
         if (details.flairText && canShowFlair) {
-            contentLines.push( await TranslationHelper.t(TranslationKey.LABEL_POST_FLAIR, context, { flair: details.flairText }) );
+            let postFlair = await TranslationHelper.t(TranslationKey.LABEL_POST_FLAIR, context, { flair: details.flairText }, isPublic);
+            contentLines.push( postFlair );
         }
 
         // Content Warnings (NSFW/Spoiler)
         if (details.contentWarning && (publicShowContentWarning || !isPublic)) {
-            contentLines.push( await TranslationHelper.t(TranslationKey.LABEL_WARNING, context, { warning: details.contentWarning }) );
+            let contentWarning = await TranslationHelper.t(TranslationKey.LABEL_WARNING, context, { warning: details.contentWarning }, isPublic);
+            contentLines.push( contentWarning );
         }
 
         // Crosspost Info
         if (details.isCrossPost) {
-            const crosspostLine = await TranslationHelper.t(TranslationKey.LABEL_CROSSPOST, context, {
-                sub: details.crossPostSubredditName || 'unknown',
-                url: details.crossPostPermalink || '#'
-            });
+            let crosspostLine = await TranslationHelper.t(TranslationKey.LABEL_CROSSPOST, context, {
+                    sub: details.crossPostSubredditName || 'unknown',
+                    url: details.crossPostPermalink || '#'
+                }, isPublic);
             contentLines.push(crosspostLine);
         }
 
@@ -428,11 +430,11 @@ export class ComponentManager {
         if (!isPublic && status !== ItemState.Deleted) {
             if (showAuthorButton) buttons.push({
                 id: this.generateRandomId(), type: 2, style: 5,
-                label: await TranslationHelper.t(TranslationKey.BUTTON_AUTHOR, context), url: `https://www.reddit.com/user/${details.authorName}`
+                label: await TranslationHelper.t(TranslationKey.BUTTON_AUTHOR, context, {}, isPublic), url: `https://www.reddit.com/user/${details.authorName}`
             });
             if (showArcticShift) buttons.push({
                 id: this.generateRandomId(), type: 2, style: 5,
-                label: await TranslationHelper.t(TranslationKey.BUTTON_ARCTIC_SHIFT, context), url: `https://arctic-shift.photon-reddit.com/search?fun=posts_search&author=${details.authorName}&limit=10&sort=desc`
+                label: await TranslationHelper.t(TranslationKey.BUTTON_ARCTIC_SHIFT, context, {}, isPublic), url: `https://arctic-shift.photon-reddit.com/search?fun=posts_search&author=${details.authorName}&limit=10&sort=desc`
             });
         }
 

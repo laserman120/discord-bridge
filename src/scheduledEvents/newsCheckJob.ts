@@ -1,6 +1,7 @@
 import { JobContext } from '@devvit/public-api';
 import { NEWS_SOURCE_SUBREDDIT, NEWS_SOURCE_AUTHOR } from '../config/constants.js';
 import { NEWS_MAX_AGE_MS } from '../config/constants.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 export async function checkNewsUpdates(event: any, context: JobContext): Promise<void> {
 
     // 1. Check Settings
@@ -52,10 +53,10 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
             console.log(`[NewsCheck] Sending ${notificationType} notification for ${post.id}`);
 
             const cleanTitle = post.title.replace(/\[.*?\]/, '').trim();
-
+            const cleanBody = UtilityManager.cleanBodyText(post.body || '');
             await context.reddit.modMail.createModNotification({
                 subject: `Discord Bridge ${notificationType}: ${cleanTitle}`,
-                bodyMarkdown: `**Discord Bridge ${notificationType}**\n\n${post.url}\n\n${post.body ? post.body.substring(0, 1000) + '...' : ''}\n\n*You can disable these notifications in the App Settings.*\n\n*This is an automatic message, if you require assistance, have questions or want to request a feature, contact me directly* ( [Here](https://www.reddit.com/message/compose/?to=_GLAD0S_) ) *or create a post in* [r/Discord_Bridge](https://www.reddit.com/r/Discord_Bridge/)`,
+                bodyMarkdown: `**Discord Bridge ${notificationType}**\n\n${post.url}\n\n${cleanBody ? cleanBody.substring(0, 1000) + '...' : ''}\n\n*You can disable these notifications in the App Settings.*\n\n*This is an automatic message, if you require assistance, have questions or want to request a feature, contact me directly* ( [Here](https://www.reddit.com/message/compose/?to=_GLAD0S_) ) *or create a post in* [r/Discord_Bridge](https://www.reddit.com/r/Discord_Bridge/)`,
                 subredditId: currentSub.id
             });
 

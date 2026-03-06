@@ -5,11 +5,15 @@ export class TranslationHelper {
     private static readonly DEFAULTS: Record<string, string> = {
         // Labels
     [TranslationKey.LABEL_AUTHOR]: "**Author:** u/{{author}}",
+    [TranslationKey.LABEL_AUTHOR_PUBLIC]: "**Author:** {{author}}",
     [TranslationKey.LABEL_AGE]: "**Age:** {{age}}",
     [TranslationKey.LABEL_USER_FLAIR]: "**User Flair:** {{flair}}",
     [TranslationKey.LABEL_POST_FLAIR]: "**Post Flair:** {{flair}}",
+    [TranslationKey.LABEL_POST_FLAIR_PUBLIC]: "**Post Flair:** {{flair}}",
     [TranslationKey.LABEL_WARNING]: "**Warning:** {{warning}}",
+    [TranslationKey.LABEL_WARNING_PUBLIC]: "**Warning:** {{warning}}",
     [TranslationKey.LABEL_CROSSPOST]: "**Crosspost From:** [r/{{sub}}]({{url}})",
+    [TranslationKey.LABEL_CROSSPOST_PUBLIC]: "**Crosspost From:** r/{{sub}}",
     [TranslationKey.LABEL_REPORTS_WITH_REASONS]: "**Reports:** {{count}} ({{reasons}})",
     [TranslationKey.LABEL_REPORTS_COUNT_ONLY]: "**Reports:** {{count}}",
     [TranslationKey.LABEL_REMOVAL_REASON]: "**Removal Reason:** {{reason}}",
@@ -49,19 +53,23 @@ export class TranslationHelper {
     [TranslationKey.ACTION_AWAITING_REVIEW]: "Awaiting Review",
 
     // Content Placeholders
-    [TranslationKey.TEXT_HIDDEN_NSFW]: "*[Hidden due to potential NSFW content]*",
-    [TranslationKey.TEXT_HIDDEN_SPOILER]: "*[Hidden due to potential Spoilers]*",
+    [TranslationKey.TEXT_HIDDEN_NSFW_PUBLIC]: "*[Hidden due to potential NSFW content]*",
+    [TranslationKey.TEXT_HIDDEN_SPOILER_PUBLIC]: "*[Hidden due to potential Spoilers]*",
     [TranslationKey.TEXT_COMMENT_BY]: "Comment by {{author}}",
+    [TranslationKey.TEXT_COMMENT_BY_PUBLIC]: "Comment by {{author}}",
     [TranslationKey.TEXT_IMAGE_POST]: "_Image post_",
     [TranslationKey.TEXT_NO_CONTENT]: "No content.",
     [TranslationKey.LABEL_PERMALINK_FOOTER]: "r/{{sub}} • <t:{{time}}:f>",
+    [TranslationKey.LABEL_PERMALINK_FOOTER_PUBLIC]: "r/{{sub}} • {{time}}",
     [TranslationKey.TEXT_NO_USERNAME]: "Unknown User",
     [TranslationKey.TEXT_REMOVED_SILENTLY_BY_REDDIT_REASON]: "Item was silently removed or marked as spam by Reddit.",
     [TranslationKey.TEXT_REMOVED_SILENTLY_BY_REDDIT]: "Reddit Filter",
 
     // Buttons
     [TranslationKey.BUTTON_POST]: "Post",
+    [TranslationKey.BUTTON_POST_PUBLIC]: "Post",
     [TranslationKey.BUTTON_COMMENT]: "Comment",
+    [TranslationKey.BUTTON_COMMENT_PUBLIC]: "Comment",
     [TranslationKey.BUTTON_AUTHOR]: "Author",
     [TranslationKey.BUTTON_ARCTIC_SHIFT]: "Author A-S",
     [TranslationKey.BUTTON_OPEN_QUEUE]: "Open Queue",
@@ -76,7 +84,15 @@ export class TranslationHelper {
     [TranslationKey.MODMAIL_SUBJECT_HEADER]: "{{subject}}",
     [TranslationKey.MODMAIL_MOD_REPLIED]: "Moderator Replied: u/{{user}}",
     [TranslationKey.MODMAIL_USER_REPLIED]: "User Replied: u/{{user}}",
-    [TranslationKey.MODMAIL_NO_SUBJECT]: "(No Subject)"
+    [TranslationKey.MODMAIL_NO_SUBJECT]: "(No Subject)",
+
+    // ModLog
+    [TranslationKey.MODLOG_TITLE]: "Mod Action: {{action}}",
+    [TranslationKey.MODLOG_MODERATOR]: "Moderator",
+    [TranslationKey.MODLOG_ACTION]: "Action",
+    [TranslationKey.MODLOG_TARGET]: "Target",
+    [TranslationKey.MODLOG_TARGET_USER]: "Target User",
+
     };
 
     /**
@@ -92,15 +108,27 @@ export class TranslationHelper {
      * @param context The Devvit context (to access settings)
      * @param vars Optional variables to replace in the string (e.g. { user: 'name' })
      */
-    static async t(key: TranslationKey, context: DevvitContext, vars?: Record<string, string | number>): Promise<string> {
-        let template = this.DEFAULTS[key] || `[[${key}]]`;
+    static async t(key: TranslationKey, context: DevvitContext, vars?: Record<string, string | number>, isPublic: boolean = false): Promise<string> {
+        let finalKey: string = key;
+
+        // If it's a public message, try to find the "public_" version of the key first
+        if (isPublic) {
+            const publicKey = `${key}_public`;
+            // We check if this public key exists in our DEFAULTS or overrides
+            if (this.DEFAULTS[publicKey as TranslationKey]) {
+                finalKey = publicKey;
+            }
+        }
+
+
+        let template = this.DEFAULTS[finalKey] || `[[${finalKey}]]`;
 
         try {
             const customJson = await context.settings.get<string>('TRANSLATION_OVERRIDES_JSON');
             if (customJson) {
                 const overrides = JSON.parse(customJson);
-                if (overrides[key]) {
-                    template = overrides[key];
+                if (overrides[finalKey]) {
+                    template = overrides[finalKey];
                 }
             }
         } catch (e) {
@@ -126,5 +154,12 @@ export class TranslationHelper {
             .replace(/\\\{\\\{.*?\\\}\\\}/g, '.*'); // Replace {{var}} with wildcard '.*'
         
         return new RegExp(escaped, 'g');
+    }
+
+    static logCurrentDefaults(): void {
+        const json = JSON.stringify(this.DEFAULTS, null, 2);
+        console.log("--- START TRANSLATION DEFAULTS ---");
+        console.log(json);
+        console.log("--- END TRANSLATION DEFAULTS ---");
     }
 }
