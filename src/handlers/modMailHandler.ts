@@ -4,7 +4,7 @@ import { BaseHandler } from './baseHandler.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
-import { APP_USERNAME } from '../config/constants.js';
+import { APP_USERNAME, MAX_MODMAIL_AGE_MS } from '../config/constants.js';
 import { TranslationHelper } from '../helpers/translationHelper.js';
 
 interface ModmailMessage {
@@ -64,53 +64,48 @@ export class ModMailHandler extends BaseHandler {
         logEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         const latestLogEntry = logEntries[0];
 
-        // 4. State Calculation Logic
+        // 4. Identify NEW and FRESH messages
+        const now = Date.now();
+        const processedIds = await StorageManager.getProcessedMessageIds(cleanId, context);
+
+        const messagesToBridge = (Object.values(conversation.messages) as ModmailMessage[])
+            .filter((msg) => {
+                const isNew = !processedIds.includes(msg.id);
+                const isFresh = (now - new Date(msg.date).getTime()) < MAX_MODMAIL_AGE_MS;
+                return isNew && isFresh;
+            })
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        // If no fresh messages to process, just stop.
+        if (messagesToBridge.length === 0) return;
+
+        // 5. State Calculation: Does this batch contain a USER reply?
+        const containsUserReply = messagesToBridge.some(msg => !(msg.participatingAs === 'moderator' || msg.author?.isMod));
+
         let shouldCreateNew = false;
         let state = ItemState.New_Modmail;
 
-        if (!latestLogEntry) {
+        if (!latestLogEntry || containsUserReply) {
             shouldCreateNew = true;
-            state = ItemState.New_Modmail;
+            state = containsUserReply ? ItemState.New_Reply_Modmail : ItemState.New_Modmail;
         } else {
-            const lastStatus = latestLogEntry.currentStatus;
-            if (isModAuthor) {
-                shouldCreateNew = false;
-                state = ItemState.Answered_Modmail;
-            } else {
-                // If it was Answered/Archived and a user replies, we create a NEW message in Discord
-                if (lastStatus === ItemState.Answered_Modmail || lastStatus === ItemState.Archived_Modmail) {
-                    shouldCreateNew = true;
-                    state = ItemState.New_Reply_Modmail;
-                } else {
-                    shouldCreateNew = false;
-                    state = lastStatus === ItemState.New_Reply_Modmail ? ItemState.New_Reply_Modmail : ItemState.New_Modmail;
-                }
-            }
+            shouldCreateNew = false;
+            state = ItemState.Answered_Modmail;
         }
 
-        // 5. Special Filter: Ignore threads started by Mods (unless from this App)
+        // 6. Filter: Ignore threads started by Mods (unless from this App)
         if (state === ItemState.New_Modmail && isModAuthor) {
             const allowNews = await context.settings.get('ALLOW_NOTIFICATIONS_IN_DISCORD') as boolean;
-            if (allowNews && latestMessage.author?.name?.toLowerCase() === APP_USERNAME.toLowerCase()) {
-                console.log(`[ModMailHandler] New conversation started by app, proceeding.`);
-            } else {
-                console.log(`[ModMailHandler] New conversation started by Moderator, ignoring.`);
+            if (!(allowNews && latestMessage.author?.name?.toLowerCase() === APP_USERNAME.toLowerCase())) {
                 return;
             }
         }
 
-        // 6. Ignore User Filter
-        let ignoredUsersList = await context.settings.get('MODMAIL_AUTHOR_IGNORED') as string || "";
-        let ignoredUsers = ignoredUsersList.split(";").map(u => u.trim().toLowerCase());
-        if (latestMessage.author?.name && ignoredUsers.includes(latestMessage.author.name.toLowerCase())) {
-            return;
-        }
-
-        // 7. Route to Creation or Update logic
+        // 7. Route with the pre-filtered message list
         if (shouldCreateNew) {
-            await this.handleNewNotification(conversation, cleanId, latestLogEntry, messageList, state, webhookUrl, context);
+            await this.handleNewNotification(conversation, cleanId, latestLogEntry, messagesToBridge, state, webhookUrl, context);
         } else if (latestLogEntry) {
-            await this.handleExistingUpdate(conversation, cleanId, latestLogEntry, state, context);
+            await this.handleExistingUpdate(conversation, cleanId, latestLogEntry, messagesToBridge, state, context);
         }
     }
 
@@ -118,20 +113,39 @@ export class ModMailHandler extends BaseHandler {
      * Logic for creating a brand new Discord notification for a modmail thread.
      * @private
      */
-    private static async handleNewNotification(conversation: any, cleanId: string, latestLogEntry: any, messageList: any[], state: ItemState, webhookUrl: string, context: TriggerContext) {
-        // If no log exists, show the very first message. Otherwise show the latest reply.
-        const messageToShow = (!latestLogEntry) ? messageList[messageList.length - 1] : messageList[0];
-        if (!messageToShow.id) return;
-
+    private static async handleNewNotification(conversation: any, cleanId: string, latestLogEntry: any, messagesToBridge: any[], state: ItemState, webhookUrl: string, context: TriggerContext) {
+        // Use the first message in the batch for the main card
+        const triggerMessage = messagesToBridge[0];
         const notificationString = await context.settings.get('MODMAIL_MESSAGE') as string | undefined;
-        const payload = await ComponentManager.createModMailMessage(
-            conversation.subject ?? await TranslationHelper.t(TranslationKey.MODMAIL_NO_SUBJECT, context),
+
+        let payload = await ComponentManager.createModMailMessage(
+            conversation.subject ?? "No Subject",
             cleanId,
-            messageToShow,
+            triggerMessage,
             state,
             context,
             notificationString
         );
+
+        // If there are more messages in this batch (like a quick Mod follow-up), append them
+        if (messagesToBridge.length > 1) {
+            for (let i = 1; i < messagesToBridge.length; i++) {
+                const msg = messagesToBridge[i];
+                const isMsgMod = msg.participatingAs === 'moderator' || msg.author?.isMod;
+                
+                if (isMsgMod) {
+                    payload.components = await ComponentManager.appendModeratorReply(payload.components, msg, context);
+                    
+                    payload.components = await ComponentManager.updateModMailState(payload.components, ItemState.Answered_Modmail, context);
+                    
+                    state = ItemState.Answered_Modmail; 
+                } else {
+                    payload.components = await ComponentManager.updateModMailBody(payload.components, msg.bodyMarkdown, context);
+                    
+                    state = ItemState.New_Reply_Modmail;
+                }
+            }
+        }
 
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
         if (messageId && !messageId.startsWith('failed')) {
@@ -144,7 +158,11 @@ export class ModMailHandler extends BaseHandler {
             }, context);
 
             await StorageManager.trackActiveModmail(cleanId, context);
-            await StorageManager.markMessageAsProcessed(cleanId, messageToShow.id, context);
+            
+            // Mark all messages in this batch as processed
+            for (const msg of messagesToBridge) {
+                await StorageManager.markMessageAsProcessed(cleanId, msg.id, context);
+            }
         }
     }
 
@@ -152,16 +170,7 @@ export class ModMailHandler extends BaseHandler {
      * Logic for appending messages to an existing Discord notification.
      * @private
      */
-    private static async handleExistingUpdate(conversation: any, cleanId: string, latestLogEntry: any, state: ItemState, context: TriggerContext) {
-        const processedIds = await StorageManager.getProcessedMessageIds(cleanId, context);
-        
-        // Filter for unsent messages, sort Oldest -> Newest for proper reading order
-        const messagesToBridge = (Object.values(conversation.messages) as ModmailMessage[])
-            .filter((msg) => !processedIds.includes(msg.id))
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-        if (messagesToBridge.length === 0) return;
-
+    private static async handleExistingUpdate(conversation: any, cleanId: string, latestLogEntry: any, messagesToBridge: any[], state: ItemState, context: TriggerContext) {
         const currentMessage = await WebhookManager.getMessage(latestLogEntry.webhookUrl, latestLogEntry.discordMessageId);
         if (!currentMessage) return;
 
@@ -180,12 +189,7 @@ export class ModMailHandler extends BaseHandler {
 
             if (isMsgMod) {
                 // Keep buttons at the bottom: remove them, add message, put them back
-                const buttonRowIndex = components.findIndex((c: any) => c.type === 1);
-                let buttonRow = buttonRowIndex !== -1 ? components.splice(buttonRowIndex, 1)[0] : null;
-
-                const replyComponents = await ComponentManager.createModMailReply(msg, true, context);
-                components.push(...replyComponents);
-                if (buttonRow) components.push(buttonRow);
+                components = await ComponentManager.appendModeratorReply(components, msg, context);
             } else {
                 components = await ComponentManager.updateModMailBody(components, msg.bodyMarkdown || "...", context);
             }

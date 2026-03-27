@@ -52,7 +52,7 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
             if (hasConflictingLog && !alreadyLogged) {
                 //Logs do exist, but not in removals
                 console.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other.`);
-                if (!scanEnabled) {
+                if (scanEnabled) {
                     await QueueManager.enqueue({
                         handler: 'SpamRemovalHandler',
                         data: mockEvent
@@ -76,7 +76,7 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
                 // no logs exist for the item
                 console.log(`[SpamCheck] New silent removal detected: ${item.id}.`);
 
-                if (!scanEnabled) {
+                if (scanEnabled) {
                     await QueueManager.enqueue({
                         handler: 'SpamRemovalHandler',
                         data: mockEvent

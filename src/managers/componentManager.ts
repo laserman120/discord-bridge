@@ -374,8 +374,8 @@ export class ComponentManager {
             }
         
             // 2. Reports Logic
-            if (details.reportCount || (details.reportReasons && details.reportReasons.length > 0)) {
-                const count = details.reportCount || 0;
+            if (details.reportCount && details.reportCount > 0 || (details.reportReasons && details.reportReasons.length > 0)) {
+                let count = details.reportCount || 0;
                 const reasons = details.reportReasons?.join(', ').substring(0, 100);
         
                 if (reasons) {
@@ -586,35 +586,33 @@ export class ComponentManager {
     static async updateModMailState(existingComponents: ComponentV2[], newState: ItemState, context: TriggerContext): Promise<ComponentV2[]> {
         const color = await UtilityManager.getColorFromState(newState, context);
         const statusText = await UtilityManager.getStatusTextModMail(newState, context);
-
+    
         const mainContainer = existingComponents.find(c => c.type === 17);
-
-        if (!mainContainer || !mainContainer.components) {
-            console.warn('[ComponentManager] Could not find main container to update state.');
-            return existingComponents;
-        }
-
+        if (!mainContainer || !mainContainer.components) return existingComponents;
+    
         mainContainer.accent_color = color;
-
-        const statusLabel = await TranslationHelper.t(TranslationKey.LABEL_META_STATUS, context);
-        const statusLabelClean = statusLabel.replace("{{status}}", "").trim();
-        const separator = await TranslationHelper.t(TranslationKey.META_SEPARATOR, context);
-
-        const metaComponent = mainContainer.components.find(c => c.content && c.content.includes(statusLabelClean));
-
+    
+        const statusLabelTemplate = await TranslationHelper.t(TranslationKey.LABEL_META_STATUS, context);
+        
+        const labelPrefix = statusLabelTemplate.replace("{{status}}", "").trim();
+        
+        const metaComponent = mainContainer.components.find(c => c.content && c.content.includes(labelPrefix));
+    
         if (metaComponent && metaComponent.content) {
-
-            const escapedLabel = statusLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const escapedSep = separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-            const regex = new RegExp(`${escapedLabel}(.*?)( ${escapedSep}|$)`);
-
-            metaComponent.content = metaComponent.content.replace(
-                regex,
-                `${statusLabel}${statusText}$2`
-            );
+            const separator = await TranslationHelper.t(TranslationKey.META_SEPARATOR, context);
+            
+            const parts = metaComponent.content.split(separator);
+    
+            const updatedParts = parts.map(part => {
+                if (part.includes(labelPrefix)) {
+                    return statusLabelTemplate.replace("{{status}}", statusText);
+                }
+                return part;
+            });
+    
+            metaComponent.content = updatedParts.join(separator);
         }
-
+    
         return existingComponents;
     }
 
@@ -654,6 +652,59 @@ export class ComponentManager {
             console.warn('[ComponentManager] Could not find body component to update.');
         }
 
+        return updatedComponents;
+    }
+
+    static async appendModeratorReply(existingComponents: ComponentV2[], message: any, context: TriggerContext): Promise<ComponentV2[]> {
+        const updatedComponents: ComponentV2[] = JSON.parse(JSON.stringify(existingComponents));
+        const authorName = message.author?.name || "Moderator";
+        const body = message.bodyMarkdown || "...";
+    
+        // 1. Identify all containers (Type 17)
+        const containers = updatedComponents.filter(c => c.type === 17);
+    
+        // 2. Logic: If we have 2, the second is the Mod block. If 1, we create the Mod block.
+        if (containers.length >= 2) {
+            const modContainer = containers[1]; // The second block
+            const textComponent = modContainer.components?.find(c => 
+                c.type === 10 && !c.content?.startsWith('###')
+            );
+    
+            if (textComponent) {
+                // Use a single newline to keep it compact
+                textComponent.content += `\n**${authorName}:** ${body}`;
+                if(!textComponent.content){
+                    console.log('[ComponentManager] Warning: Text component content is undefined after appending. This should not happen.');
+                    return updatedComponents;
+                }
+                // Discord character limits for a single text component
+                if (textComponent.content.length > 1000) {
+                    textComponent.content = "..." + textComponent.content.substring(textComponent.content.length - 990);
+                }
+            }
+        } else {
+            // Create the Moderator block for the first time
+            const header = this.createText("### " + await TranslationHelper.t(TranslationKey.MODMAIL_MOD_REPLIED, context, { user: UtilityManager.escapeMarkdown(authorName) }));
+            const firstMsg = this.createText(`**${authorName}:** ${body}`);
+            
+            const newModContainer: ComponentV2 = {
+                type: 17,
+                id: this.generateRandomId(),
+                accent_color: 0x2ECC71, // Green
+                components: [header, firstMsg]
+            };
+    
+            // Find the button row to insert above it
+            const buttonIdx = updatedComponents.findIndex(c => c.type === 1);
+            
+            // Add Divider + New Block
+            if (buttonIdx !== -1) {
+                updatedComponents.splice(buttonIdx, 0, this.createDivider(), newModContainer);
+            } else {
+                updatedComponents.push(this.createDivider(), newModContainer);
+            }
+        }
+    
         return updatedComponents;
     }
 }

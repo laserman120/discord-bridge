@@ -8,3 +8,4 @@ export const NEWS_SOURCE_SUBREDDIT = 'Discord_Bridge'; // Subreddit that will be
 export const NEWS_SOURCE_AUTHOR = '_GLAD0S_'; // Reddit account that will be used to post news/announcements in the source subreddit.
 export const PRUNE_AGE_SECONDS = 13 * 86400; // Age until messages are pruned
 export const NEWS_MAX_AGE_MS = 3 * 60 * 60 * 1000; // Max age of news posts to consider for notifications (3 hours)
+export const MAX_MODMAIL_AGE_MS = 10 * 60 * 1000; // 10 minutes, if a modmail conversation has messages older than 10 minutes that are untracked we ignore them.

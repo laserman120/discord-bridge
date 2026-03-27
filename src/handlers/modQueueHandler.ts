@@ -5,6 +5,15 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
+
+
+type ThresholdRule = {
+    Threshold: number;
+    Comparator: ">" | "<" | "=" | ">=" | "<=";
+    Message_Removal: string;
+    Message_Report: string;
+};
 
 /**
  * Handles items entering the Moderator Queue.
@@ -51,11 +60,40 @@ export class ModQueueHandler extends BaseHandler {
 
         console.log(`[ModQueueHandler] Logging new entry: ${targetId} (${state})`);
 
-        // 5. Build Notification String
-        const notificationString = state === ItemState.Unhandled_Report
-            ? await context.settings.get('MOD_QUEUE_MESSAGE_REPORT') as string | undefined
-            : await context.settings.get('MOD_QUEUE_MESSAGE_REMOVAL') as string | undefined;
+        const queueCount = currentQueue.length;
+        const thresholdJson = await context.settings.get('MOD_QUEUE_THRESHOLDS_JSON') as string || "{}";
+        let notificationString: string | undefined;
 
+        try {
+            const rules: Record<string, ThresholdRule> = JSON.parse(thresholdJson);
+            
+            // Sort rules by Threshold descending so we hit the highest "priority" first
+            const sortedRules = Object.values(rules).sort((a, b) => b.Threshold - a.Threshold);
+        
+            for (const rule of sortedRules) {
+                if (UtilityManager.evaluateThreshold(queueCount, rule.Threshold, rule.Comparator)) {
+                    notificationString = state === ItemState.Unhandled_Report 
+                        ? rule.Message_Report 
+                        : rule.Message_Removal;
+                    
+                    console.log(`[ModQueueHandler] Threshold met: ${rule.Threshold}. Using custom alert.`);
+                    break; // Stop at the highest matching threshold
+                }
+            }
+        } catch (e) {
+            console.error("[ModQueueHandler] Error parsing thresholds:", e);
+        }
+        
+        // Fallback to default settings if no threshold was met or JSON failed
+        if (!notificationString) {
+            notificationString = state === ItemState.Unhandled_Report
+                ? await context.settings.get('MOD_QUEUE_MESSAGE_REPORT') as string | undefined
+                : await context.settings.get('MOD_QUEUE_MESSAGE_REMOVAL') as string | undefined;
+        }
+        if(notificationString) {
+            notificationString = notificationString.replace('{{count}}', queueCount.toString());
+        }
+        
         // 6. Dispatch and Store
         const payload = await ComponentManager.createDefaultMessage(contentData, state, ChannelType.ModQueue, context, notificationString);
         const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);

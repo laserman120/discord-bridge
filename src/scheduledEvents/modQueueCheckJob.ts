@@ -14,8 +14,15 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
     console.log('[ModQueueCheckJob] Starting Mod Queue Check...');
 
     const subreddit = await context.reddit.getCurrentSubreddit();
+    if(!subreddit){
+        console.error('[ModQueueCheckJob] Failed to get subreddit instance.');
+        return;
+    }
     const currentQueue = await subreddit.getModQueue().all();
-
+    if(!currentQueue){
+        console.error('[ModQueueCheckJob] Failed to fetch mod queue.');
+        return;
+    }
     const queueIds = new Set<string>();
     for (const item of currentQueue) {
         queueIds.add(item.id);

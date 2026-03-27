@@ -312,6 +312,28 @@ export const modQueueGroup = {
             helpText: 'Custom text sent with notification',
         },
         {
+            type: 'paragraph' as const,
+            name: 'MOD_QUEUE_THRESHOLDS_JSON',
+            label: 'Mod Queue Threshold Alerts (JSON)',
+            helpText: 'Set dynamic ping messages based on queue size. Use {{count}} to show the current number. Overrides the default pingable messages when thresholds are met.',
+            defaultValue: JSON.stringify({
+                "High_Volume": {
+                    "Threshold": 10,
+                    "Comparator": ">=",
+                    "Message_Removal": "⚠️ **Queue Alert! New Removal:** {{count}} unhandled waiting! @here",
+                    "Message_Report": "⚠️ **Report Alert! New Report:** {{count}} unhandled waiting! @here"
+                },
+                "Extreme_Volume": {
+                    "Threshold": 20,
+                    "Comparator": ">=",
+                    "Message_Removal": "🚨 **Extreme Queue Alert! New Removal:** {{count}} unhandled waiting! @here",
+                    "Message_Report": "🚨 **Extreme Report Alert! New Report:** {{count}} unhandled waiting! @here"
+                }
+            }, null, 2),
+            scope: 'installation' as const,
+            onValidate: async ({ value }: { value?: string }) => UtilityManager.validateThresholdJson(value),
+        },
+        {
             type: 'boolean' as const,
             name: 'MOD_QUEUE_BUTTON',
             label: 'Adds a button to directly open the mod queue of the subreddit.',

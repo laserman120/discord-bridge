@@ -137,6 +137,17 @@ export class UtilityManager {
         }
     }
 
+    static evaluateThreshold(count: number, threshold: number, comparator: string): boolean {
+        switch (comparator) {
+            case ">": return count > threshold;
+            case "<": return count < threshold;
+            case "=": return count === threshold;
+            case ">=": return count >= threshold;
+            case "<=": return count <= threshold;
+            default: return false;
+        }
+    }
+
     /**
      * Escapes Discord-specific markdown characters to prevent formatting breakages.
      */
@@ -276,5 +287,43 @@ export class UtilityManager {
         } catch (e) {
             return 'Invalid JSON format. Please check for missing commas or quotes.';
         }
+    }
+
+    /**
+     * Validates the Mod Queue Threshold JSON structure.
+     * Returns a string error message if invalid, or undefined if valid.
+     */
+    static validateThresholdJson(value?: string): string | undefined {
+        if (!value) return undefined;
+        try {
+            const parsed = JSON.parse(value);
+            
+            // Ensure it's an object and not an array
+            if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                return "Must be a JSON Object (Key-Value pairs)";
+            }
+
+            const validComparators = [">", "<", "=", ">=", "<="];
+
+            for (const key in parsed) {
+                const rule = parsed[key];
+                
+                if (typeof rule.Threshold !== 'number') {
+                    return `Rule '${key}': 'Threshold' must be a number.`;
+                }
+                if (!validComparators.includes(rule.Comparator)) {
+                    return `Rule '${key}': Invalid 'Comparator'. Use: >, <, =, >=, or <=`;
+                }
+                if (!rule.Message_Removal || typeof rule.Message_Removal !== 'string') {
+                    return `Rule '${key}': 'Message_Removal' is required text.`;
+                }
+                if (!rule.Message_Report || typeof rule.Message_Report !== 'string') {
+                    return `Rule '${key}': 'Message_Report' is required text.`;
+                }
+            }
+        } catch (e) {
+            return "Invalid JSON format. Check your commas and brackets!";
+        }
+        return undefined;
     }
 }

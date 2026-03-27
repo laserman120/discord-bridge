@@ -19,6 +19,10 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
             subredditName: NEWS_SOURCE_SUBREDDIT,
             limit: 25
         }).all();
+        if(!recentPosts){
+            console.error('[NewsCheck] Failed to fetch recent posts from subreddit.');
+            return;
+        }
 
         const currentSub = await context.reddit.getCurrentSubreddit();
 

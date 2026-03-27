@@ -72,11 +72,17 @@ Making at easy to keep track of anything related to your subreddit directly from
 ## Changelog
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
-- v0.XX.X
+- v0.14.16
   - Refactored codebase
   - Added Translation setting ( See Wiki for more information on translation )
+  - Added threshold json config to Mod Queue Feed.
+    - This can be used to define different pingable messages when certain thresholds are met.
+    - See the wiki for more information on setup, by default it will change the message to a ping at 10 or more items in queue.
   - Fixed minor issue with silent removal check.
   - Minor fixes for unescaped markdown
+  - Improved stability during reddit api downtimes.
+  - Improved Mod Mail handling, now also groups moderator replies.
+    - Implemented a check for modmail message age, it should no longer fetch old messages when they are no longer relevant.
 - v0.14.6
   - Hotfix: Fixed incorrectly labeled setting to show the default author button in private messages.
 - v0.14.4

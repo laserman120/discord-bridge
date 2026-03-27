@@ -63,6 +63,13 @@ export class QueueManager {
      * and dispatches to appropriate handlers.
      */
     static async processQueue(_event: any, context: JobContext): Promise<void> {
+
+        const isPaused = await context.redis.get('msg_queue:paused');
+        if (isPaused) {
+            console.warn('[Queue] Queue is paused due to previous error...');
+            return;
+        }
+
         const isLocked = await context.redis.get(this.LOCK_KEY);
         if (isLocked) return;
 
@@ -122,6 +129,8 @@ export class QueueManager {
                     modQueue = queueItems;
                 } catch (e) {
                     console.error('[Queue] Batch fetch failed:', e);
+                    await context.redis.set('msg_queue:paused', 'true', { expiration: new Date(Date.now() + 300000) }); // 5 min pause
+                    return;
                 }
             }
 
