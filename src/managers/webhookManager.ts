@@ -135,7 +135,7 @@ export class WebhookManager {
 
             embed.color = await UtilityManager.getColorFromState(newState, context);
 
-            const statusText = UtilityManager.getStatusTextModMail(newState);
+            const statusText = UtilityManager.getStatusTextModMail(newState, context);
 
             if (embed.fields) {
                 const statusField = embed.fields.find((f: any) => f.name === 'Status');
@@ -163,27 +163,34 @@ export class WebhookManager {
         }
     }
 
-    static async deleteMessage(webhookUrl: string, messageId: string, _context?: any): Promise<void> {
+    static async deleteMessage(webhookUrl: string, messageId: string): Promise<boolean> {
         const webhookDetails = this.parseWebhookUrl(webhookUrl);
-        if (!webhookDetails) { return; }
-
+        if (!webhookDetails) return false;
+    
         const [webhookId, webhookToken] = webhookDetails;
         const discordApiUrl = `${DISCORD_API_BASE}/${webhookId}/${webhookToken}/messages/${messageId}`;
-
+    
         try {
-            const response = await fetch(discordApiUrl, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-            });
-
-            if (response.ok || response.status === 404) {
-                console.log(`[WEBHOOK] Discord message ${messageId} deleted.`);
-            } else {
-                const errorText = await response.text();
-                console.error(`[WEBHOOK] Deletion failed (Status ${response.status}): ${errorText}`);
+            const response = await fetch(discordApiUrl, { method: 'DELETE' });
+    
+            // 204 No Content is success, 404 means it's already gone (also a win)
+            if (response.status === 204 || response.status === 404) {
+                console.log(`[WEBHOOK] Discord message ${messageId} removed.`);
+                return true; 
+            } 
+            
+            // Handle Rate Limits (429)
+            if (response.status === 429) {
+                console.warn(`[WEBHOOK] Rate limited. Will try again next cycle.`);
+                return false;
             }
+    
+            const errorText = await response.text();
+            console.error(`[WEBHOOK] Deletion failed (${response.status}): ${errorText}`);
+            return false;
         } catch (e) {
-            console.error(`[WEBHOOK] Error deleting message: ${e}`);
+            console.error(`[WEBHOOK] Network error during deletion: ${e}`);
+            return false;
         }
     }
 }

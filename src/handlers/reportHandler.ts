@@ -28,6 +28,11 @@ export class ReportHandler extends BaseHandler {
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
+        if(contentData.authorName === '[deleted]') {
+            console.log(`[ReportHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
+            return;
+        }
+
         // Safety: If there are no reports, there's nothing for this handler to do.
         if (!contentData.reportCount || contentData.reportCount <= 0) {
             return;

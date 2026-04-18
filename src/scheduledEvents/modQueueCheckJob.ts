@@ -43,7 +43,11 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
 
             console.log(`[ModQueueCheckJob] Orphaned item found: ${entry.redditId}. Deleting from Discord.`);
 
-            await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
+            const success = await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
+            if(!success){
+                console.log(`[ModQueueCheckJob] Failed to delete Discord message for Reddit ID ${entry.redditId}. Will retry in next check.`);
+                continue;
+            }
             await StorageManager.deleteLogEntry(entry, context as any);
 
             deletedCount++;

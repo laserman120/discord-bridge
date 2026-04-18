@@ -44,6 +44,11 @@ export class RemovalHandler extends BaseHandler {
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
+        if(contentData.authorName === '[deleted]') {
+            console.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
+            return;
+        }
+
         // 5. Integrity Check: Ensure it's actually removed/spam and not approved
         if (contentItem.isApproved() || (!contentItem.isRemoved() && !contentItem.isSpam() && !contentData.removedBy)) {
             return;

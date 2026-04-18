@@ -64,13 +64,13 @@ Devvit.addTrigger({
 
             // Await plenty of time to ensure the post is fully up to date before checking for public posting
 
-            await QueueManager.enqueue({ handler: 'PublicPostHandler', data: event.post }, context, 6);
-            await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.post }, context, 6);
-            await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.post }, context, 6);
+            await QueueManager.enqueue({ handler: 'PublicPostHandler', data: event.post }, context, 8);
+            await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.post }, context, 8);
+            await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.post }, context, 8);
 
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
-            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context, 6);
-            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context, 6);
+            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context, 8);
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context, 8);
         }
 
     },
@@ -95,8 +95,8 @@ Devvit.addTrigger({
 Devvit.addTrigger({
     events: ['PostDelete', 'CommentDelete'], 
     onEvent: async (event, context) => {
-        await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event }, context, 2);
-        await QueueManager.enqueue({ handler: 'DeletionHandler', data: event }, context, 2);
+        await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event }, context, 5);
+        await QueueManager.enqueue({ handler: 'DeletionHandler', data: event }, context, 5);
     },
 });
 

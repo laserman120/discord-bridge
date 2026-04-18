@@ -70,11 +70,40 @@ export class QueueManager {
             return;
         }
 
-        const isLocked = await context.redis.get(this.LOCK_KEY);
-        if (isLocked) return;
+        const lockValue = await context.redis.get(this.LOCK_KEY);
+
+        if (lockValue) {
+            const startTime = parseInt(lockValue);
+            const now = Date.now();
+            const ONE_HOUR_MS = 3600000;
+
+            const isTimestampValid = !isNaN(startTime);
+            const isExpired = isTimestampValid && (now - startTime > ONE_HOUR_MS);
+
+            if (isTimestampValid && !isExpired) {
+                console.warn(`[Queue] Worker is already running (Started ${Math.round((now - startTime) / 1000)}s ago). Skipping...`);
+                return;
+            } 
+            
+            if (!isTimestampValid) {
+                console.warn('[Queue] Legacy lock format ("true") detected. Overriding for migration...');
+            } else if (isExpired) {
+                console.warn('[Queue] Stale timestamp lock detected. Overriding...');
+            }
+        }
+        
+        try {
+            await context.settings.getAll(); // Test if we can fetch the settings
+        } catch (e) {
+            console.error("[Queue] Unable to fetch settings. Aborting cycle, pausing queue");
+            await context.redis.set('msg_queue:paused', 'true', { expiration: new Date(Date.now() + 300000) }); // 5 min pause
+            return; 
+        }
 
         // Lock for 2 minutes to prevent overlapping workers
-        await context.redis.set(this.LOCK_KEY, 'true', { expiration: new Date(Date.now() + 120000) });
+        await context.redis.set(this.LOCK_KEY, Date.now().toString(), { 
+            expiration: new Date(Date.now() + 120000) 
+        });
 
         try {
             const now = Date.now();
