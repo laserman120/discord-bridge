@@ -27,7 +27,7 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
 
         if (isPost) {
             const post = item as Post;
-            if (post.removedByCategory && post.removedByCategory !== "moderator" && post.removedByCategory !== "author") {
+            if (post.removedByCategory && post.removedByCategory !== "moderator" && post.removedByCategory !== "author" && post.removedByCategory !== "automod_filtered") {
                 isSilentRemoval = true;
             }
         } else if (!item.isRemoved() && !item.isSpam()) {
@@ -65,6 +65,8 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
                 }, context);
             } else if (hasConflictingLog && alreadyLogged) {
                 // Logs exist and are in removals, but not marked as spam/removed
+                console.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other, but already logged in removals.`);
+                console.log(item.toJSON());
                 await QueueManager.enqueue({
                     handler: 'StateSyncHandler',
                     data: mockEvent

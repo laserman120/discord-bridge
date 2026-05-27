@@ -30,16 +30,21 @@ export async function checkForOldMessages(event: any, context: JobContext): Prom
 
             try {
                 if (entry.webhookUrl) {
-                    await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId, context);
-                    console.log(`[JOB] Successfully deleted Discord message ID ${entry.discordMessageId}.`);
+                    const success = await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
+                    if(success){
+                        console.log(`[JOB] Successfully deleted Discord message ID ${entry.discordMessageId}.`);
+                        await StorageManager.deleteLogEntry(entry as LogEntry, context as any);
+                        successfulDeletions++;
+                    } else {
+                        console.warn(`[JOB] Failed to delete Discord message ID ${entry.discordMessageId}. Will retry in next cleanup.`);
+                    }
+                    
+
 
                     await sleep(500);
                 } else {
                     console.warn(`[JOB] No webhook URL for message ${entry.discordMessageId}. Skipping Discord deletion.`);
                 }
-
-                await StorageManager.deleteLogEntry(entry as LogEntry, context as any);
-                successfulDeletions++;
 
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);

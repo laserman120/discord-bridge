@@ -50,6 +50,11 @@ export class NewPostHandler extends BaseHandler {
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         const notificationString = await context.settings.get('NEW_POST_MESSAGE') as string | undefined;
 
+        if(contentData.authorName === '[deleted]') {
+            console.log(`[NewPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
+            return;
+        }
+
         const payload = await ComponentManager.createDefaultMessage(
             contentData, 
             status, 

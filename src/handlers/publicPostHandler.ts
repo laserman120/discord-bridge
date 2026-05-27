@@ -22,31 +22,30 @@ export class PublicPostHandler extends BaseHandler {
         const postId = this.getRedditId(event);
         if (!postId) return;
 
-        // 1. Resolve Settings
         const webhookUrl = await context.settings.get('WEBHOOK_PUBLIC_NEW_POSTS') as string | undefined;
         if (!webhookUrl) return;
 
-        // 2. Duplicate Check
         if (await this.isAlreadyLogged(postId, ChannelType.PublicNewPosts, context)) {
             console.log(`[PublicPostHandler] Already mirrored ${postId}, skipping.`);
             return;
         }
 
-        // 3. Resolve Content
         const contentItem = await this.fetchContent(postId, context, preFetchedContent);
         if (!contentItem || !(contentItem instanceof Post)) return;
 
-        // 4. Pre-Publication Verification
-        // We gather details to check if the post was already removed by filters/mods before we mirror it.
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         if (contentData.removalReason || contentData.removedBy) {
             console.log(`[PublicPostHandler] Post ${postId} is removed/spam. Aborting mirror.`);
             return;
         }
 
+        if(contentData.authorName === '[deleted]') {
+            console.log(`[publicPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
+            return;
+        }
+
         console.log(`[PublicPostHandler] Mirroring post: ${contentItem.title}`);
 
-        // 5. Build and Send
         const notificationString = await context.settings.get('NEW_PUBLIC_POST_MESSAGE') as string | undefined;
         const payload = await ComponentManager.createDefaultMessage(
             contentData, 
@@ -89,9 +88,14 @@ export class PublicPostHandler extends BaseHandler {
         ].includes(state);
 
         if (publicLog && needsDeletion) {
-            await WebhookManager.deleteMessage(publicLog.webhookUrl, publicLog.discordMessageId, context);
-            await StorageManager.deleteLogEntry(publicLog, context);
-            console.log(`[PublicPostHandler] Deleted mirror for ${postId} due to state: ${state}`);
+            const success = await WebhookManager.deleteMessage(publicLog.webhookUrl, publicLog.discordMessageId);
+            if(success){
+                await StorageManager.deleteLogEntry(publicLog, context);
+                console.log(`[PublicPostHandler] Deleted mirror for ${postId} due to state: ${state}`);
+            } else {
+                console.error(`[PublicPostHandler] Failed to delete mirror for ${postId}. Will retry on next state change.`);
+            }
+            
         } 
         
         // Scenario B: Post isn't mirrored but just became visible (Live/Approved)

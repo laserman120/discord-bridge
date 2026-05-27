@@ -72,51 +72,42 @@ Making at easy to keep track of anything related to your subreddit directly from
 ## Changelog
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
+
+- 0.14.32
+  - Minor fix to prevent double handling of ModLog entries
+
+- 0.14.30
+  - Minor timing adjustments.
+  - Minor formatting fixes.
+  - Fixed cases in which deleted posts were sent to webhooks which should not include deleted posts.
+
+- 0.14.28
+  - Minor timing adjustements to prevent missed message updates.
+    - (Primarily for the new post and flair posts)
+  - Fixed the spam check incorrectly flagging automod filtered posts as spam removals.
+
+- 0.14.24
+  - Minor bug fixes
+  - Self release lock system to prevent the system from locking up
+  - Minor formatting fixes.
+  - Improved handling of reddit/devvit downtimes
+
 - v0.14.16
-  - Refactored codebase
-  - Added Translation setting ( See Wiki for more information on translation )
-  - Added threshold json config to Mod Queue Feed.
-    - This can be used to define different pingable messages when certain thresholds are met.
-    - See the wiki for more information on setup, by default it will change the message to a ping at 10 or more items in queue.
-  - Fixed minor issue with silent removal check.
-  - Minor fixes for unescaped markdown
-  - Improved stability during reddit api downtimes.
-  - Improved Mod Mail handling, now also groups moderator replies.
-    - Implemented a check for modmail message age, it should no longer fetch old messages when they are no longer relevant.
-- v0.14.6
-  - Hotfix: Fixed incorrectly labeled setting to show the default author button in private messages.
-- v0.14.4
-  - Spam Detection
-	- If items are silently removed by reddit they can now be properly shown in the removal stream
-	- This can be toggled off in the removal settings.
-	- A scan only occurs once every 15 minutes.
-  - Ban detection. If a user is banned from reddit (or shadowbanned) this will be shown accordingly in the message
-  - Adjusted message layout. Now grouping up fields to decrease overall size and increase readability.
-	- For example the layout is now grouped up into:
-	  - Author information
-	  - Post/Comment information
-	  - Karma information
-	  - Moderation and status information
-  - Adjusted the way message details are configured. 
-	- All settings are now by default setup so enabled in the settings also correlates to enabled in the notification.
-	- This is to streamline the configuration process and avoid confusion about what is enabled or not.
-  - Added new options for private messages.
-	- You can now show the amount of karma the author has
-	  - This is split up into seperate fields for: Total Karma, Total Subreddit Karma, Post Karma, Subreddit Post Karma, Comment Karma, Subreddit Comment Karma
-	  - Each can be toggled individually
-	- Added the option to show the account age of the author.
-	- Added the option to show the user flair of the author.
-  - Improved ModMail Layout
-	- Added option to show an Arctic Shift user Button on ModMail messages.
-	- Improved handling of ModMail messages sent in quick succession. 
-  - Improved overall formatting by converting reddit formatting styles to discord formatting styles where possible.
-	- This generally improves readability and tries its best to remove incorrect formatting
-  - Improved Crosspost handling:
-	- The system should now be able to detect way more crossposts than previously, even in removed or approved messages.
-  - Fixed issue in which messages would not update if no webhook was provided for the report feed.
-	- Now even if no webhook is provided for the report feed, all related messages will still be updated to reflect the reported state.
-  - Fixed usernames getting incorrect formatting applied when they included two underscores
-	
+  - Infrastructure: Major codebase refactor and improved stability during Reddit API downtimes.
+  - Translations: Added global translation settings (see Wiki for setup).
+  - Mod Queue Feed: Implemented JSON threshold configurations to trigger custom pings based on queue size (default ping at 10+ items).
+  - Modmail: Enhanced grouping for moderator replies and added an age-check filter to ignore outdated messages.
+  - Refinements: Improved markdown escaping and fixed minor issues with silent removal checks.
+
+- v0.14.4 – v0.14.6
+  - Spam & Ban Detection: Added detection for shadowbanned users and items silently removed by Reddit (scans every 15 minutes).
+  - UI Overhaul: Regrouped notification layouts into logical sections (Author, Post/Comment, Karma, and Mod Status) to reduce message size.
+  - Author Insights: Added toggleable fields for account age, user flairs, and granular karma breakdowns (Total vs. Subreddit-specific).
+  - Modmail Enhancements: Improved layout density, integrated Arctic Shift user buttons, and optimized handling for rapid-fire messages.
+  - Formatting Engine: Added a conversion layer to translate Reddit-style formatting into Discord-compatible styles, fixing issues like underscore-heavy usernames.
+  - Crossposts: Significantly improved detection logic for crossposts, even within removed or approved content.
+  - Settings Streamlining: Synced settings so that "Enabled" in the dashboard consistently correlates to "Enabled" in the notification.
+
 - v0.0.63
   - System Rework: Complete overhaul of the message system for improved UI, maintainability, and field customization; replaced title hyperlinks with buttons.
   - ModQueue Stream: New stream that mirrors the subreddit mod queue and auto-deletes handled items from Discord.

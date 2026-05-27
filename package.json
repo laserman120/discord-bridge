@@ -16,7 +16,7 @@
     "@devvit/web": "^0.12.19"
   },
   "devDependencies": {
-    "devvit": "^0.12.15",
+    "devvit": "^0.12.19",
     "dotenv-cli": "8.0.0",
     "typescript": "5.8.3",
     "vitest": "^4.0.18"

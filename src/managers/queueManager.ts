@@ -66,9 +66,27 @@ export class QueueManager {
 
         const isPaused = await context.redis.get('msg_queue:paused');
         if (isPaused) {
-            console.warn('[Queue] Queue is paused due to previous error...');
-            return;
+            const startTime = parseInt(isPaused);
+            const now = Date.now();
+            const ONE_HOUR_MS = 3600000;
+
+            const isTimestampValid = !isNaN(startTime);
+            const isExpired = isTimestampValid && (now - startTime > ONE_HOUR_MS);
+
+            if (isTimestampValid && !isExpired) {
+                console.warn(`[Queue] Queue is paused due to previous error (Started ${Math.round((now - startTime) / 1000)}s ago). Skipping...`);
+                return;
+            } 
+            
+            if (!isTimestampValid) {
+                console.warn('[Queue] Queue Pause: Legacy lock format ("true") detected. Overriding for migration...');
+                context.redis.del('msg_queue:paused');
+            } else if (isExpired) {
+                console.warn('[Queue] Stale timestamp pause detected. Overriding...');
+                context.redis.del('msg_queue:paused');
+            }
         }
+
 
         const lockValue = await context.redis.get(this.LOCK_KEY);
 
@@ -96,7 +114,7 @@ export class QueueManager {
             await context.settings.getAll(); // Test if we can fetch the settings
         } catch (e) {
             console.error("[Queue] Unable to fetch settings. Aborting cycle, pausing queue");
-            await context.redis.set('msg_queue:paused', 'true', { expiration: new Date(Date.now() + 300000) }); // 5 min pause
+            await context.redis.set('msg_queue:paused',  Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
             return; 
         }
 
@@ -158,7 +176,7 @@ export class QueueManager {
                     modQueue = queueItems;
                 } catch (e) {
                     console.error('[Queue] Batch fetch failed:', e);
-                    await context.redis.set('msg_queue:paused', 'true', { expiration: new Date(Date.now() + 300000) }); // 5 min pause
+                    await context.redis.set('msg_queue:paused', Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
                     return;
                 }
             }

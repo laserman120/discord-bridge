@@ -128,9 +128,15 @@ export class ModQueueHandler extends BaseHandler {
             if (stillInQueue) return;
 
             // Remove from Discord and DB since the item is handled
-            await WebhookManager.deleteMessage(modQueueLog.webhookUrl, modQueueLog.discordMessageId, context);
-            await StorageManager.deleteLogEntry(modQueueLog, context);
-            console.log(`[ModQueueHandler] Removed handled item ${itemId} from Discord.`);
+            const success = await WebhookManager.deleteMessage(modQueueLog.webhookUrl, modQueueLog.discordMessageId);
+            if(success){
+                await StorageManager.deleteLogEntry(modQueueLog, context);
+                console.log(`[ModQueueHandler] Removed handled item ${itemId} from Discord.`);
+            } else {
+                console.error(`[ModQueueHandler] Failed to delete Discord message for ${itemId}. Will retry on next state change.`);
+            }
+            
+            
         }
     }
 }

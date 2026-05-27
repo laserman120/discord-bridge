@@ -18,26 +18,20 @@ export class UpdateHandler extends BaseHandler {
      * @param preFetchedContent - Optional pre-fetched content to save API calls.
      */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        // 1. Resolve the ID using our universal base utility
         const targetId = this.getRedditId(event);
         if (!targetId) return;
 
-        // 2. Fetch all log entries. If nothing is being tracked, we stop here.
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) return;
 
         console.log(`[UpdateHandler] Refreshing ${logEntries.length} messages for ${targetId}`);
 
-        // 3. Resolve the latest version of the content from Reddit
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
-        // 4. Gather the fresh details (new body text, new score, etc.)
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-        // 5. Update every linked Discord message
         for (const entry of logEntries) {
-            // We maintain the current status (e.g., if it was already marked 'Removed', it stays 'Removed')
             const currentStatus = entry.currentStatus;
 
             const payload = await ComponentManager.createDefaultMessage(

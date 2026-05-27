@@ -18,27 +18,33 @@ export class ModLogHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      */
     static async handle(event: any, context: TriggerContext): Promise<void> {
-        // 1. Resolve Settings and Filters
         const webhookUrl = await context.settings.get('WEBHOOK_MODLOG') as string | undefined;
         if (!webhookUrl) return;
 
         const enabledActions = await context.settings.get('MODLOG_ACTIONS') as string[] || [];
         if (!enabledActions.includes(event.action || '')) return;
 
-        // 2. Data Gathering
-        // Note: ModLogs use a specific gatherer because the target can be a user, post, or comment.
+        const uniqueId = `modlog:${event.action}:${event.actionedAt}:${event.moderator.name || 'unknown_mod'}`;
+
+        const existingLogs = await StorageManager.getLinkedLogEntries(uniqueId, context);
+        const alreadyPosted = existingLogs.some(
+            entry => entry.channelType === ChannelType.ModLog
+        );
+
+        if (alreadyPosted) {
+            console.log(`[ModLogHandler] Already logged action ${event.action} with ID ${uniqueId}, skipping.`);
+            return;
+        }
+
         const contentData = await ContentDataManager.gatherModActionTarget(event, context);
 
-        // 3. Build Payload
         const payload = await EmbedManager.createModLogEmbed(event, contentData, ChannelType.ModLog, context);
 
-        // 4. Handle Notification Strings & Custom Overrides
         const notificationStrings = await UtilityManager.getMessageFromChannelType(ChannelType.ModLog, context);
         if (notificationStrings && notificationStrings?.length > 0) {
             payload.content = notificationStrings[0];
         }
 
-        // Apply action-specific message overrides if they exist in settings
         payload.content = await this.getCustomMessageOverride(event.action, payload.content, context);
 
         console.log(`[ModLogHandler] Dispatching notification for: ${event.action}`);
@@ -48,7 +54,7 @@ export class ModLogHandler extends BaseHandler {
 
         if (messageId && !messageId.startsWith('failed')) {
             await StorageManager.createLogEntry({
-                redditId: event.id, // We use the unique action ID as the reference for logs
+                redditId: uniqueId, // We use the unique action ID as the reference for logs
                 discordMessageId: messageId,
                 channelType: ChannelType.ModLog,
                 currentStatus: ItemState.Live,

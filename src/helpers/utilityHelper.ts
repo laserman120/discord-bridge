@@ -152,7 +152,7 @@ export class UtilityManager {
      * Escapes Discord-specific markdown characters to prevent formatting breakages.
      */
     static escapeMarkdown(text: string): string {
-        return text.replace(/([_*~`|<>])/g, '\\$1');
+        return text.replace(/(?<!\\)([_*~`|<>])/g, '\\$1');
     }
 
     /**

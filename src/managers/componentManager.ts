@@ -359,12 +359,12 @@ export class ComponentManager {
             // 1. Status & Action Line
             const { statusText, actionText } = await this.getStatusDetails(status, context);
             const showRemovedBy = (status === ItemState.Removed || status === ItemState.Awaiting_Review || status === ItemState.Spam) && details.removedBy;
-        
-            if (showRemovedBy) {
+            
+            if (showRemovedBy && details.removedBy) {
                 modLines.push(await TranslationHelper.t(TranslationKey.STATUS_LINE_WITH_BY, context, {
                     status: statusText,
                     action: actionText,
-                    user: details.removedBy!
+                    user: UtilityManager.escapeMarkdown(details.removedBy)!
                 }));
             } else {
                 modLines.push(await TranslationHelper.t(TranslationKey.STATUS_LINE_SIMPLE, context, {

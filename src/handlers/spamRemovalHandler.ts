@@ -39,6 +39,11 @@ export class SpamRemovalHandler extends BaseHandler {
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
+        if(contentData.authorName === '[deleted]') {
+            console.log(`[SpamRemovalHandler] Content ${targetId} is authored by [deleted]. Skipping spam removal handling.`)
+            return;
+        }
+
         // 4. Fallback attribution for silent removals
         if (!contentData.removedBy) {
             contentData.removedBy = await TranslationHelper.t(TranslationKey.TEXT_REMOVED_SILENTLY_BY_REDDIT, context);

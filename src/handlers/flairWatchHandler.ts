@@ -82,6 +82,11 @@ export class FlairWatchHandler extends BaseHandler {
 
                 const details = await ContentDataManager.gatherDetails(contentItem, context, event);
 
+                if(details.authorName === '[deleted]') {
+                    console.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping flair watch handling.`)
+                    return;
+                }
+
                 // Determine context: 'Public' rules use different colors/channels
                 const state = entry.publicFormat ? ItemState.Public_Post : ItemState.Live;
                 const channelType = entry.publicFormat ? ChannelType.PublicFlairWatch : ChannelType.FlairWatch;
@@ -119,7 +124,11 @@ export class FlairWatchHandler extends BaseHandler {
             // remove discord message and delete from database
             for (const entry of logEntries) {
                 if (entry.channelType === ChannelType.PublicFlairWatch) {
-                    await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId, context as any);
+                    const success = await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
+                    if(!success){
+                        console.error(`[FlairWatchHandler] Failed to delete Discord message ${entry.discordMessageId} for ${Id}. Will retry on next state change.`);
+                        continue;
+                    }
                     await StorageManager.deleteLogEntry(entry, context as any);
                     console.log(`[FlairWatchHandler] Deleted Discord message ${entry.discordMessageId} for post/comment ${Id} due to state change to ${state}`);
                 }

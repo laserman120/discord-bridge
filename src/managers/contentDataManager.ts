@@ -85,7 +85,7 @@ export class ContentDataManager {
             body: item.body || '',
             url: isPost ? (item as Post).url : '',
             permalink: `https://reddit.com${item.permalink}`,
-            authorName: item.authorName || '[Deleted]',
+            authorName: UtilityManager.escapeMarkdown(item.authorName) || '[Deleted]',
             subredditName: item.subredditName,
             createdAt: item.createdAt,
             flairText: isPost ? (item as Post).flair?.text : undefined,
