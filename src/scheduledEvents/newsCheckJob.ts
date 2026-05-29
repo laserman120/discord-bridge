@@ -4,7 +4,6 @@ import { NEWS_MAX_AGE_MS } from '../config/constants.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 export async function checkNewsUpdates(event: any, context: JobContext): Promise<void> {
 
-    // 1. Check Settings
     const enableNews = await context.settings.get('ENABLE_NEWS_NOTIFICATIONS') as boolean;
     const enableUpdates = await context.settings.get('ENABLE_UPDATE_NOTIFICATIONS') as boolean;
 
