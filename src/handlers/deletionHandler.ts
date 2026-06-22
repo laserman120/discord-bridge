@@ -8,6 +8,7 @@ import { PublicPostHandler } from '../handlers/publicPostHandler.js';
 import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
 import { ComponentManager } from '../managers/componentManager.js';
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 import { BaseHandler } from './baseHandler.js';
 
 
@@ -25,7 +26,7 @@ export class DeletionHandler extends BaseHandler {
 
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
-            console.log(`[DeletionHandler] No tracked messages for ${targetId}. Skipping.`);
+            UtilityManager.log(`[DeletionHandler] No tracked messages for ${targetId}. Skipping.`);
             return;
         }
         
@@ -39,7 +40,7 @@ export class DeletionHandler extends BaseHandler {
 
         if (!isActuallyDeleted) return;
 
-        console.log("[DeletionHandler] Post/Comment was deleted. Updating entries...");
+        UtilityManager.log("[DeletionHandler] Post/Comment was deleted. Updating entries...")
 
         await Promise.all([
             PublicPostHandler.handlePossibleStateChange(targetId, ItemState.Deleted, context, contentItem),

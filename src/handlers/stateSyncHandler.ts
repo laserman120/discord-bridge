@@ -37,7 +37,7 @@ export class StateSyncHandler extends BaseHandler {
         // 3. Early Exit: If no logs exist, there is nothing to sync
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
-            console.log(`[StateSync] No tracked messages for ${targetId}. Skipping.`);
+            UtilityManager.log(`[StateSync] No tracked messages for ${targetId}. Skipping.`);
             return;
         }
 
@@ -55,7 +55,7 @@ export class StateSyncHandler extends BaseHandler {
             }
         }
 
-        console.log(`[StateSync] Syncing ${targetId} to ${newStatus} for ${logEntries.length} messages.`);
+        UtilityManager.log(`[StateSync] Syncing ${targetId} to ${newStatus} for ${logEntries.length} messages.`);
 
         // 6. Notify specific handlers that need to perform side-effects (Deletion/Creation)
         await Promise.all([

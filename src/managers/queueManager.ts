@@ -14,6 +14,7 @@ import { ModActivityHandler } from '../handlers/modActivityHandler.js';
 import { UpdateHandler } from '../handlers/updateHandler.js'; 
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 export type HandlerName =
     | 'NewPostHandler' | 'PublicPostHandler' | 'StateSyncHandler'
@@ -52,9 +53,9 @@ export class QueueManager {
             // The score is the timestamp when the task becomes 'ready'
             await context.redis.zAdd(this.QUEUE_KEY, { score: processAt, member: taskId });
 
-            console.log(`[Queue] Enqueued ${task.handler} (Ready in ${delaySeconds}s)`);
+            UtilityManager.log(`[Queue] Enqueued ${task.handler} (Ready in ${delaySeconds}s)`);
         } catch (e) {
-            console.error('[Queue] Failed to enqueue task:', e);
+            UtilityManager.error('[Queue] Failed to enqueue task:', e);
         }
     }
 
@@ -74,15 +75,15 @@ export class QueueManager {
             const isExpired = isTimestampValid && (now - startTime > ONE_HOUR_MS);
 
             if (isTimestampValid && !isExpired) {
-                console.warn(`[Queue] Queue is paused due to previous error (Started ${Math.round((now - startTime) / 1000)}s ago). Skipping...`);
+                UtilityManager.log(`[Queue] Queue is paused due to previous error (Started ${Math.round((now - startTime) / 1000)}s ago). Skipping...`);
                 return;
             } 
             
             if (!isTimestampValid) {
-                console.warn('[Queue] Queue Pause: Legacy lock format ("true") detected. Overriding for migration...');
+                UtilityManager.log('[Queue] Queue Pause: Legacy lock format ("true") detected. Overriding for migration...');
                 context.redis.del('msg_queue:paused');
             } else if (isExpired) {
-                console.warn('[Queue] Stale timestamp pause detected. Overriding...');
+                UtilityManager.log('[Queue] Stale timestamp pause detected. Overriding...');
                 context.redis.del('msg_queue:paused');
             }
         }
@@ -99,21 +100,21 @@ export class QueueManager {
             const isExpired = isTimestampValid && (now - startTime > ONE_HOUR_MS);
 
             if (isTimestampValid && !isExpired) {
-                console.warn(`[Queue] Worker is already running (Started ${Math.round((now - startTime) / 1000)}s ago). Skipping...`);
+                UtilityManager.log(`[Queue] Worker is already running (Started ${Math.round((now - startTime) / 1000)}s ago). Skipping...`);
                 return;
             } 
             
             if (!isTimestampValid) {
-                console.warn('[Queue] Legacy lock format ("true") detected. Overriding for migration...');
+                UtilityManager.log('[Queue] Legacy lock format ("true") detected. Overriding for migration...');
             } else if (isExpired) {
-                console.warn('[Queue] Stale timestamp lock detected. Overriding...');
+                UtilityManager.log('[Queue] Stale timestamp lock detected. Overriding...');
             }
         }
         
         try {
             await context.settings.getAll(); // Test if we can fetch the settings
         } catch (e) {
-            console.error("[Queue] Unable to fetch settings. Aborting cycle, pausing queue");
+            UtilityManager.error("[Queue] Unable to fetch settings. Aborting cycle, pausing queue");
             await context.redis.set('msg_queue:paused',  Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
             return; 
         }
@@ -137,7 +138,7 @@ export class QueueManager {
 
             if (!taskIds || taskIds.length === 0) return;
 
-            console.log(`[Queue] Worker processing ${taskIds.length} tasks.`);
+            UtilityManager.log(`[Queue] Worker processing ${taskIds.length} tasks.`);
 
             // 1. Batch fetch task payloads
             const taskDataStrings = await Promise.all(taskIds.map(t => context.redis.hGet(this.DATA_KEY, t.member)));
@@ -156,7 +157,7 @@ export class QueueManager {
                         allItemIds.add(itemId);
                     }
                 } catch (e) {
-                    console.error('[Queue] Payload parse error', e);
+                    UtilityManager.error('[Queue] Payload parse error', e);
                 }
             });
 
@@ -175,7 +176,7 @@ export class QueueManager {
                     items.forEach(item => contentCache.set(item.id, item));
                     modQueue = queueItems;
                 } catch (e) {
-                    console.error('[Queue] Batch fetch failed:', e);
+                    UtilityManager.error('[Queue] Batch fetch failed:', e);
                     await context.redis.set('msg_queue:paused', Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
                     return;
                 }
@@ -189,7 +190,7 @@ export class QueueManager {
                 try {
                     await this.dispatch(task.payload, context, modQueue, preFetchedItem);
                 } catch (err) {
-                    console.error(`[Queue] Dispatch error for ${task.payload.handler}:`, err);
+                    UtilityManager.error(`[Queue] Dispatch error for ${task.payload.handler}:`, err);
                 }
 
                 // Cleanup
@@ -203,7 +204,7 @@ export class QueueManager {
             }
                 
         } catch(e) {
-            console.error('[Queue] Worker fatal error:', e);
+            UtilityManager.error('[Queue] Worker fatal error:', e);
         } finally {
             await context.redis.del(this.LOCK_KEY);
         }
@@ -243,7 +244,7 @@ export class QueueManager {
             case 'ModQueueHandler': 
                 if (currentQueue) await ModQueueHandler.handle(data, ctx, currentQueue, preFetchedContent); 
                 break;
-            default: console.warn(`[Queue] Unknown handler: ${handler}`);
+            default: UtilityManager.error(`[Queue] Unknown handler: ${handler}`);
         }
     }
 }

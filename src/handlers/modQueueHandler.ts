@@ -58,7 +58,7 @@ export class ModQueueHandler extends BaseHandler {
             state = ItemState.Awaiting_Review;
         }
 
-        console.log(`[ModQueueHandler] Logging new entry: ${targetId} (${state})`);
+        UtilityManager.log(`[ModQueueHandler] Logging new entry: ${targetId} (${state})`);
 
         const queueCount = currentQueue.length;
         const thresholdJson = await context.settings.get('MOD_QUEUE_THRESHOLDS_JSON') as string || "{}";
@@ -76,12 +76,12 @@ export class ModQueueHandler extends BaseHandler {
                         ? rule.Message_Report 
                         : rule.Message_Removal;
                     
-                    console.log(`[ModQueueHandler] Threshold met: ${rule.Threshold}. Using custom alert.`);
+                        UtilityManager.log(`[ModQueueHandler] Threshold met: ${rule.Threshold}. Using custom alert.`);
                     break; // Stop at the highest matching threshold
                 }
             }
         } catch (e) {
-            console.error("[ModQueueHandler] Error parsing thresholds:", e);
+            UtilityManager.error("[ModQueueHandler] Error parsing thresholds:", e);
         }
         
         // Fallback to default settings if no threshold was met or JSON failed
@@ -131,9 +131,9 @@ export class ModQueueHandler extends BaseHandler {
             const success = await WebhookManager.deleteMessage(modQueueLog.webhookUrl, modQueueLog.discordMessageId);
             if(success){
                 await StorageManager.deleteLogEntry(modQueueLog, context);
-                console.log(`[ModQueueHandler] Removed handled item ${itemId} from Discord.`);
+                UtilityManager.log(`[ModQueueHandler] Removed handled item ${itemId} from Discord.`);
             } else {
-                console.error(`[ModQueueHandler] Failed to delete Discord message for ${itemId}. Will retry on next state change.`);
+                UtilityManager.error(`[ModQueueHandler] Failed to delete Discord message for ${itemId}. Will retry on next state change.`);
             }
             
             

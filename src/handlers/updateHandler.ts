@@ -4,6 +4,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 /**
  * Handles content update events (e.g., post edits).
@@ -24,7 +25,7 @@ export class UpdateHandler extends BaseHandler {
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) return;
 
-        console.log(`[UpdateHandler] Refreshing ${logEntries.length} messages for ${targetId}`);
+        UtilityManager.log(`[UpdateHandler] Refreshing ${logEntries.length} messages for ${targetId}`);
 
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;

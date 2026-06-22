@@ -33,20 +33,20 @@ export class WebhookManager {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[WEBHOOK] Failed to send (Status ${response.status}): ${errorText}`);
+                UtilityManager.error(`[WEBHOOK] Failed to send (Status ${response.status}): ${errorText}`);
                 throw new Error(`Discord API error: ${response.status}`);
             }
 
             const data = await response.json() as { id: string };
             const discordMessageId = data.id;
 
-            console.log(`[WEBHOOK] Successfully sent message. Discord ID: ${discordMessageId}`);
+            UtilityManager.log(`[WEBHOOK] Successfully sent message. Discord ID: ${discordMessageId}`);
             return discordMessageId;
 
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
-            console.error(`[WEBHOOK] Exception during sendNewMessage: ${errorMessage}`);
-            console.error(`Payload was: ${JSON.stringify(payload)}`);
+            UtilityManager.error(`[WEBHOOK] Exception during sendNewMessage: ${errorMessage}`);
+            UtilityManager.error(`Payload was: ${JSON.stringify(payload)}`);
             return `failed_id_${Date.now()}`;
         }
     }
@@ -61,12 +61,12 @@ export class WebhookManager {
         try {
             const response = await fetch(url);
             if (!response.ok) {
-                console.error(`[WEBHOOK] Failed to fetch message ${messageId} (Status ${response.status})`);
+                UtilityManager.error(`[WEBHOOK] Failed to fetch message ${messageId} (Status ${response.status})`);
                 return null;
             }
             return await response.json();
         } catch (e) {
-            console.error(`[WEBHOOK] Exception fetching message:`, e);
+            UtilityManager.error(`[WEBHOOK] Exception fetching message:`, e);
             return null;
         }
     }
@@ -74,7 +74,7 @@ export class WebhookManager {
     static async editMessage(webhookUrl: string, messageId: string, payload: unknown): Promise<void> {
         const webhookDetails = this.parseWebhookUrl(webhookUrl);
         if (!webhookDetails) {
-            console.error(`[WEBHOOK] Invalid Webhook URL: ${webhookUrl}`);
+            UtilityManager.error(`[WEBHOOK] Invalid Webhook URL: ${webhookUrl}`);
             return;
         }
 
@@ -96,21 +96,21 @@ export class WebhookManager {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[WEBHOOK] Edit failed (Status ${response.status}): ${errorText}`);
+                UtilityManager.error(`[WEBHOOK] Edit failed (Status ${response.status}): ${errorText}`);
             } else {
-                console.log(`[WEBHOOK] Successfully updated message ID ${messageId}`);
+                UtilityManager.log(`[WEBHOOK] Successfully updated message ID ${messageId}`);
             }
 
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
-            console.error(`[WEBHOOK] Exception during editMessage: ${errorMessage}`);
+            UtilityManager.error(`[WEBHOOK] Exception during editMessage: ${errorMessage}`);
         }
     }
 
     static async updateMessageStateOnly(webhookUrl: string, messageId: string, newState: ItemState, context: Context): Promise<void> {
         const webhookDetails = this.parseWebhookUrl(webhookUrl);
         if (!webhookDetails) {
-            console.error(`[WEBHOOK] Invalid Webhook URL for update: ${webhookUrl}`);
+            UtilityManager.error(`[WEBHOOK] Invalid Webhook URL for update: ${webhookUrl}`);
             return;
         }
 
@@ -120,14 +120,14 @@ export class WebhookManager {
         try {
             const getResponse = await fetch(discordApiUrl);
             if (!getResponse.ok) {
-                console.error(`[WEBHOOK] Failed to fetch message ${messageId} for update (Status ${getResponse.status}).`);
+                UtilityManager.error(`[WEBHOOK] Failed to fetch message ${messageId} for update (Status ${getResponse.status}).`);
                 return;
             }
 
             const existingMessage = await getResponse.json();
 
             if (!existingMessage.embeds || existingMessage.embeds.length === 0) {
-                console.warn(`[WEBHOOK] Message ${messageId} has no embeds to update.`);
+                UtilityManager.log(`[WEBHOOK] Message ${messageId} has no embeds to update.`);
                 return;
             }
 
@@ -153,13 +153,13 @@ export class WebhookManager {
             });
 
             if (patchResponse.ok) {
-                console.log(`[WEBHOOK] Successfully updated state for message ${messageId} to ${newState}`);
+                UtilityManager.log(`[WEBHOOK] Successfully updated state for message ${messageId} to ${newState}`);
             } else {
-                console.error(`[WEBHOOK] Failed to patch message state (Status ${patchResponse.status}).`);
+                UtilityManager.error(`[WEBHOOK] Failed to patch message state (Status ${patchResponse.status}).`);
             }
 
         } catch (e) {
-            console.error(`[WEBHOOK] Exception during updateMessageStateOnly: ${e}`);
+            UtilityManager.error(`[WEBHOOK] Exception during updateMessageStateOnly: ${e}`);
         }
     }
 
@@ -175,21 +175,21 @@ export class WebhookManager {
     
             // 204 No Content is success, 404 means it's already gone (also a win)
             if (response.status === 204 || response.status === 404) {
-                console.log(`[WEBHOOK] Discord message ${messageId} removed.`);
+                UtilityManager.log(`[WEBHOOK] Discord message ${messageId} removed.`);
                 return true; 
             } 
             
             // Handle Rate Limits (429)
             if (response.status === 429) {
-                console.warn(`[WEBHOOK] Rate limited. Will try again next cycle.`);
+                UtilityManager.log(`[WEBHOOK] Rate limited. Will try again next cycle.`);
                 return false;
             }
     
             const errorText = await response.text();
-            console.error(`[WEBHOOK] Deletion failed (${response.status}): ${errorText}`);
+            UtilityManager.error(`[WEBHOOK] Deletion failed (${response.status}): ${errorText}`);
             return false;
         } catch (e) {
-            console.error(`[WEBHOOK] Network error during deletion: ${e}`);
+            UtilityManager.error(`[WEBHOOK] Network error during deletion: ${e}`);
             return false;
         }
     }

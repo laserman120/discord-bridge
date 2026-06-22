@@ -9,6 +9,25 @@ import { TranslationHelper } from './translationHelper.js';
  */
 export class UtilityManager {
     /**
+     * Logs a standardized message with a clean, un-encluttered timestamp (HH:MM:SS).
+     */
+    static log(message: string): void {
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0]; // Extracts 'HH:MM:SS'
+        console.log(`[${timeStr}] ${message}`);
+    }
+
+    /**
+     * Logs a standardized error message with a clean timestamp (HH:MM:SS).
+     */
+    static error(message: string, error?: unknown): void {
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+        const errorDetails = error ? ` | Details: ${error instanceof Error ? error.message : String(error)}` : '';
+        console.error(`[${timeStr}] ERROR: ${message}${errorDetails}`);
+    }
+
+    /**
      * Maps a Reddit ModAction string to our internal ItemState.
      */
     static getStateFromModAction(action: string): ItemState | null {
@@ -132,7 +151,7 @@ export class UtilityManager {
 
             return undefined;
         } catch (error) {
-            console.error(`[UtilityManager] Error resolving image: ${error}`);
+            UtilityManager.error(`[UtilityManager] Error resolving image: ${error}`);
             return undefined;
         }
     }

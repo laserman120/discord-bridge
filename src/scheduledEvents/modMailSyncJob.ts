@@ -4,18 +4,19 @@ import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { ItemState } from '../config/enums.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 export async function checkModMailStatus(event: any, context: JobContext): Promise<void> {
-    console.log('[ModMailSync] Starting ModMail Archival Check...');
+    UtilityManager.log('[ModMailSync] Starting ModMail Archival Check...');
 
     const activeIds = await StorageManager.getActiveModmailIds(context as any);
 
     if (activeIds.length === 0) {
-        console.log('[ModMailSync] No active modmail conversations to check.');
+        UtilityManager.log('[ModMailSync] No active modmail conversations to check.');
         return;
     }
 
-    console.log(`[ModMailSync] Checking ${activeIds.length} active conversations...`);
+    UtilityManager.log(`[ModMailSync] Checking ${activeIds.length} active conversations...`);
 
     for (const conversationId of activeIds) {
         try {
@@ -25,14 +26,14 @@ export async function checkModMailStatus(event: any, context: JobContext): Promi
             });
 
             if (!conversation) {
-                console.warn(`[ModMailSync] Could not fetch conversation ${conversationId}. Skipping.`);
+                UtilityManager.log(`[ModMailSync] Could not fetch conversation ${conversationId}. Skipping.`);
                 continue;
             }
 
             const isArchived = conversation.state == "Archived";
 
             if (isArchived) {
-                console.log(`[ModMailSync] Conversation ${conversationId} is now Archived. Updating Discord.`);
+                UtilityManager.log(`[ModMailSync] Conversation ${conversationId} is now Archived. Updating Discord.`);
 
                 const logEntries = await StorageManager.getLinkedLogEntries(conversationId, context as any);
 
@@ -57,7 +58,7 @@ export async function checkModMailStatus(event: any, context: JobContext): Promi
                                 }
                             );
                         } else {
-                            console.warn(`[ModMailSync] Message ${entry.discordMessageId} not found or has no components.`);
+                            UtilityManager.log(`[ModMailSync] Message ${entry.discordMessageId} not found or has no components.`);
                         }
 
                         // 4. Update Database
@@ -72,8 +73,8 @@ export async function checkModMailStatus(event: any, context: JobContext): Promi
                 await StorageManager.untrackActiveModmail(conversationId, context as any);
             }
         } catch (e) {
-            console.error(`[ModMailSync] Failed to check/update conversation ${conversationId}:`, e);
+            UtilityManager.error(`[ModMailSync] Failed to check/update conversation ${conversationId}:`, e);
         }
     }
-    console.log('[ModMailSync] ModMail check complete.');
+    UtilityManager.log('[ModMailSync] ModMail check complete.');
 }

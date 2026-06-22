@@ -2,6 +2,7 @@ import { Devvit, JobContext } from '@devvit/public-api';
 import { ChannelType } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 export async function checkModQueue(event: any, context: JobContext): Promise<void> {
 
@@ -11,16 +12,16 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
         return;
     }
 
-    console.log('[ModQueueCheckJob] Starting Mod Queue Check...');
+    UtilityManager.log('[ModQueueCheckJob] Starting Mod Queue Check...');
 
     const subreddit = await context.reddit.getCurrentSubreddit();
     if(!subreddit){
-        console.error('[ModQueueCheckJob] Failed to get subreddit instance.');
+        UtilityManager.error('[ModQueueCheckJob] Failed to get subreddit instance.');
         return;
     }
     const currentQueue = await subreddit.getModQueue().all();
     if(!currentQueue){
-        console.error('[ModQueueCheckJob] Failed to fetch mod queue.');
+        UtilityManager.error('[ModQueueCheckJob] Failed to fetch mod queue.');
         return;
     }
     const queueIds = new Set<string>();
@@ -28,7 +29,7 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
         queueIds.add(item.id);
     }
 
-    console.log(`[ModQueueCheckJob] Reddit Queue has ${queueIds.size} items.`);
+    UtilityManager.log(`[ModQueueCheckJob] Reddit Queue has ${queueIds.size} items.`);
 
     const recentLogs = await StorageManager.getRecentLogEntries(200, context);
 
@@ -41,11 +42,11 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
 
         if (!queueIds.has(entry.redditId)) {
 
-            console.log(`[ModQueueCheckJob] Orphaned item found: ${entry.redditId}. Deleting from Discord.`);
+            UtilityManager.log(`[ModQueueCheckJob] Orphaned item found: ${entry.redditId}. Deleting from Discord.`);
 
             const success = await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
             if(!success){
-                console.log(`[ModQueueCheckJob] Failed to delete Discord message for Reddit ID ${entry.redditId}. Will retry in next check.`);
+                UtilityManager.log(`[ModQueueCheckJob] Failed to delete Discord message for Reddit ID ${entry.redditId}. Will retry in next check.`);
                 continue;
             }
             await StorageManager.deleteLogEntry(entry, context as any);
@@ -54,5 +55,5 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
         }
     }
 
-    console.log(`[ModQueueCheckJob] Check completed. Cleaned up ${deletedCount} messages.`);
+    UtilityManager.log(`[ModQueueCheckJob] Check completed. Cleaned up ${deletedCount} messages.`);
 }

@@ -1,6 +1,7 @@
 import { Devvit } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { DevvitContext } from '../types/context.js';
+import { PRUNE_AGE_SECONDS } from '../config/constants.js';
 
 export interface LogEntry {
     redditId: string;
@@ -198,7 +199,7 @@ export class StorageManager {
             this.getActiveModmailIndexKey(), 
             0, 
             -1, 
-            { by: 'rank' } // Explicitly defined for type safety
+            { by: 'rank' }
         );
         return results.map(item => item.member);
     }
@@ -213,7 +214,9 @@ export class StorageManager {
     }
 
     static async markMessageAsProcessed(redditId: string, messageId: string, context: DevvitContext) {
-        await context.redis.zAdd(this.getProcessedMessagesKey(redditId), { score: Date.now(), member: messageId });
+        const key = this.getProcessedMessagesKey(redditId);
+        await context.redis.zAdd(key, { score: Date.now(), member: messageId });
+        await context.redis.expire(key, PRUNE_AGE_SECONDS);
     }
 
     static async getProcessedMessageIds(redditId: string, context: DevvitContext): Promise<string[]> {

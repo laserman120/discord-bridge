@@ -3,11 +3,12 @@ import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { QueueManager } from '../managers/queueManager.js';
 import { PRUNE_AGE_SECONDS } from '../config/constants.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 export async function checkSpamQueue(event: any, context: JobContext): Promise<void> {
     const scanEnabled = await context.settings.get('REMOVALS_SCAN_SPAM') as boolean || false;
 
-    console.log('[SpamCheck] Starting Spam Queue Check...');
+    UtilityManager.log('[SpamCheck] Starting Spam Queue Check...');
 
     const subreddit = await context.reddit.getCurrentSubreddit();
 
@@ -51,7 +52,7 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
 
             if (hasConflictingLog && !alreadyLogged) {
                 //Logs do exist, but not in removals
-                console.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other.`);
+                UtilityManager.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other.`);
                 if (scanEnabled) {
                     await QueueManager.enqueue({
                         handler: 'SpamRemovalHandler',
@@ -65,18 +66,18 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
                 }, context);
             } else if (hasConflictingLog && alreadyLogged) {
                 // Logs exist and are in removals, but not marked as spam/removed
-                console.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other, but already logged in removals.`);
-                console.log(item.toJSON());
+                UtilityManager.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other, but already logged in removals.`);
+
                 await QueueManager.enqueue({
                     handler: 'StateSyncHandler',
                     data: mockEvent
                 }, context);
             } else if (alreadyLogged) {
                 // It's in the spam queue and we already logged it as removed.
-                console.log(`[SpamCheck] ${item.id} is correctly logged as removed.`);
+                UtilityManager.log(`[SpamCheck] ${item.id} is correctly logged as removed.`);
             } else {
                 // no logs exist for the item
-                console.log(`[SpamCheck] New silent removal detected: ${item.id}.`);
+                UtilityManager.log(`[SpamCheck] New silent removal detected: ${item.id}.`);
 
                 if (scanEnabled) {
                     await QueueManager.enqueue({
@@ -94,5 +95,5 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
             // Manually removed by mod, or deleted by user.
         }
     }
-    console.log('[SpamCheck] Check completed.');
+    UtilityManager.log('[SpamCheck] Check completed.');
 }

@@ -5,6 +5,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 /**
  * Handles mirroring public posts to a dedicated Discord channel.
@@ -26,7 +27,7 @@ export class PublicPostHandler extends BaseHandler {
         if (!webhookUrl) return;
 
         if (await this.isAlreadyLogged(postId, ChannelType.PublicNewPosts, context)) {
-            console.log(`[PublicPostHandler] Already mirrored ${postId}, skipping.`);
+            UtilityManager.log(`[PublicPostHandler] Already mirrored ${postId}, skipping.`);
             return;
         }
 
@@ -35,16 +36,16 @@ export class PublicPostHandler extends BaseHandler {
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         if (contentData.removalReason || contentData.removedBy) {
-            console.log(`[PublicPostHandler] Post ${postId} is removed/spam. Aborting mirror.`);
+            UtilityManager.log(`[PublicPostHandler] Post ${postId} is removed/spam. Aborting mirror.`);
             return;
         }
 
         if(contentData.authorName === '[deleted]') {
-            console.log(`[publicPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
+            UtilityManager.log(`[publicPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
             return;
         }
 
-        console.log(`[PublicPostHandler] Mirroring post: ${contentItem.title}`);
+        UtilityManager.log(`[PublicPostHandler] Mirroring post: ${contentItem.title}`);
 
         const notificationString = await context.settings.get('NEW_PUBLIC_POST_MESSAGE') as string | undefined;
         const payload = await ComponentManager.createDefaultMessage(
@@ -91,9 +92,9 @@ export class PublicPostHandler extends BaseHandler {
             const success = await WebhookManager.deleteMessage(publicLog.webhookUrl, publicLog.discordMessageId);
             if(success){
                 await StorageManager.deleteLogEntry(publicLog, context);
-                console.log(`[PublicPostHandler] Deleted mirror for ${postId} due to state: ${state}`);
+                UtilityManager.log(`[PublicPostHandler] Deleted mirror for ${postId} due to state: ${state}`);
             } else {
-                console.error(`[PublicPostHandler] Failed to delete mirror for ${postId}. Will retry on next state change.`);
+                UtilityManager.error(`[PublicPostHandler] Failed to delete mirror for ${postId}. Will retry on next state change.`);
             }
             
         } 

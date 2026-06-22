@@ -5,6 +5,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 /**
  * Handles the 'addremovalreason' moderator action.
@@ -29,7 +30,7 @@ export class RemovalReasonHandler extends BaseHandler {
         // 3. Fetch log entries early. If we aren't tracking this item, stop immediately.
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
-            console.log(`[RemovalReasonHandler] No tracked messages for ${targetId}. skipping.`);
+            UtilityManager.log(`[RemovalReasonHandler] No tracked messages for ${targetId}. skipping.`);
             return;
         }
 
@@ -42,7 +43,7 @@ export class RemovalReasonHandler extends BaseHandler {
         // 5. Verification: Ensure a reason actually exists
         if (!contentData.removalReason) return;
 
-        console.log(`[RemovalReasonHandler] Syncing removal reason for ${targetId} across ${logEntries.length} entries.`);
+        UtilityManager.log(`[RemovalReasonHandler] Syncing removal reason for ${targetId} across ${logEntries.length} entries.`);
 
         // 6. Loop and Update existing messages
         for (const entry of logEntries) {

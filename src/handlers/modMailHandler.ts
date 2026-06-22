@@ -6,6 +6,7 @@ import { WebhookManager } from '../managers/webhookManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 import { APP_USERNAME, MAX_MODMAIL_AGE_MS } from '../config/constants.js';
 import { TranslationHelper } from '../helpers/translationHelper.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 interface ModmailMessage {
     id: string;
@@ -45,7 +46,7 @@ export class ModMailHandler extends BaseHandler {
         });
 
         if (!conversation) {
-            console.log("[ModMailHandler] failed to fetch conversation!");
+            UtilityManager.log("[ModMailHandler] failed to fetch conversation!");
             return;
         }
 

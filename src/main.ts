@@ -7,6 +7,7 @@ import { checkModQueue } from './scheduledEvents/modQueueCheckJob.js';
 import { checkNewsUpdates } from './scheduledEvents/newsCheckJob.js';
 import { checkSpamQueue } from './scheduledEvents/spamQueueCheckJob.js';
 import { TranslationHelper } from './helpers/translationHelper.js';
+import { UtilityManager } from './helpers/utilityHelper.js';
 
 Devvit.addSettings([
     appNotificationGroup,
@@ -169,9 +170,10 @@ Devvit.addTrigger({
     events: ['AppInstall', 'AppUpgrade'],
     onEvent: async (_event, context) => {
         try {
+
             const jobs = await context.scheduler.listJobs();
             for (const job of jobs) {
-                console.log(`[Setup] Cancelling existing job: ${job.id}`);
+                UtilityManager.log(`[Setup] Cancelling existing job: ${job.id}`);
                 await context.scheduler.cancelJob(job.id);
             }
 
@@ -179,40 +181,40 @@ Devvit.addTrigger({
                 name: 'cleanup_old_messages',
                 cron: '0 * * * *', // Run once every hour at minute 0
             });
-            console.log(`[Setup] Scheduled cleanup job with ID: ${jobId}`);
+            UtilityManager.log(`[Setup] Scheduled cleanup job with ID: ${jobId}`);
 
             const modmailJobId = await context.scheduler.runJob({
                 name: 'modmail_sync_job',
                 cron: '*/5 * * * *', // Every 5 minutes
             });
-            console.log(`[Setup] Scheduled modmail sync job with ID: ${modmailJobId}`);
+            UtilityManager.log(`[Setup] Scheduled modmail sync job with ID: ${modmailJobId}`);
 
             const modQueueJobId = await context.scheduler.runJob({
                 name: 'check_mod_queue',
                 cron: '*/10 * * * *', // Every 10 minutes
             });
-            console.log(`[Setup] Scheduled modQueue check job with ID: ${modQueueJobId}`);
+            UtilityManager.log(`[Setup] Scheduled modQueue check job with ID: ${modQueueJobId}`);
 
             const queueJobId = await context.scheduler.runJob({
                 name: 'process_queue',
                 cron: '*/30 * * * * *', // Run every 30 seconds
             });
-            console.log(`[Setup] Scheduled queue processor with ID: ${queueJobId}`);
+            UtilityManager.log(`[Setup] Scheduled queue processor with ID: ${queueJobId}`);
 
             const newsJobId = await context.scheduler.runJob({
                 name: 'check_news',
                 cron: '0 * * * *', // Run every 1 hour 0 * * * *
             });
-            console.log(`[Setup] Scheduled news check with ID: ${newsJobId}`);
+            UtilityManager.log(`[Setup] Scheduled news check with ID: ${newsJobId}`);
 
             const spamQueueJobId = await context.scheduler.runJob({
                 name: 'check_spam_queue',
                 cron: '*/15 * * * *', // Run every 15 minutes
             });
-            console.log(`[Setup] Scheduled spam queue check with ID: ${spamQueueJobId}`);
+            UtilityManager.log(`[Setup] Scheduled spam queue check with ID: ${spamQueueJobId}`);
 
         } catch (e) {
-            console.error('[Setup] Failed to schedule cleanup job:', e);
+            UtilityManager.error('[Setup] Failed to schedule cleanup job:', e);
         }
 
         if (isDevMode) {

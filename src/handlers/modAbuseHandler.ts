@@ -2,6 +2,7 @@
 import { CacheManager } from '../managers/cacheManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { BaseHandler } from './baseHandler.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 export class ModAbuseHandler extends BaseHandler {
     /**
@@ -48,12 +49,11 @@ export class ModAbuseHandler extends BaseHandler {
             // 5. Cooldown Check to prevent Discord spamming
             const isCooldown = await CacheManager.isWarningOnCooldown(moderatorName, context);
             if (isCooldown) {
-                console.log(`[ModAbuse] ${moderatorName} hit threshold (${actionCount}), but alert is on cooldown.`);
+                UtilityManager.log(`[ModAbuse] ${moderatorName} hit threshold (${actionCount}), but alert is on cooldown.`)
                 return;
             }
 
-            console.log(`[ModAbuse] Alert triggered for ${moderatorName}: ${actionCount} actions in ${timeframeMins}m.`);
-
+            UtilityManager.log(`[ModAbuse] Alert triggered for ${moderatorName}: ${actionCount} actions in ${timeframeMins}m.`);
             // 6. Build and Send Discord Notification
             const payload = {
                 content: alertMessage,

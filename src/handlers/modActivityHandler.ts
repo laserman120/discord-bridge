@@ -5,6 +5,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 /**
  * Monitors and logs activity (posts and comments) from subreddit moderators.
@@ -33,7 +34,7 @@ export class ModActivityHandler extends BaseHandler {
 
         // 2. Prevent Duplicate bridge notifications
         if (await this.isAlreadyLogged(targetId, ChannelType.ModActivity, context)) {
-            console.log(`[ModActivityHandler] Item ${targetId} already logged, skipping.`);
+            UtilityManager.log(`[ModActivityHandler] Item ${targetId} already logged, skipping.`);
             return;
         }
 
@@ -46,7 +47,7 @@ export class ModActivityHandler extends BaseHandler {
         const isMod = await this.verifyAuthorIsMod(contentItem, context);
         if (!isMod) return;
 
-        console.log(`[ModActivityHandler] Validated mod activity for u/${contentItem.authorName}`);
+        UtilityManager.log(`[ModActivityHandler] Validated mod activity for u/${contentItem.authorName}`);
 
         // 5. Build Payload & Dispatch
         const details = await ContentDataManager.gatherDetails(contentItem, context, event);
@@ -89,7 +90,7 @@ export class ModActivityHandler extends BaseHandler {
             
             return mods.length > 0;
         } catch (e) {
-            console.error(`[ModActivityHandler] Failed to verify mod status for ${item.authorName}:`, e);
+            UtilityManager.error(`[ModActivityHandler] Failed to verify mod status for ${item.authorName}:`, e);
             return false;
         }
     }

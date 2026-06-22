@@ -32,7 +32,7 @@ export class ModLogHandler extends BaseHandler {
         );
 
         if (alreadyPosted) {
-            console.log(`[ModLogHandler] Already logged action ${event.action} with ID ${uniqueId}, skipping.`);
+            UtilityManager.log(`[ModLogHandler] Already logged action ${event.action} with ID ${uniqueId}, skipping.`);
             return;
         }
 
@@ -47,7 +47,7 @@ export class ModLogHandler extends BaseHandler {
 
         payload.content = await this.getCustomMessageOverride(event.action, payload.content, context);
 
-        console.log(`[ModLogHandler] Dispatching notification for: ${event.action}`);
+        UtilityManager.log(`[ModLogHandler] Dispatching notification for: ${event.action}`);
 
         // 5. Dispatch and Log
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload);
@@ -80,7 +80,7 @@ export class ModLogHandler extends BaseHandler {
                 }
             }
         } catch (e) {
-            console.error('[ModLogHandler] JSON parsing failed for custom messages:', e);
+            UtilityManager.error('[ModLogHandler] JSON parsing failed for custom messages:', e);
         }
 
         return defaultContent;

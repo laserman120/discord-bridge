@@ -5,6 +5,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 /**
  * Handles the initial bridging of newly submitted posts to a private Discord channel.
@@ -29,7 +30,7 @@ export class NewPostHandler extends BaseHandler {
         // 3. Prevent Duplicate Logging
         // Uses the standardized isAlreadyLogged method from BaseHandler
         if (await this.isAlreadyLogged(postId, ChannelType.NewPosts, context)) {
-            console.log(`[NewPostHandler] Post ${postId} already sent to New Posts channel. Skipping.`);
+            UtilityManager.log(`[NewPostHandler] Post ${postId} already sent to New Posts channel. Skipping.`);
             return;
         }
 
@@ -51,7 +52,7 @@ export class NewPostHandler extends BaseHandler {
         const notificationString = await context.settings.get('NEW_POST_MESSAGE') as string | undefined;
 
         if(contentData.authorName === '[deleted]') {
-            console.log(`[NewPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
+            UtilityManager.log(`[NewPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
             return;
         }
 

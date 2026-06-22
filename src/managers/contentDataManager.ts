@@ -148,7 +148,7 @@ export class ContentDataManager {
                     result.targetUrl = result.contentDetails.permalink;
                 }
             } catch (e) {
-                console.warn(`[ContentDataManager] Could not fetch content for mod log: ${targetId}`);
+                UtilityManager.log(`[ContentDataManager] Could not fetch content for mod log: ${targetId}`);
                 result.targetUrl = event.targetPost?.permalink ? `https://reddit.com${event.targetPost.permalink}` : undefined;
             }
             return result;
@@ -191,7 +191,7 @@ export class ContentDataManager {
                 details.crossPostSubredditName = crosspostItem.subredditName;
                 details.isCrossPost = true;
             } catch (error) {
-                console.error(`[ContentDataManager] Failed to fetch crosspost parent:`, error);
+                UtilityManager.error(`[ContentDataManager] Failed to fetch crosspost parent:`, error);
             }
         }
     }
@@ -242,7 +242,7 @@ export class ContentDataManager {
                 }
             }
         } catch {
-            console.warn(`[ContentDataManager] Failed user stats for ${details.authorName}`);
+            UtilityManager.log(`[ContentDataManager] Failed user stats for ${details.authorName}`);
         }
     }
 

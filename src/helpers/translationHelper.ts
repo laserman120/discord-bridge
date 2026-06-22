@@ -1,5 +1,6 @@
 import { DevvitContext } from '../types/context.js';
 import { TranslationKey } from '../config/enums.js';
+import { UtilityManager } from './utilityHelper.js';
 
 export class TranslationHelper {
     private static readonly DEFAULTS: Record<string, string> = {
@@ -133,7 +134,7 @@ export class TranslationHelper {
             }
         } catch (e) {
             // Fallback to default if JSON is malformed
-            console.log(`[TranslationHelper] Failed to parse custom translations JSON: ${e}`);
+            UtilityManager.log(`[TranslationHelper] Failed to parse custom translations JSON: ${e}`);
         }
 
         if (!vars) return template;
@@ -158,8 +159,8 @@ export class TranslationHelper {
 
     static logCurrentDefaults(): void {
         const json = JSON.stringify(this.DEFAULTS, null, 2);
-        console.log("--- START TRANSLATION DEFAULTS ---");
-        console.log(json);
-        console.log("--- END TRANSLATION DEFAULTS ---");
+        UtilityManager.log("--- START TRANSLATION DEFAULTS ---");
+        UtilityManager.log(json);
+        UtilityManager.log("--- END TRANSLATION DEFAULTS ---");
     }
 }

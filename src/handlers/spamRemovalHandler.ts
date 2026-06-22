@@ -29,7 +29,7 @@ export class SpamRemovalHandler extends BaseHandler {
 
         // 2. Prevent Duplicate Logging
         if (await this.isAlreadyLogged(targetId, ChannelType.Removals, context)) {
-            console.log(`[SpamRemovalHandler] Item ${targetId} already logged in removals. Skipping.`);
+            UtilityManager.log(`[SpamRemovalHandler] Item ${targetId} already logged in removals. Skipping.`);
             return;
         }
 
@@ -40,7 +40,7 @@ export class SpamRemovalHandler extends BaseHandler {
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
         if(contentData.authorName === '[deleted]') {
-            console.log(`[SpamRemovalHandler] Content ${targetId} is authored by [deleted]. Skipping spam removal handling.`)
+            UtilityManager.log(`[SpamRemovalHandler] Content ${targetId} is authored by [deleted]. Skipping spam removal handling.`)
             return;
         }
 
@@ -61,7 +61,7 @@ export class SpamRemovalHandler extends BaseHandler {
             ? notificationStrings[3] 
             : undefined;
 
-        console.log(`[SpamRemovalHandler] Dispatching spam notification for ${targetId}`);
+        UtilityManager.log(`[SpamRemovalHandler] Dispatching spam notification for ${targetId}`);
 
         // 7. Build and Send
         const payload = await ComponentManager.createDefaultMessage(

@@ -1,6 +1,6 @@
 import { JobContext } from '@devvit/public-api';
 import { NEWS_SOURCE_SUBREDDIT, NEWS_SOURCE_AUTHOR } from '../config/constants.js';
-import { NEWS_MAX_AGE_MS } from '../config/constants.js';
+import { NEWS_MAX_AGE_MS, PRUNE_AGE_SECONDS } from '../config/constants.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 export async function checkNewsUpdates(event: any, context: JobContext): Promise<void> {
 
@@ -11,7 +11,7 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
         return;
     }
 
-    console.log('[NewsCheck] Checking for global updates...');
+    UtilityManager.log('[NewsCheck] Checking for global updates...');
 
     try {
         const recentPosts = await context.reddit.getNewPosts({
@@ -19,7 +19,7 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
             limit: 25
         }).all();
         if(!recentPosts){
-            console.error('[NewsCheck] Failed to fetch recent posts from subreddit.');
+            UtilityManager.error('[NewsCheck] Failed to fetch recent posts from subreddit.');
             return;
         }
 
@@ -53,7 +53,7 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
 
             if (hasSeen) continue;
 
-            console.log(`[NewsCheck] Sending ${notificationType} notification for post ${post.id} in sub: ${currentSub.name} with id ${currentSub.id}`);
+            UtilityManager.log(`[NewsCheck] Sending ${notificationType} notification for post ${post.id} in sub: ${currentSub.name} with id ${currentSub.id}`);
 
             const cleanTitle = post.title.replace(/\[.*?\]/, '').trim();
             const cleanBody = UtilityManager.cleanBodyText(post.body || '');
@@ -64,14 +64,14 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
             });
 
             if(!convId){
-                console.error(`[NewsCheck] Failed to create mod notification for post ${post.id}, failed to return conversation ID.`);
+                UtilityManager.error(`[NewsCheck] Failed to create mod notification for post ${post.id}, failed to return conversation ID.`);
                 continue;
             }
             
-            await context.redis.set(redisKey, 'true');
+            await context.redis.set(redisKey, 'true', { expiration: new Date(Date.now() + (PRUNE_AGE_SECONDS)) });
         }
 
     } catch (e) {
-        console.error('[NewsCheck] Failed to check for news:', e);
+        UtilityManager.error('[NewsCheck] Failed to check for news:', e);
     }
 }

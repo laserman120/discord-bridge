@@ -647,9 +647,9 @@ export class ComponentManager {
             }
 
             bodyComponent.content = newTotalContent;
-            console.log(`[ComponentManager] Appended body content. New length: ${newTotalContent.length}`);
+            UtilityManager.log(`[ComponentManager] Appended body content. New length: ${newTotalContent.length}`);
         } else {
-            console.warn('[ComponentManager] Could not find body component to update.');
+            UtilityManager.log('[ComponentManager] Could not find body component to update.');
         }
 
         return updatedComponents;
@@ -674,7 +674,7 @@ export class ComponentManager {
                 // Use a single newline to keep it compact
                 textComponent.content += `\n**${authorName}:** ${body}`;
                 if(!textComponent.content){
-                    console.log('[ComponentManager] Warning: Text component content is undefined after appending. This should not happen.');
+                    UtilityManager.log('[ComponentManager] Warning: Text component content is undefined after appending. This should not happen.');
                     return updatedComponents;
                 }
                 // Discord character limits for a single text component

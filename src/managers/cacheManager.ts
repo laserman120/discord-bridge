@@ -1,4 +1,5 @@
 import { DevvitContext } from '../types/context.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 /**
  * Manages short-term data persistence in Redis.
@@ -34,7 +35,7 @@ export class CacheManager {
                 expiration: new Date(Date.now() + this.POST_CACHE_TTL * 1000)
             });
         } catch (e) {
-            console.error(`[CacheManager] Failed to cache content ${id}:`, e);
+            UtilityManager.error(`[CacheManager] Failed to cache content ${id}:`, e);
         }
     }
 
@@ -72,7 +73,7 @@ export class CacheManager {
             // Maintenance: Remove actions older than 1 hour to prevent memory bloat
             await context.redis.zRemRangeByScore(key, -1, oneHourAgo);
         } catch (e) {
-            console.error(`[CacheManager] Failed to track mod action for ${moderatorName}:`, e);
+            UtilityManager.error(`[CacheManager] Failed to track mod action for ${moderatorName}:`, e);
         }
     }
 
@@ -105,7 +106,7 @@ export class CacheManager {
 
             return relevantActions.length;
         } catch (e) {
-            console.error(`[CacheManager] Threshold check failed for ${moderatorName}:`, e);
+            UtilityManager.error(`[CacheManager] Threshold check failed for ${moderatorName}:`, e);
             return 0;
         }
     }

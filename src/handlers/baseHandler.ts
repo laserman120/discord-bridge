@@ -1,6 +1,7 @@
 import { Post, Comment, TriggerContext } from '@devvit/public-api';
 import { ChannelType, ItemState } from '../config/enums.js';
 import { StorageManager } from '../managers/storageManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 export abstract class BaseHandler {
     /**
@@ -38,7 +39,7 @@ export abstract class BaseHandler {
                 ? await context.reddit.getPostById(id) 
                 : await context.reddit.getCommentById(id);
         } catch (e) {
-            console.error(`[BaseHandler] Failed fetch for ${id}:`, e);
+            UtilityManager.error(`[BaseHandler] Failed fetch for ${id}:`, e)
             return null;
         }
     }

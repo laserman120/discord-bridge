@@ -5,6 +5,7 @@ import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 /**
  * Handles Reddit report events. 
@@ -29,7 +30,7 @@ export class ReportHandler extends BaseHandler {
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
         if(contentData.authorName === '[deleted]') {
-            console.log(`[ReportHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
+            UtilityManager.log(`[ReportHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
             return;
         }
 
@@ -54,7 +55,7 @@ export class ReportHandler extends BaseHandler {
             ChannelType.ModActivity
         ];
 
-        console.log(`[ReportHandler] Broadcasting report count (${contentData.reportCount}) to ${logEntries.length} logs.`);
+        UtilityManager.log(`[ReportHandler] Broadcasting report count (${contentData.reportCount}) to ${logEntries.length} logs.`);
 
         for (const entry of logEntries) {
             if (syncableChannels.includes(entry.channelType)) {

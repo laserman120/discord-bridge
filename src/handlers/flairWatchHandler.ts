@@ -6,6 +6,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { BaseHandler } from './baseHandler.js';
+import { UtilityManager } from '../helpers/utilityHelper.js';
 
 
 /**
@@ -42,7 +43,7 @@ export class FlairWatchHandler extends BaseHandler {
         );
 
         if (alreadyPosted) {
-            console.log(`[FlairWatchHandler] Already logged ${targetId}, skipping.`);
+            UtilityManager.log(`[FlairWatchHandler] Already logged ${targetId}, skipping.`);
             return;
         }
 
@@ -51,7 +52,7 @@ export class FlairWatchHandler extends BaseHandler {
         try {
             watchList = JSON.parse(configString);
         } catch (e) {
-            console.error('[FlairWatchHandler] Config JSON parse error:', e);
+            UtilityManager.error('[FlairWatchHandler] Config JSON parse error:', e);
             return;
         }
 
@@ -78,12 +79,12 @@ export class FlairWatchHandler extends BaseHandler {
                 const webhookUrl = entry.webhook;
                 if (!webhookUrl) continue;
 
-                console.log(`[FlairWatchHandler] Match: '${entry.flair}' found on ${targetId}`);
+                UtilityManager.log(`[FlairWatchHandler] Match: '${entry.flair}' found on ${targetId}`);
 
                 const details = await ContentDataManager.gatherDetails(contentItem, context, event);
 
                 if(details.authorName === '[deleted]') {
-                    console.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping flair watch handling.`)
+                    UtilityManager.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping flair watch handling.`)
                     return;
                 }
 
@@ -126,11 +127,11 @@ export class FlairWatchHandler extends BaseHandler {
                 if (entry.channelType === ChannelType.PublicFlairWatch) {
                     const success = await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
                     if(!success){
-                        console.error(`[FlairWatchHandler] Failed to delete Discord message ${entry.discordMessageId} for ${Id}. Will retry on next state change.`);
+                        UtilityManager.error(`[FlairWatchHandler] Failed to delete Discord message ${entry.discordMessageId} for ${Id}. Will retry on next state change.`)
                         continue;
                     }
                     await StorageManager.deleteLogEntry(entry, context as any);
-                    console.log(`[FlairWatchHandler] Deleted Discord message ${entry.discordMessageId} for post/comment ${Id} due to state change to ${state}`);
+                    UtilityManager.log(`[FlairWatchHandler] Deleted Discord message ${entry.discordMessageId} for post/comment ${Id} due to state change to ${state}`);
                 }
             }
         }

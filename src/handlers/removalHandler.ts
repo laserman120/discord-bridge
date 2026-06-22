@@ -34,7 +34,7 @@ export class RemovalHandler extends BaseHandler {
 
         // 3. Prevent Duplicates
         if (await this.isAlreadyLogged(targetId, ChannelType.Removals, context)) {
-            console.log(`[RemovalHandler] Log already exists for ${targetId}. Skipping.`);
+            UtilityManager.log(`[RemovalHandler] Log already exists for ${targetId}. Skipping.`);
             return;
         }
 
@@ -45,7 +45,7 @@ export class RemovalHandler extends BaseHandler {
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
         if(contentData.authorName === '[deleted]') {
-            console.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
+            UtilityManager.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
             return;
         }
 
