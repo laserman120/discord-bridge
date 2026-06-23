@@ -37,7 +37,7 @@ export async function checkForOldMessages(event: any, context: JobContext): Prom
                         await StorageManager.deleteLogEntry(entry as LogEntry, context as any);
                         successfulDeletions++;
                     } else {
-                        const messageAge = Date.now() - (entry.unixTimestamp);
+                        const messageAge = Math.floor(Date.now() / 1000) - (entry.unixTimestamp);
                         if (messageAge > PRUNE_AGE_SECONDS + (24 * 60 * 60)) { // Add 1 day buffer to retry
                             UtilityManager.log(`[JOB] Message exceeded 13-day limit. Force deleting DB entry.`);
                             await StorageManager.deleteLogEntry(entry as LogEntry, context as any);
