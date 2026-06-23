@@ -70,4 +70,28 @@ export async function checkForOldMessages(event: any, context: JobContext): Prom
     } catch (error) {
         UtilityManager.error(`[JOB] CRITICAL ERROR during cleanup job:`, error);
     }
+
+    try{
+        // Perform a cleanup for the queue
+        // We want to remove any items that have been in the queue for more than 13 days (PRUNE_AGE_SECONDS)
+
+        const queueCutoffMs = Date.now() - (PRUNE_AGE_SECONDS * 1000);
+
+        const stuckTasks = await context.redis.zRange('msg_queue:ids', 0, queueCutoffMs, { by: 'score' });
+
+        if (stuckTasks && stuckTasks.length > 0) {
+            UtilityManager.log(`[Queue Maintenance] Found ${stuckTasks.length} orphaned/stuck items older than 13 days. Pruning...`);
+            
+            const stuckIds = stuckTasks.map(t => t.member);
+            
+            await Promise.all([
+                context.redis.hDel('msg_queue:data', stuckIds),
+                context.redis.zRemRangeByScore('msg_queue:ids', 0, queueCutoffMs)
+            ]);
+            
+            UtilityManager.log(`[Queue Maintenance] Successfully purged ${stuckIds.length} stuck queue items.`);
+        }
+    } catch (error) {
+        UtilityManager.error(`[Queue Maintenance] Error during stuck queue cleanup:`, error);
+    }
 }

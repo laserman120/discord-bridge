@@ -47,7 +47,7 @@ export class QueueManager {
         try {
             const taskId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
             const processAt = Date.now() + (delaySeconds * 1000);
-
+            
             await context.redis.hSet(this.DATA_KEY, { [taskId]: JSON.stringify(task) });
             
             // The score is the timestamp when the task becomes 'ready'

@@ -68,7 +68,8 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
                 continue;
             }
             
-            await context.redis.set(redisKey, 'true', { expiration: new Date(Date.now() + (PRUNE_AGE_SECONDS)) });
+            await context.redis.set(redisKey, 'true');
+            await context.redis.expire(redisKey, PRUNE_AGE_SECONDS);
         }
 
     } catch (e) {
