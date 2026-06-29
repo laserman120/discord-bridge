@@ -1,4 +1,5 @@
 import { JobContext, TriggerContext, Post, Comment } from '@devvit/public-api';
+import LZString from 'lz-string';
 import { NewPostHandler } from '../handlers/newPostHandler.js';
 import { StateSyncHandler } from '../handlers/stateSyncHandler.js';
 import { RemovalHandler } from '../handlers/removalHandler.js';
@@ -15,6 +16,7 @@ import { UpdateHandler } from '../handlers/updateHandler.js';
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
+import { MAX_AGE_QUEUE } from '../config/constants.js';
 
 export type HandlerName =
     | 'NewPostHandler' | 'PublicPostHandler' | 'StateSyncHandler'
@@ -48,7 +50,9 @@ export class QueueManager {
             const taskId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
             const processAt = Date.now() + (delaySeconds * 1000);
             
-            await context.redis.hSet(this.DATA_KEY, { [taskId]: JSON.stringify(task) });
+            const compressedData = LZString.compressToBase64(JSON.stringify(task));
+            await context.redis.hSet(this.DATA_KEY, { [taskId]: compressedData });
+            await context.redis.expire(this.DATA_KEY, MAX_AGE_QUEUE); // 14 days fallback expiration
             
             // The score is the timestamp when the task becomes 'ready'
             await context.redis.zAdd(this.QUEUE_KEY, { score: processAt, member: taskId });
@@ -140,16 +144,22 @@ export class QueueManager {
 
             UtilityManager.log(`[Queue] Worker processing ${taskIds.length} tasks.`);
 
-            // 1. Batch fetch task payloads
+            // Batch fetch task payloads
             const taskDataStrings = await Promise.all(taskIds.map(t => context.redis.hGet(this.DATA_KEY, t.member)));
             const tasks: { id: string, payload: QueueTask }[] = [];
             const allItemIds = new Set<string>();
 
-            // 2. Parse payloads and collect Reddit IDs for batch fetching
+            // Parse payloads and collect Reddit IDs for batch fetching
             taskDataStrings.forEach((str, index) => {
                 if (!str) return;
                 try {
-                    const payload: QueueTask = JSON.parse(str);
+                    // Fallback support: Raw JSON starts with '{', Base64 compression does not.
+                    const isLegacy = str.trim().startsWith('{');
+                    const jsonString = isLegacy ? str : LZString.decompressFromBase64(str);
+                    
+                    if (!jsonString) throw new Error("Decompression returned null");
+
+                    const payload: QueueTask = JSON.parse(jsonString);
                     tasks.push({ id: taskIds[index].member, payload });
 
                     const itemId = this.extractItemId(payload);
@@ -161,7 +171,7 @@ export class QueueManager {
                 }
             });
 
-            // 3. Perform Batch Fetch from Reddit API
+            // Perform Batch Fetch from Reddit API
             const contentCache = new Map<string, Post | Comment>();
             let modQueue: (Post | Comment)[] = [];
 
@@ -182,7 +192,7 @@ export class QueueManager {
                 }
             }
 
-            // 4. Dispatch Tasks
+            // Dispatch Tasks
             for (const task of tasks) {
                 const itemId = this.extractItemId(task.payload);
                 const preFetchedItem = itemId ? contentCache.get(itemId) : undefined;
