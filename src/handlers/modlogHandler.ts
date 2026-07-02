@@ -24,7 +24,7 @@ export class ModLogHandler extends BaseHandler {
         const enabledActions = await context.settings.get('MODLOG_ACTIONS') as string[] || [];
         if (!enabledActions.includes(event.action || '')) return;
 
-        const uniqueId = `modlog:${event.action}:${event.actionedAt}:${event.moderator.name || 'unknown_mod'}`;
+        const uniqueId = `modlog:${event.action}:${event.actionedAt}:${event.moderator?.name || 'unknown_mod'}`;
 
         const existingLogs = await StorageManager.getLinkedLogEntries(uniqueId, context);
         const alreadyPosted = existingLogs.some(

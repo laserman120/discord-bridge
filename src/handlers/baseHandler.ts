@@ -11,13 +11,13 @@ export abstract class BaseHandler {
      */
     public static getRedditId(event: any): string | undefined {
         return (
-            event.id ||
-            event.postId ||
-            event.commentId ||
-            event.targetPost?.id ||
-            event.targetComment?.id ||
-            event.targetId ||
-            event.conversationId?.replace('ModmailConversation_', '')
+            event.targetComment?.id || // ModAction on a comment
+            event.targetPost?.id ||    // ModAction on a post
+            event.commentId ||         // CommentDelete event
+            event.postId ||            // PostDelete event
+            event.targetId ||          // Custom mock events
+            event.id ||                // Direct Post/Comment objects
+            event.conversationId?.replace('ModmailConversation_', '') // 7. Modmail events
         );
     }
 

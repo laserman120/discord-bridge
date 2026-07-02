@@ -24,7 +24,10 @@ export class StateSyncHandler extends BaseHandler {
     static async handleModAction(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         // 1. Resolve ID using BaseHandler
         const targetId = this.getRedditId(event);
-        if (!targetId) return;
+        if (!targetId) {
+            UtilityManager.log(`[StateSync] Unable to resolve Reddit ID for event: ${JSON.stringify(event)}`);
+            return;
+        }
 
         // 2. Resolve the new Status
         let newStatus = UtilityManager.getStateFromModAction(event.action);

@@ -45,7 +45,7 @@ export class RemovalHandler extends BaseHandler {
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
         if(contentData.authorName === '[deleted]') {
-            UtilityManager.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
+            UtilityManager.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping removal handling.`)
             return;
         }
 
