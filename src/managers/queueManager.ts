@@ -228,7 +228,7 @@ export class QueueManager {
         const d = payload.data;
         if (d.type === 'CommentDelete') return d.commentId;
         if (d.type === 'PostDelete') return d.postId;
-        return d.id || d.itemId || d.postId || d.commentId || d.targetPost?.id || d.targetComment?.id;
+        return d.targetComment?.id || d.targetPost?.id || d.commentId || d.postId || d.itemId || d.id;
     }
 
     private static async dispatch(task: QueueTask, context: JobContext, currentQueue?: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<void> {

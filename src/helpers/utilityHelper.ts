@@ -181,7 +181,7 @@ export class UtilityManager {
         if (!text) return "";
 
         let cleaned = text
-            // 1. Fix Reddit's Pre-Escaped Links & Flatten Redundant URLs
+            // Fix Reddit's Pre-Escaped Links & Flatten Redundant URLs
             .replace(/\[(https?:\/\/[^\]]+)\]\((https?:\/\/[^\)]+)\)/gi, (match, label, url) => {
                 if (label.replaceAll("\\", "").trim() === url.trim() || label.startsWith("http")) {
                     return url;
@@ -189,36 +189,36 @@ export class UtilityManager {
                 return `[${label.replaceAll("\\", "")}](${url})`;
             })
 
-            // 2. Spoilers
+            // Spoilers
             .replace(/>!(.*?)!</g, "||$1||")
 
-            // 3. Media Placeholders
+            // Media Placeholders
             .replace(/!\[video\]\(.*?\)/gi, "[Video]")
             .replace(/!\[img\]\(.*?\)/gi, "[Image]")
             .replace(/!\[gif\]\(.*?\)/gi, "[GIF]")
 
-            // 4. Remove Zero Width Spaces
+            // Remove Zero Width Spaces
             .replace(/\u200b|&#8203;/g, "")
 
-            // 5. Headers (H1, H2, H3 -> Bold)
+            // Headers (H1, H2, H3 -> Bold)
             .replace(/^(?:#{1,3})\s+(.+)$/gm, "**$1**")
 
-            // 6. Superscript to Italics (Original two-step logic)
+            // Superscript to Italics (Original two-step logic)
             .replace(/\^\((.*?)\)/g, "*$1*")
             .replace(/\^(\S+)/g, "*$1*")
 
-            // 7. Quote Fix
+            // Quote Fix
             .replace(/^>(?!\s)(.*)$/gm, "> $1")
 
-            // 8. Indented Code Blocks
+            // Indented Code Blocks
             // Wraps each line, then merges adjacent blocks to create a proper Discord code block
             .replace(/^ {4,}(.*)$/gm, "```\n$1\n```")
             .replace(/```\n```/g, "") 
 
-            // 9. Clean up random backslashes on basic Markdown chars
+            // Clean up random backslashes on basic Markdown chars
             .replace(/\\([_~*])/g, "$1")
 
-            // 10. Collapse 3+ newlines into exactly 2
+            // Collapse 3+ newlines into exactly 2
             .replace(/\n{3,}/g, "\n\n");
 
         return cleaned.trim();

@@ -23,17 +23,17 @@ export class SpamRemovalHandler extends BaseHandler {
         const targetId = this.getRedditId(event);
         if (!targetId) return;
 
-        // 1. Resolve Configuration
+        // Resolve Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_REMOVALS') as string | undefined;
         if (!webhookUrl) return;
 
-        // 2. Prevent Duplicate Logging
+        // Prevent Duplicate Logging
         if (await this.isAlreadyLogged(targetId, ChannelType.Removals, context)) {
             UtilityManager.log(`[SpamRemovalHandler] Item ${targetId} already logged in removals. Skipping.`);
             return;
         }
 
-        // 3. Resolve Content
+        // Resolve Content
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
@@ -44,18 +44,18 @@ export class SpamRemovalHandler extends BaseHandler {
             return;
         }
 
-        // 4. Fallback attribution for silent removals
+        // Fallback attribution for silent removals
         if (!contentData.removedBy) {
             contentData.removedBy = await TranslationHelper.t(TranslationKey.TEXT_REMOVED_SILENTLY_BY_REDDIT, context);
             contentData.removalReason = contentData.removalReason || await TranslationHelper.t(TranslationKey.TEXT_REMOVED_SILENTLY_BY_REDDIT_REASON, context);
         }
 
-        // 5. Ignore Author Filter
+        // Ignore Author Filter
         if (await this.isAuthorIgnored(contentData.authorName, context)) {
             return;
         }
 
-        // 6. Resolve Notification String (Index 3 is reserved for Spam)
+        // Resolve Notification String (Index 3 is reserved for Spam)
         const notificationStrings = await UtilityManager.getMessageFromChannelType(ChannelType.Removals, context);
         const notificationString = (notificationStrings && notificationStrings.length > 3) 
             ? notificationStrings[3] 
@@ -63,7 +63,7 @@ export class SpamRemovalHandler extends BaseHandler {
 
         UtilityManager.log(`[SpamRemovalHandler] Dispatching spam notification for ${targetId}`);
 
-        // 7. Build and Send
+        // Build and Send
         const payload = await ComponentManager.createDefaultMessage(
             contentData,
             ItemState.Spam,

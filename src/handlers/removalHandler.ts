@@ -24,21 +24,21 @@ export class RemovalHandler extends BaseHandler {
         const targetId = this.getRedditId(event);
         if (!targetId) return;
 
-        // 1. Validate State: Only process 'Removed' or 'Spam' actions
+        // Validate State: Only process 'Removed' or 'Spam' actions
         let state = UtilityManager.getStateFromModAction(event.action);
         if (state !== ItemState.Removed && state !== ItemState.Spam) return;
 
-        // 2. Resolve Configuration
+        // Resolve Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_REMOVALS') as string | undefined;
         if (!webhookUrl) return;
 
-        // 3. Prevent Duplicates
+        // Prevent Duplicates
         if (await this.isAlreadyLogged(targetId, ChannelType.Removals, context)) {
             UtilityManager.log(`[RemovalHandler] Log already exists for ${targetId}. Skipping.`);
             return;
         }
 
-        // 4. Resolve Content and Data
+        // Resolve Content and Data
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
@@ -49,23 +49,23 @@ export class RemovalHandler extends BaseHandler {
             return;
         }
 
-        // 5. Integrity Check: Ensure it's actually removed/spam and not approved
+        // Integrity Check: Ensure it's actually removed/spam and not approved
         if (contentItem.isApproved() || (!contentItem.isRemoved() && !contentItem.isSpam() && !contentData.removedBy)) {
             return;
         }
 
-        // 6. Refined State Logic: Detect Automated Removals
+        // Refined State Logic: Detect Automated Removals
         if (state === ItemState.Removed && await this.isAutomatedRemoval(contentData.removedBy, context)) {
             state = ItemState.Awaiting_Review;
         }
 
-        // 7. Filters: Ignore Moderator self-removals or specific authors
+        // Filters: Ignore Moderator self-removals or specific authors
         if (await this.shouldSkipNotification(contentData, state, context)) return;
 
-        // 8. Resolve Notification String
+        // Resolve Notification String
         const notificationString = await this.getNotificationString(state, contentData.removedBy, context);
 
-        // 9. Dispatch
+        // Dispatch
         const payload = await ComponentManager.createDefaultMessage(contentData, state, ChannelType.Removals, context, notificationString);
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 

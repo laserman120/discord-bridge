@@ -34,21 +34,19 @@ export class ModQueueHandler extends BaseHandler {
         const webhookUrl = await context.settings.get('WEBHOOK_MOD_QUEUE') as string | undefined;
         if (!webhookUrl) return;
 
-        // 1. Prevent Duplicate Logs
         if (await this.isAlreadyLogged(targetId, ChannelType.ModQueue, context)) {
             return;
         }
 
-        // 2. Queue Verification
         // Even if a trigger fires, we verify the item is actually IN the queue
         const existsInQueue = currentQueue.some(item => item.id === targetId);
         if (!existsInQueue) return;
 
-        // 3. Resolve Content
+        // Resolve Content
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem || contentItem.isApproved()) return;
 
-        // 4. Determine Item State
+        // Determine Item State
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         let state = ItemState.Live;
 
@@ -94,7 +92,7 @@ export class ModQueueHandler extends BaseHandler {
             notificationString = notificationString.replace('{{count}}', queueCount.toString());
         }
         
-        // 6. Dispatch and Store
+        // Dispatch and Store
         const payload = await ComponentManager.createDefaultMessage(contentData, state, ChannelType.ModQueue, context, notificationString);
         const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 

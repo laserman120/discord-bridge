@@ -23,7 +23,7 @@ export class ReportHandler extends BaseHandler {
         const targetId = triggerPost.id;
         if (!targetId) return;
 
-        // 1. Resolve Content and Stats
+        // Resolve Content and Stats
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
@@ -39,14 +39,14 @@ export class ReportHandler extends BaseHandler {
             return;
         }
 
-        // 2. Load all existing logs for this item
+        // Load all existing logs for this item
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         const status = ItemState.Unhandled_Report;
 
-        // 3. Handle the dedicated Reports Channel
+        // Handle the dedicated Reports Channel
         await this.handleReportsChannel(targetId, contentData, status, logEntries, context);
 
-        // 4. Broadcast Updates to other channels
+        // Broadcast Updates to other channels
         // We update New Posts, Removals, etc., so the report count is visible everywhere.
         const syncableChannels = [
             ChannelType.NewPosts,

@@ -22,14 +22,14 @@ export class StateSyncHandler extends BaseHandler {
      * @param preFetchedContent - Optional content already fetched by the QueueManager.
      */
     static async handleModAction(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        // 1. Resolve ID using BaseHandler
+        // Resolve ID using BaseHandler
         const targetId = this.getRedditId(event);
         if (!targetId) {
             UtilityManager.log(`[StateSync] Unable to resolve Reddit ID for event: ${JSON.stringify(event)}`);
             return;
         }
 
-        // 2. Resolve the new Status
+        // Resolve the new Status
         let newStatus = UtilityManager.getStateFromModAction(event.action);
         if (event.targetState === ItemState.Spam) {
             newStatus = ItemState.Spam;
@@ -37,20 +37,20 @@ export class StateSyncHandler extends BaseHandler {
 
         if (!newStatus) return;
 
-        // 3. Early Exit: If no logs exist, there is nothing to sync
+        // Early Exit: If no logs exist, there is nothing to sync
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
             UtilityManager.log(`[StateSync] No tracked messages for ${targetId}. Skipping.`);
             return;
         }
 
-        // 4. Content Resolution
+        // Content Resolution
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-        // 5. Adjust for Automated Removals
+        // Adjust for Automated Removals
         if (newStatus === ItemState.Removed) {
             const automatedUsers = await context.settings.get('AUTOMATIC_REMOVALS_USERS') as string[] || [];
             if (automatedUsers.includes(contentData.removedBy?.toLowerCase() || '')) {
@@ -60,14 +60,14 @@ export class StateSyncHandler extends BaseHandler {
 
         UtilityManager.log(`[StateSync] Syncing ${targetId} to ${newStatus} for ${logEntries.length} messages.`);
 
-        // 6. Notify specific handlers that need to perform side-effects (Deletion/Creation)
+        // Notify specific handlers that need to perform side-effects (Deletion/Creation)
         await Promise.all([
             PublicPostHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem),
             FlairWatchHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem),
             ModQueueHandler.handlePossibleStateChange(targetId, newStatus, context, contentItem)
         ]);
 
-        // 7. Loop and update all standard logs
+        // Loop and update all standard logs
         const syncableChannels = [
             ChannelType.NewPosts,
             ChannelType.Removals,

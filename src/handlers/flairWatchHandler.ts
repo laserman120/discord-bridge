@@ -31,11 +31,11 @@ export class FlairWatchHandler extends BaseHandler {
         const targetId = this.getRedditId(event);
         if (!targetId || !context.subredditName) return;
 
-        // 1. Fetch Configuration
+        // Fetch Configuration
         const configString = await context.settings.get('FLAIR_WATCH_CONFIG') as string;
         if (!configString) return;
 
-        // 2. Prevent Duplicate Notifications
+        // Prevent Duplicate Notifications
         // We check for both internal and public flair watch channels
         const existingLogs = await StorageManager.getLinkedLogEntries(targetId, context);
         const alreadyPosted = existingLogs.some(
@@ -47,7 +47,7 @@ export class FlairWatchHandler extends BaseHandler {
             return;
         }
 
-        // 3. Resolve Content and Watch-list
+        // Resolve Content and Watch-list
         let watchList: FlairConfigEntry[] = [];
         try {
             watchList = JSON.parse(configString);
@@ -59,7 +59,7 @@ export class FlairWatchHandler extends BaseHandler {
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
-        // 4. Extract Flairs for comparison
+        // Extract Flairs for comparison
         const isPost = targetId.startsWith('t3_');
         const postFlair = isPost ? (contentItem as Post).flair?.text : null;
 
@@ -67,7 +67,7 @@ export class FlairWatchHandler extends BaseHandler {
         const authorFlairData = await author?.getUserFlairBySubreddit(context.subredditName);
         const authorFlair = authorFlairData?.flairText;
 
-        // 5. Evaluate Watch-list Rules
+        // Evaluate Watch-list Rules
         for (const entry of watchList) {
             const hasMatchingFlair = (authorFlair?.includes(entry.flair)) || (postFlair?.includes(entry.flair));
             

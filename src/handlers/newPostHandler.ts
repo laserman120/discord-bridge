@@ -19,35 +19,35 @@ export class NewPostHandler extends BaseHandler {
      * @param preFetchedContent - Optional post object from the QueueManager's batch fetch.
      */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        // 1. Resolve ID using BaseHandler
+        // Resolve ID using BaseHandler
         const postId = this.getRedditId(event);
         if (!postId) return;
 
-        // 2. Load Configuration
+        // Load Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_NEW_POSTS') as string | undefined;
         if (!webhookUrl) return;
 
-        // 3. Prevent Duplicate Logging
+        // Prevent Duplicate Logging
         // Uses the standardized isAlreadyLogged method from BaseHandler
         if (await this.isAlreadyLogged(postId, ChannelType.NewPosts, context)) {
             UtilityManager.log(`[NewPostHandler] Post ${postId} already sent to New Posts channel. Skipping.`);
             return;
         }
 
-        // 4. Resolve Content (respecting pre-fetched data)
+        // Resolve Content (respecting pre-fetched data)
         const contentItem = await this.fetchContent(postId, context, preFetchedContent);
         if (!contentItem || !(contentItem instanceof Post)) {
             return;
         }
 
-        // 5. Determine Initial Status
+        // Determine Initial Status
         // New posts are usually 'Live', but could be 'Approved' if submitted by a mod/approved user
         let status = ItemState.Live;
         if (contentItem.isApproved()) {
             status = ItemState.Approved;
         }
         
-        // 6. Data Gathering & Payload Construction
+        // Data Gathering & Payload Construction
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         const notificationString = await context.settings.get('NEW_POST_MESSAGE') as string | undefined;
 
@@ -64,7 +64,7 @@ export class NewPostHandler extends BaseHandler {
             notificationString
         );
 
-        // 7. Dispatch to Discord & Record in Storage
+        // Dispatch to Discord & Record in Storage
         const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 
         if (discordMessageId && !discordMessageId.startsWith('failed')) {

@@ -11,7 +11,7 @@ export class ModAbuseHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      */
     static async handle(event: any, context: TriggerContext): Promise<void> {
-        // 1. Resolve Moderator Identity
+        // Resolve Moderator Identity
         const moderatorName = event.moderatorName || event.moderator?.name;
 
         // Ignore system accounts and automated actions
@@ -20,7 +20,7 @@ export class ModAbuseHandler extends BaseHandler {
             return;
         }
 
-        // 2. Load Configuration Settings
+        // Load Configuration Settings
         const webhookUrl = await context.settings.get('WEBHOOK_MOD_ABUSE') as string | undefined;
         if (!webhookUrl) return; 
 
@@ -29,12 +29,12 @@ export class ModAbuseHandler extends BaseHandler {
         const thresholdLimit = await context.settings.get('MOD_ABUSE_THRESHOLD') as number || 20;
         const monitoredActions = await context.settings.get('MOD_ABUSE_ACTIONS') as string[] || [];
 
-        // 3. Log the action in the cache
+        // Log the action in the cache
         // We use BaseHandler.getRedditId to identify WHAT was acted upon (post, comment, or user)
         const targetId = this.getRedditId(event) || 'subreddit';
         await CacheManager.trackModAction(moderatorName, event.action, targetId, context);
 
-        // 4. Threshold Evaluation
+        // Threshold Evaluation
         if (!monitoredActions.includes(event.action)) return;
 
         const actionCount = await CacheManager.checkModThreshold(
@@ -46,7 +46,7 @@ export class ModAbuseHandler extends BaseHandler {
         );
 
         if (actionCount >= thresholdLimit) {
-            // 5. Cooldown Check to prevent Discord spamming
+            // Cooldown Check to prevent Discord spamming
             const isCooldown = await CacheManager.isWarningOnCooldown(moderatorName, context);
             if (isCooldown) {
                 UtilityManager.log(`[ModAbuse] ${moderatorName} hit threshold (${actionCount}), but alert is on cooldown.`)
@@ -54,7 +54,7 @@ export class ModAbuseHandler extends BaseHandler {
             }
 
             UtilityManager.log(`[ModAbuse] Alert triggered for ${moderatorName}: ${actionCount} actions in ${timeframeMins}m.`);
-            // 6. Build and Send Discord Notification
+            // Build and Send Discord Notification
             const payload = {
                 content: alertMessage,
                 embeds: [{

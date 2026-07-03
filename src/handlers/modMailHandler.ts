@@ -39,7 +39,7 @@ export class ModMailHandler extends BaseHandler {
 
         const cleanId = targetId.replace('ModmailConversation_', '');
 
-        // 1. Fetch conversation data
+        // Fetch conversation data
         const { conversation } = await context.reddit.modMail.getConversation({
             conversationId: cleanId,
             markRead: false,
@@ -50,7 +50,7 @@ export class ModMailHandler extends BaseHandler {
             return;
         }
 
-        // 2. Sort messages Newest -> Oldest to identify current state
+        // Sort messages Newest -> Oldest to identify current state
         const messageList = Object.values(conversation.messages).sort((a: any, b: any) =>
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
@@ -60,12 +60,12 @@ export class ModMailHandler extends BaseHandler {
         const latestMessage = messageList[0];
         const isModAuthor = latestMessage.participatingAs === 'moderator' || latestMessage.author?.isMod;
 
-        // 3. Determine logging history
+        // Determine logging history
         const logEntries = await StorageManager.getLinkedLogEntries(cleanId, context);
         logEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         const latestLogEntry = logEntries[0];
 
-        // 4. Identify NEW and FRESH messages
+        // Identify NEW and FRESH messages
         const now = Date.now();
         const processedIds = await StorageManager.getProcessedMessageIds(cleanId, context);
 
@@ -80,7 +80,7 @@ export class ModMailHandler extends BaseHandler {
         // If no fresh messages to process, just stop.
         if (messagesToBridge.length === 0) return;
 
-        // 5. State Calculation: Does this batch contain a USER reply?
+        // State Calculation: Does this batch contain a USER reply?
         const containsUserReply = messagesToBridge.some(msg => !(msg.participatingAs === 'moderator' || msg.author?.isMod));
 
         let shouldCreateNew = false;
@@ -94,7 +94,7 @@ export class ModMailHandler extends BaseHandler {
             state = ItemState.Answered_Modmail;
         }
 
-        // 6. Filter: Ignore threads started by Mods (unless from this App)
+        // Filter: Ignore threads started by Mods (unless from this App)
         if (state === ItemState.New_Modmail && isModAuthor) {
             const allowNews = await context.settings.get('ALLOW_NOTIFICATIONS_IN_DISCORD') as boolean;
             if (!(allowNews && latestMessage.author?.name?.toLowerCase() === APP_USERNAME.toLowerCase())) {
@@ -102,7 +102,7 @@ export class ModMailHandler extends BaseHandler {
             }
         }
 
-        // 7. Route with the pre-filtered message list
+        // Route with the pre-filtered message list
         if (shouldCreateNew) {
             await this.handleNewNotification(conversation, cleanId, latestLogEntry, messagesToBridge, state, webhookUrl, context);
         } else if (latestLogEntry) {

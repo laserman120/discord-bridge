@@ -20,32 +20,32 @@ export class RemovalReasonHandler extends BaseHandler {
      * @param preFetchedContent - Optional pre-fetched content to save API calls.
      */
     static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
-        // 1. Action Filter: We only care about adding removal reasons
+        // Action Filter: We only care about adding removal reasons
         if (event.action !== 'addremovalreason') return;
 
-        // 2. Resolve ID
+        // Resolve ID
         const targetId = this.getRedditId(event);
         if (!targetId) return;
 
-        // 3. Fetch log entries early. If we aren't tracking this item, stop immediately.
+        // Fetch log entries early. If we aren't tracking this item, stop immediately.
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
             UtilityManager.log(`[RemovalReasonHandler] No tracked messages for ${targetId}. skipping.`);
             return;
         }
 
-        // 4. Resolve Content
+        // Resolve Content
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem || !context.subredditName) return;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-        // 5. Verification: Ensure a reason actually exists
+        // Verification: Ensure a reason actually exists
         if (!contentData.removalReason) return;
 
         UtilityManager.log(`[RemovalReasonHandler] Syncing removal reason for ${targetId} across ${logEntries.length} entries.`);
 
-        // 6. Loop and Update existing messages
+        // Loop and Update existing messages
         for (const entry of logEntries) {
             // Determine effective state (Awaiting Review vs Removed)
             const state = await this.getEffectiveState(contentData.removedBy, context);

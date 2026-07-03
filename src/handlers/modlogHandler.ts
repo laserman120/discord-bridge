@@ -49,7 +49,7 @@ export class ModLogHandler extends BaseHandler {
 
         UtilityManager.log(`[ModLogHandler] Dispatching notification for: ${event.action}`);
 
-        // 5. Dispatch and Log
+        // Dispatch and Log
         const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload);
 
         if (messageId && !messageId.startsWith('failed')) {

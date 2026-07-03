@@ -22,7 +22,7 @@ export class ModActivityHandler extends BaseHandler {
         const targetId = this.getRedditId(event);
         if (!targetId || !context.subredditName) return;
 
-        // 1. Resolve Settings
+        // Resolve Settings
         const webhookUrl = await context.settings.get('MOD_ACTIVITY_WEBHOOK') as string | undefined;
         if (!webhookUrl) return;
 
@@ -32,24 +32,24 @@ export class ModActivityHandler extends BaseHandler {
         const isPost = targetId.startsWith('t3_');
         if ((isPost && !checkPosts) || (!isPost && !checkComments)) return;
 
-        // 2. Prevent Duplicate bridge notifications
+        // Prevent Duplicate bridge notifications
         if (await this.isAlreadyLogged(targetId, ChannelType.ModActivity, context)) {
             UtilityManager.log(`[ModActivityHandler] Item ${targetId} already logged, skipping.`);
             return;
         }
 
-        // 3. Content Resolution
+        // Content Resolution
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) return;
 
-        // 4. Mod Status Verification
+        // Mod Status Verification
         // We defer this check until after the "Already Logged" check to save an API call.
         const isMod = await this.verifyAuthorIsMod(contentItem, context);
         if (!isMod) return;
 
         UtilityManager.log(`[ModActivityHandler] Validated mod activity for u/${contentItem.authorName}`);
 
-        // 5. Build Payload & Dispatch
+        // Build Payload & Dispatch
         const details = await ContentDataManager.gatherDetails(contentItem, context, event);
         const customMessage = await context.settings.get('MOD_ACTIVITY_MESSAGE') as string | undefined;
 
