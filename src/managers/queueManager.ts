@@ -57,7 +57,8 @@ export class QueueManager {
             // The score is the timestamp when the task becomes 'ready'
             await context.redis.zAdd(this.QUEUE_KEY, { score: processAt, member: taskId });
 
-            UtilityManager.log(`[Queue] Enqueued ${task.handler} (Ready in ${delaySeconds}s)`);
+            const targetId = this.extractItemId(task) || 'unknown';
+            UtilityManager.log(`[Queue] Enqueued ${task.handler} for ${targetId} (Ready in ${delaySeconds}s)`);
         } catch (e) {
             UtilityManager.error('[Queue] Failed to enqueue task:', e);
         }
@@ -198,6 +199,7 @@ export class QueueManager {
                 const preFetchedItem = itemId ? contentCache.get(itemId) : undefined;
 
                 try {
+                    UtilityManager.log(`[Queue] Dispatching ${task.payload.handler} for ${itemId || 'unknown'}`);
                     await this.dispatch(task.payload, context, modQueue, preFetchedItem);
                 } catch (err) {
                     UtilityManager.error(`[Queue] Dispatch error for ${task.payload.handler}:`, err);
@@ -228,7 +230,7 @@ export class QueueManager {
         const d = payload.data;
         if (d.type === 'CommentDelete') return d.commentId;
         if (d.type === 'PostDelete') return d.postId;
-        return d.targetComment?.id || d.targetPost?.id || d.commentId || d.postId || d.itemId || d.id;
+        return d.id || d.itemId ||  d.targetComment?.id || d.targetPost?.id || d.commentId || d.postId;
     }
 
     private static async dispatch(task: QueueTask, context: JobContext, currentQueue?: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<void> {

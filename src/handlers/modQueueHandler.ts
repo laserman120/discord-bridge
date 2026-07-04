@@ -35,16 +35,27 @@ export class ModQueueHandler extends BaseHandler {
         if (!webhookUrl) return;
 
         if (await this.isAlreadyLogged(targetId, ChannelType.ModQueue, context)) {
+            UtilityManager.log(`[ModQueueHandler] Exit: ${targetId} has already been logged.`);
             return;
         }
 
         // Even if a trigger fires, we verify the item is actually IN the queue
         const existsInQueue = currentQueue.some(item => item.id === targetId);
-        if (!existsInQueue) return;
+        if (!existsInQueue) {
+            UtilityManager.log(`[ModQueueHandler] Exit: ${targetId} is not in the ModQueue.`);
+            return;
+        }
 
         // Resolve Content
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem || contentItem.isApproved()) return;
+        if (!contentItem) {
+            UtilityManager.log(`[ModQueueHandler] Exit: Could not fetch content for ${targetId}.`);
+            return;
+        }
+        if (contentItem.isApproved()) {
+            UtilityManager.log(`[ModQueueHandler] Exit: ${targetId} is marked as Approved.`);
+            return;
+        }
 
         // Determine Item State
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);

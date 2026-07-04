@@ -21,11 +21,17 @@ export class ReportHandler extends BaseHandler {
      */
     static async handle(triggerPost: { id: string }, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
         const targetId = triggerPost.id;
-        if (!targetId) return;
+        if (!targetId) {
+            UtilityManager.log('[ReportHandler] Exit: No targetId provided in payload.');
+            return;
+        }
 
         // Resolve Content and Stats
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem) {
+            UtilityManager.log(`[ReportHandler] Exit: Could not fetch content for ${targetId}.`);
+            return;
+        }
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
