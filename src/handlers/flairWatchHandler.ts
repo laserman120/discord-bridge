@@ -27,13 +27,13 @@ export class FlairWatchHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched content to save API calls.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         const targetId = this.getRedditId(event);
-        if (!targetId || !context.subredditName) return;
+        if (!targetId || !context.subredditName) return true;
 
         // Fetch Configuration
         const configString = await context.settings.get('FLAIR_WATCH_CONFIG') as string;
-        if (!configString) return;
+        if (!configString) return true;
 
         // Prevent Duplicate Notifications
         // We check for both internal and public flair watch channels
@@ -44,7 +44,7 @@ export class FlairWatchHandler extends BaseHandler {
 
         if (alreadyPosted) {
             UtilityManager.log(`[FlairWatchHandler] Already logged ${targetId}, skipping.`);
-            return;
+            return true;
         }
 
         // Resolve Content and Watch-list
@@ -53,11 +53,11 @@ export class FlairWatchHandler extends BaseHandler {
             watchList = JSON.parse(configString);
         } catch (e) {
             UtilityManager.error('[FlairWatchHandler] Config JSON parse error:', e);
-            return;
+            return true;
         }
 
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem) return true;
 
         // Extract Flairs for comparison
         const isPost = targetId.startsWith('t3_');
@@ -85,7 +85,7 @@ export class FlairWatchHandler extends BaseHandler {
 
                 if(details.authorName === '[deleted]') {
                     UtilityManager.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping flair watch handling.`)
-                    return;
+                    return true;
                 }
 
                 // Determine context: 'Public' rules use different colors/channels
@@ -106,6 +106,7 @@ export class FlairWatchHandler extends BaseHandler {
                 }
             }
         }
+        return true;
     }
 
     /**

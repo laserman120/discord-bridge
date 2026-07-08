@@ -21,12 +21,12 @@ export class StateSyncHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional content already fetched by the QueueManager.
      */
-    static async handleModAction(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handleModAction(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         // Resolve ID using BaseHandler
         const targetId = this.getRedditId(event);
         if (!targetId) {
             UtilityManager.log(`[StateSync] Unable to resolve Reddit ID for event: ${JSON.stringify(event)}`);
-            return;
+            return true;
         }
 
         // Resolve the new Status
@@ -35,18 +35,24 @@ export class StateSyncHandler extends BaseHandler {
             newStatus = ItemState.Spam;
         }
 
-        if (!newStatus) return;
+        if (!newStatus) {
+            UtilityManager.log(`[StateSync] Failed to find status for action: ${event.action}. Skipping sync for ${targetId}.`);
+            return true;
+        }
 
         // Early Exit: If no logs exist, there is nothing to sync
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
             UtilityManager.log(`[StateSync] No tracked messages for ${targetId}. Skipping.`);
-            return;
+            return true;
         }
 
         // Content Resolution
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem) {
+            UtilityManager.log(`[StateSync] Unable to fetch content for ${targetId}. Skipping sync.`);
+            return true;
+        } 
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
@@ -75,7 +81,7 @@ export class StateSyncHandler extends BaseHandler {
             ChannelType.FlairWatch,
             ChannelType.ModActivity
         ];
-
+        let successValue = true;
         for (const entry of logEntries) {
             // Skip if the Discord message is already in the correct state
             if (entry.currentStatus === newStatus) continue;
@@ -88,9 +94,16 @@ export class StateSyncHandler extends BaseHandler {
                     context
                 );
 
-                await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
-                await StorageManager.updateLogStatus(entry.discordMessageId, newStatus, context);
+                const success = await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
+                if(success){
+                    await StorageManager.updateLogStatus(entry.discordMessageId, newStatus, context);
+                } else {
+                    successValue = false;
+                    break;
+                }
+                
             }
         }
+        return successValue;
     }
 }

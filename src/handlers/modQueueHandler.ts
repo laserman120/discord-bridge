@@ -27,34 +27,37 @@ export class ModQueueHandler extends BaseHandler {
      * @param currentQueue - The list of items currently in the Subreddit's ModQueue.
      * @param preFetchedContent - Optional content already fetched by the QueueManager.
      */
-    static async handle(event: any, context: TriggerContext, currentQueue: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, currentQueue: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<boolean> {
         const targetId = this.getRedditId(event);
-        if (!targetId) return;
+        if (!targetId){
+            UtilityManager.log('[ModQueueHandler] Exit: No targetId provided in payload.');
+            return true;
+        } 
 
         const webhookUrl = await context.settings.get('WEBHOOK_MOD_QUEUE') as string | undefined;
-        if (!webhookUrl) return;
+        if (!webhookUrl) return true;
 
         if (await this.isAlreadyLogged(targetId, ChannelType.ModQueue, context)) {
             UtilityManager.log(`[ModQueueHandler] Exit: ${targetId} has already been logged.`);
-            return;
+            return true;
         }
 
         // Even if a trigger fires, we verify the item is actually IN the queue
         const existsInQueue = currentQueue.some(item => item.id === targetId);
         if (!existsInQueue) {
             UtilityManager.log(`[ModQueueHandler] Exit: ${targetId} is not in the ModQueue.`);
-            return;
+            return true;
         }
 
         // Resolve Content
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) {
             UtilityManager.log(`[ModQueueHandler] Exit: Could not fetch content for ${targetId}.`);
-            return;
+            return true;
         }
         if (contentItem.isApproved()) {
             UtilityManager.log(`[ModQueueHandler] Exit: ${targetId} is marked as Approved.`);
-            return;
+            return true;
         }
 
         // Determine Item State
@@ -115,6 +118,9 @@ export class ModQueueHandler extends BaseHandler {
                 currentStatus: state,
                 webhookUrl: webhookUrl
             }, context);
+            return true;
+        } else {
+            return false;
         }
     }
 

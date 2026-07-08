@@ -17,12 +17,12 @@ export class ModLogHandler extends BaseHandler {
      * @param event - The ModAction event data.
      * @param context - The Devvit execution context.
      */
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext): Promise<boolean> {
         const webhookUrl = await context.settings.get('WEBHOOK_MODLOG') as string | undefined;
-        if (!webhookUrl) return;
+        if (!webhookUrl) return true;
 
         const enabledActions = await context.settings.get('MODLOG_ACTIONS') as string[] || [];
-        if (!enabledActions.includes(event.action || '')) return;
+        if (!enabledActions.includes(event.action || '')) return true;
 
         const uniqueId = `modlog:${event.action}:${event.actionedAt}:${event.moderator?.name || 'unknown_mod'}`;
 
@@ -33,7 +33,7 @@ export class ModLogHandler extends BaseHandler {
 
         if (alreadyPosted) {
             UtilityManager.log(`[ModLogHandler] Already logged action ${event.action} with ID ${uniqueId}, skipping.`);
-            return;
+            return true;
         }
 
         const contentData = await ContentDataManager.gatherModActionTarget(event, context);
@@ -60,6 +60,9 @@ export class ModLogHandler extends BaseHandler {
                 currentStatus: ItemState.Live,
                 webhookUrl: webhookUrl
             }, context);
+            return true;
+        } else {
+            return false;
         }
     }
 

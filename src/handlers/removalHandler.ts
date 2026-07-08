@@ -20,38 +20,42 @@ export class RemovalHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched content.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         const targetId = this.getRedditId(event);
-        if (!targetId) return;
+        if (!targetId) return true;
 
         // Validate State: Only process 'Removed' or 'Spam' actions
         let state = UtilityManager.getStateFromModAction(event.action);
-        if (state !== ItemState.Removed && state !== ItemState.Spam) return;
+        if (state !== ItemState.Removed && state !== ItemState.Spam) return true;
 
         // Resolve Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_REMOVALS') as string | undefined;
-        if (!webhookUrl) return;
+        if (!webhookUrl) return true;
 
         // Prevent Duplicates
         if (await this.isAlreadyLogged(targetId, ChannelType.Removals, context)) {
             UtilityManager.log(`[RemovalHandler] Log already exists for ${targetId}. Skipping.`);
-            return;
+            return true;
         }
 
         // Resolve Content and Data
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem){
+            UtilityManager.log(`[RemovalHandler] Unable to fetch content for ${targetId}. Skipping removal handling.`);
+            return true;
+        } 
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
         if(contentData.authorName === '[deleted]') {
             UtilityManager.log(`[RemovalHandler] Content ${targetId} is authored by [deleted]. Skipping removal handling.`)
-            return;
+            return true;
         }
 
         // Integrity Check: Ensure it's actually removed/spam and not approved
         if (contentItem.isApproved() || (!contentItem.isRemoved() && !contentItem.isSpam() && !contentData.removedBy)) {
-            return;
+            UtilityManager.log(`[RemovalHandler] Content ${targetId} is not removed/spam. Skipping removal handling.`);
+            return true;
         }
 
         // Refined State Logic: Detect Automated Removals
@@ -60,7 +64,10 @@ export class RemovalHandler extends BaseHandler {
         }
 
         // Filters: Ignore Moderator self-removals or specific authors
-        if (await this.shouldSkipNotification(contentData, state, context)) return;
+        if (await this.shouldSkipNotification(contentData, state, context)) {
+            UtilityManager.log(`[RemovalHandler] Removal for ${targetId} ignored due to filters. Skipping notification.`);
+            return true;
+        }
 
         // Resolve Notification String
         const notificationString = await this.getNotificationString(state, contentData.removedBy, context);
@@ -77,7 +84,11 @@ export class RemovalHandler extends BaseHandler {
                 currentStatus: state,
                 webhookUrl: webhookUrl
             }, context);
+            return true;
+        } else {
+            return false;
         }
+
     }
 
     /**

@@ -10,19 +10,19 @@ export class ModAbuseHandler extends BaseHandler {
      * @param event - The ModAction event data.
      * @param context - The Devvit execution context.
      */
-    static async handle(event: any, context: TriggerContext): Promise<void> {
+    static async handle(event: any, context: TriggerContext): Promise<boolean> {
         // Resolve Moderator Identity
         const moderatorName = event.moderatorName || event.moderator?.name;
 
         // Ignore system accounts and automated actions
         const systemAccounts = ['AutoModerator', 'reddit', 'Anti-Evil Operations'];
         if (!moderatorName || systemAccounts.includes(moderatorName)) {
-            return;
+            return true;
         }
 
         // Load Configuration Settings
         const webhookUrl = await context.settings.get('WEBHOOK_MOD_ABUSE') as string | undefined;
-        if (!webhookUrl) return; 
+        if (!webhookUrl) return true; 
 
         const alertMessage = await context.settings.get('MOD_ABUSE_MESSAGE') as string || "";
         const timeframeMins = await context.settings.get('MOD_ABUSE_TIMEFRAME') as number || 10;
@@ -35,7 +35,7 @@ export class ModAbuseHandler extends BaseHandler {
         await CacheManager.trackModAction(moderatorName, event.action, targetId, context);
 
         // Threshold Evaluation
-        if (!monitoredActions.includes(event.action)) return;
+        if (!monitoredActions.includes(event.action)) return true;
 
         const actionCount = await CacheManager.checkModThreshold(
             moderatorName, 
@@ -50,7 +50,7 @@ export class ModAbuseHandler extends BaseHandler {
             const isCooldown = await CacheManager.isWarningOnCooldown(moderatorName, context);
             if (isCooldown) {
                 UtilityManager.log(`[ModAbuse] ${moderatorName} hit threshold (${actionCount}), but alert is on cooldown.`)
-                return;
+                return true;
             }
 
             UtilityManager.log(`[ModAbuse] Alert triggered for ${moderatorName}: ${actionCount} actions in ${timeframeMins}m.`);
@@ -70,10 +70,18 @@ export class ModAbuseHandler extends BaseHandler {
                 }]
             };
 
-            await WebhookManager.sendNewMessage(webhookUrl, payload, context);
-
-            // Set cooldown to prevent repeated alerts for the same burst
-            await CacheManager.setWarningCooldown(moderatorName, context);
+            const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
+            if (messageId && !messageId.startsWith('failed'))
+            {
+                // Set cooldown to prevent repeated alerts for the same burst
+                await CacheManager.setWarningCooldown(moderatorName, context);
+                return true;
+            } else {
+                return false;
+            }
+            
+            
         }
+        return true;
     }
 }

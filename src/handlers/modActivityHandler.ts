@@ -18,34 +18,34 @@ export class ModActivityHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Content already fetched by the QueueManager.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         const targetId = this.getRedditId(event);
-        if (!targetId || !context.subredditName) return;
+        if (!targetId || !context.subredditName) return true;
 
         // Resolve Settings
         const webhookUrl = await context.settings.get('MOD_ACTIVITY_WEBHOOK') as string | undefined;
-        if (!webhookUrl) return;
+        if (!webhookUrl) return true;
 
         const checkPosts = await context.settings.get('MOD_ACTIVITY_CHECK_POSTS') as boolean ?? true;
         const checkComments = await context.settings.get('MOD_ACTIVITY_CHECK_COMMENTS') as boolean ?? true;
 
         const isPost = targetId.startsWith('t3_');
-        if ((isPost && !checkPosts) || (!isPost && !checkComments)) return;
+        if ((isPost && !checkPosts) || (!isPost && !checkComments)) return true;
 
         // Prevent Duplicate bridge notifications
         if (await this.isAlreadyLogged(targetId, ChannelType.ModActivity, context)) {
             UtilityManager.log(`[ModActivityHandler] Item ${targetId} already logged, skipping.`);
-            return;
+            return true;
         }
 
         // Content Resolution
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem) return true;
 
         // Mod Status Verification
         // We defer this check until after the "Already Logged" check to save an API call.
         const isMod = await this.verifyAuthorIsMod(contentItem, context);
-        if (!isMod) return;
+        if (!isMod) return true;
 
         UtilityManager.log(`[ModActivityHandler] Validated mod activity for u/${contentItem.authorName}`);
 
@@ -71,6 +71,9 @@ export class ModActivityHandler extends BaseHandler {
                 currentStatus: ItemState.Live,
                 webhookUrl: webhookUrl
             }, context);
+            return true;
+        } else {
+            return false;
         }
     }
 

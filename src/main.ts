@@ -35,22 +35,23 @@ const isDevMode = false;
 Devvit.addTrigger({
     event: 'ModAction',
     onEvent: async (event, context) => {
+        const settings = await context.settings.getAll();
         const redditItemId = event.targetPost?.id || event.targetComment?.id;
-
+        
         if (redditItemId && context)
         {
-            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event }, context, 4);
-            await QueueManager.enqueue({ handler: 'StateSyncHandler', data: event }, context, 8);
-            await QueueManager.enqueue({ handler: 'RemovalHandler', data: event }, context, 4);
-            await QueueManager.enqueue({ handler: 'RemovalReasonHandler', data: event }, context, 4);
+            if (settings['WEBHOOK_MOD_QUEUE']) await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event }, context, 6);
+            await QueueManager.enqueue({ handler: 'StateSyncHandler', data: event }, context, 10);
+            if (settings['WEBHOOK_REMOVALS']) await QueueManager.enqueue({ handler: 'RemovalHandler', data: event }, context, 6);
+            await QueueManager.enqueue({ handler: 'RemovalReasonHandler', data: event }, context, 6);
         }
 
-        await QueueManager.enqueue({ handler: 'ModLogHandler', data: event }, context, 4);
-        await QueueManager.enqueue({ handler: 'ModAbuseHandler', data: event }, context, 4);
+        if (settings['WEBHOOK_MODLOG']) await QueueManager.enqueue({ handler: 'ModLogHandler', data: event }, context, 6);
+        if (settings['WEBHOOK_MOD_ABUSE']) await QueueManager.enqueue({ handler: 'ModAbuseHandler', data: event }, context, 6);
 
         if (ActionsRequiringUpdate.includes(event.action || ""))
         {
-            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 4);
+            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 6);
         }
     },
 });
@@ -58,67 +59,70 @@ Devvit.addTrigger({
 Devvit.addTrigger({
     event: 'PostSubmit',
     onEvent: async (event, context) => {
-
         if (event.post && context) {
+            const settings = await context.settings.getAll();
 
-            await QueueManager.enqueue({ handler: 'NewPostHandler', data: event.post }, context, 2);
+            if (settings['WEBHOOK_NEW_POSTS']) await QueueManager.enqueue({ handler: 'NewPostHandler', data: event.post }, context, 4);
 
             // Await plenty of time to ensure the post is fully up to date before checking for public posting
 
-            await QueueManager.enqueue({ handler: 'PublicPostHandler', data: event.post }, context, 6);
-            await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.post }, context, 6);
-            await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.post }, context, 6);
+            if (settings['WEBHOOK_PUBLIC_NEW_POSTS']) await QueueManager.enqueue({ handler: 'PublicPostHandler', data: event.post }, context, 8);
+            if (settings['FLAIR_WATCH_CONFIG']) await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.post }, context, 8);
+            if (settings['MOD_ACTIVITY_WEBHOOK']) await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.post }, context, 8);
 
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
-            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context, 6);
-            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context, 6);
+            if (settings['WEBHOOK_MOD_QUEUE']) await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context, 8);
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context, 8);
         }
-
     },
 });
 
 Devvit.addTrigger({
     event: 'CommentSubmit',
     onEvent: async (event, context) => {
-
         if (event.comment && context) {
+            const settings = await context.settings.getAll();
+
             // Hotfix due to reports by AutoModerator NOT calling the report trigger
-            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.comment }, context, 2);
-            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context, 2);
+            if (settings['WEBHOOK_MOD_QUEUE']) await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.comment }, context, 4);
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context, 4);
 
-            await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.comment }, context, 2);
-            await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.comment }, context, 2);
+            if (settings['FLAIR_WATCH_CONFIG']) await QueueManager.enqueue({ handler: 'FlairWatchHandler', data: event.comment }, context, 4);
+            if (settings['MOD_ACTIVITY_WEBHOOK']) await QueueManager.enqueue({ handler: 'ModActivityHandler', data: event.comment }, context, 4);
         }
-
     },
 });
 
 Devvit.addTrigger({
     events: ['PostDelete', 'CommentDelete'], 
     onEvent: async (event, context) => {
-        await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event }, context, 10);
-        await QueueManager.enqueue({ handler: 'DeletionHandler', data: event }, context, 10);
+        await QueueManager.enqueue({ handler: 'DeletionHandler', data: event }, context, 12);
     },
 });
 
 Devvit.addTrigger({
     event: 'ModMail',
     onEvent: async (event, context) => {
-        await QueueManager.enqueue({ handler: 'ModMailHandler', data: event }, context, 2);
+        const webhookUrl = await context.settings.get('WEBHOOK_MODMAIL');
+        if (webhookUrl) {
+            await QueueManager.enqueue({ handler: 'ModMailHandler', data: event }, context, 4);
+        }
     },
 });
 
 Devvit.addTrigger({
     events: ['PostReport', 'CommentReport'],
     onEvent: async (event, context) => {
+        const webhookUrl = await context.settings.get('WEBHOOK_MOD_QUEUE');
+        
         if (event.type == 'PostReport' && event.post) {
-            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context, 3);
-            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context, 3);
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.post }, context, 5);
+            if (webhookUrl) await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.post }, context, 5);
         }
 
         if (event.type == 'CommentReport' && event.comment) {
-            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context, 3);
-            await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.comment }, context, 3);
+            await QueueManager.enqueue({ handler: 'ReportHandler', data: event.comment }, context, 5);
+            if (webhookUrl) await QueueManager.enqueue({ handler: 'ModQueueHandler', data: event.comment }, context, 5);
         }
     },
 });
@@ -127,11 +131,11 @@ Devvit.addTrigger({
     events: ['PostUpdate', 'CommentUpdate', 'PostNsfwUpdate', 'PostSpoilerUpdate', 'PostFlairUpdate'],
     onEvent: async (event, context) => {
         if ((event.type == 'PostUpdate' || event.type == 'PostNsfwUpdate' || event.type == 'PostSpoilerUpdate' || event.type == 'PostFlairUpdate') && event.post) {
-            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 3);
+            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 5);
         }
 
         if (event.type == 'CommentUpdate' && event.comment) {
-            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 3);
+            await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 5);
         }
     },
 });

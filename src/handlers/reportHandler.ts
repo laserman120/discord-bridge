@@ -19,41 +19,37 @@ export class ReportHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched content to save API calls.
      */
-    static async handle(triggerPost: { id: string }, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(triggerPost: { id: string }, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         const targetId = triggerPost.id;
         if (!targetId) {
             UtilityManager.log('[ReportHandler] Exit: No targetId provided in payload.');
-            return;
+            return true;
         }
 
         // Resolve Content and Stats
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
         if (!contentItem) {
             UtilityManager.log(`[ReportHandler] Exit: Could not fetch content for ${targetId}.`);
-            return;
+            return true;
         }
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
         if(contentData.authorName === '[deleted]') {
-            UtilityManager.log(`[ReportHandler] Content ${targetId} is authored by [deleted]. Skipping report handling.`)
-            return;
+            UtilityManager.log(`[ReportHandler] Exit: Content ${targetId} is authored by [deleted]. Skipping report handling.`)
+            return true;
         }
 
-        // Safety: If there are no reports, there's nothing for this handler to do.
         if (!contentData.reportCount || contentData.reportCount <= 0) {
-            return;
+            UtilityManager.log(`[ReportHandler] Exit: Content ${targetId} Has no reports.`)
+            return true;
         }
 
-        // Load all existing logs for this item
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         const status = ItemState.Unhandled_Report;
 
-        // Handle the dedicated Reports Channel
         await this.handleReportsChannel(targetId, contentData, status, logEntries, context);
 
-        // Broadcast Updates to other channels
-        // We update New Posts, Removals, etc., so the report count is visible everywhere.
         const syncableChannels = [
             ChannelType.NewPosts,
             ChannelType.Removals,
@@ -63,6 +59,7 @@ export class ReportHandler extends BaseHandler {
 
         UtilityManager.log(`[ReportHandler] Broadcasting report count (${contentData.reportCount}) to ${logEntries.length} logs.`);
 
+        let successValue = true;
         for (const entry of logEntries) {
             if (syncableChannels.includes(entry.channelType)) {
                 const payload = await ComponentManager.createDefaultMessage(
@@ -72,9 +69,14 @@ export class ReportHandler extends BaseHandler {
                     context
                 );
 
-                await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
+                const success = await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
+                if(!success){
+                    successValue = false;
+                    break;
+                }
             }
         }
+        return successValue;
     }
 
     /**
@@ -105,6 +107,8 @@ export class ReportHandler extends BaseHandler {
                     webhookUrl: webhookUrl
                 }, context);
             }
+        } else {
+            UtilityManager.log(`[ReportHandler] Report for ${id} already logged in Reports channel. Skipping creation.`);
         }
     }
 }

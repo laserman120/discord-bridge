@@ -19,29 +19,29 @@ export class SpamRemovalHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched content to save API calls.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         const targetId = this.getRedditId(event);
-        if (!targetId) return;
+        if (!targetId) return true;
 
         // Resolve Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_REMOVALS') as string | undefined;
-        if (!webhookUrl) return;
+        if (!webhookUrl) return true;
 
         // Prevent Duplicate Logging
         if (await this.isAlreadyLogged(targetId, ChannelType.Removals, context)) {
             UtilityManager.log(`[SpamRemovalHandler] Item ${targetId} already logged in removals. Skipping.`);
-            return;
+            return true;
         }
 
         // Resolve Content
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem) return true;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
         
         if(contentData.authorName === '[deleted]') {
             UtilityManager.log(`[SpamRemovalHandler] Content ${targetId} is authored by [deleted]. Skipping spam removal handling.`)
-            return;
+            return true;
         }
 
         // Fallback attribution for silent removals
@@ -52,7 +52,7 @@ export class SpamRemovalHandler extends BaseHandler {
 
         // Ignore Author Filter
         if (await this.isAuthorIgnored(contentData.authorName, context)) {
-            return;
+            return true;
         }
 
         // Resolve Notification String (Index 3 is reserved for Spam)
@@ -82,7 +82,11 @@ export class SpamRemovalHandler extends BaseHandler {
                 currentStatus: ItemState.Spam,
                 webhookUrl: webhookUrl
             }, context);
+            return true;
+        } else {
+            return false;
         }
+
     }
 
     /**

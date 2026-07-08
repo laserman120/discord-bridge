@@ -18,26 +18,26 @@ export class NewPostHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional post object from the QueueManager's batch fetch.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         // Resolve ID using BaseHandler
         const postId = this.getRedditId(event);
-        if (!postId) return;
+        if (!postId) return true;
 
         // Load Configuration
         const webhookUrl = await context.settings.get('WEBHOOK_NEW_POSTS') as string | undefined;
-        if (!webhookUrl) return;
+        if (!webhookUrl) return true;
 
         // Prevent Duplicate Logging
         // Uses the standardized isAlreadyLogged method from BaseHandler
         if (await this.isAlreadyLogged(postId, ChannelType.NewPosts, context)) {
             UtilityManager.log(`[NewPostHandler] Post ${postId} already sent to New Posts channel. Skipping.`);
-            return;
+            return true;
         }
 
         // Resolve Content (respecting pre-fetched data)
         const contentItem = await this.fetchContent(postId, context, preFetchedContent);
         if (!contentItem || !(contentItem instanceof Post)) {
-            return;
+            return true;
         }
 
         // Determine Initial Status
@@ -53,7 +53,7 @@ export class NewPostHandler extends BaseHandler {
 
         if(contentData.authorName === '[deleted]') {
             UtilityManager.log(`[NewPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
-            return;
+            return true;
         }
 
         const payload = await ComponentManager.createDefaultMessage(
@@ -75,6 +75,10 @@ export class NewPostHandler extends BaseHandler {
                 currentStatus: status,
                 webhookUrl: webhookUrl
             }, context);
+            return true;
+        } else {
+            return false;
         }
+
     }
 }

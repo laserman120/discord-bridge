@@ -19,30 +19,30 @@ export class PublicPostHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched post data.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         const postId = this.getRedditId(event);
-        if (!postId) return;
+        if (!postId) return true;
 
         const webhookUrl = await context.settings.get('WEBHOOK_PUBLIC_NEW_POSTS') as string | undefined;
-        if (!webhookUrl) return;
+        if (!webhookUrl) return true;
 
         if (await this.isAlreadyLogged(postId, ChannelType.PublicNewPosts, context)) {
             UtilityManager.log(`[PublicPostHandler] Already mirrored ${postId}, skipping.`);
-            return;
+            return true;
         }
 
         const contentItem = await this.fetchContent(postId, context, preFetchedContent);
-        if (!contentItem || !(contentItem instanceof Post)) return;
+        if (!contentItem || !(contentItem instanceof Post)) return true;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         if (contentData.removalReason || contentData.removedBy) {
             UtilityManager.log(`[PublicPostHandler] Post ${postId} is removed/spam. Aborting mirror.`);
-            return;
+            return true;
         }
 
         if(contentData.authorName === '[deleted]') {
             UtilityManager.log(`[publicPostHandler] Content ${postId} is authored by [deleted]. Skipping new post handling.`)
-            return;
+            return true;
         }
 
         UtilityManager.log(`[PublicPostHandler] Mirroring post: ${contentItem.title}`);
@@ -66,6 +66,9 @@ export class PublicPostHandler extends BaseHandler {
                 currentStatus: ItemState.Public_Post,
                 webhookUrl: webhookUrl
             }, context);
+            return true;
+        } else {
+            return false;
         }
     }
 

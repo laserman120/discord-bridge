@@ -27,19 +27,24 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
 
         const cutoffTime = Date.now() - NEWS_MAX_AGE_MS;
 
-        for (const post of recentPosts) {
+        const validPosts = recentPosts.filter(post => 
+            post.createdAt.getTime() >= cutoffTime && 
+            post.authorName && 
+            post.authorName.toLowerCase() === NEWS_SOURCE_AUTHOR.toLowerCase()
+        );
 
+        if (validPosts.length === 0) return;
 
-            if (post.createdAt.getTime() < cutoffTime) {
-                continue;
-            }
+        const keysToCheck = validPosts.map(post => `news_seen:${post.id}`);
+        const seenStatuses = await context.redis.mGet(keysToCheck);
 
-            if (!post.authorName || post.authorName.toLowerCase() !== NEWS_SOURCE_AUTHOR.toLowerCase()) {
-                continue;
-            }
+        for (let i = 0; i < validPosts.length; i++) {
+            const post = validPosts[i];
+            const hasSeen = seenStatuses[i];
+
+            if (hasSeen) continue;
 
             let notificationType: string | null = null;
-
             if (post.title.startsWith('[News]') && enableNews) {
                 notificationType = 'News';
             } else if (post.title.startsWith('[Update]') && enableUpdates) {
@@ -47,11 +52,6 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
             }
 
             if (!notificationType) continue;
-
-            const redisKey = `news_seen:${post.id}`;
-            const hasSeen = await context.redis.get(redisKey);
-
-            if (hasSeen) continue;
 
             UtilityManager.log(`[NewsCheck] Sending ${notificationType} notification for post ${post.id} in sub: ${currentSub.name} with id ${currentSub.id}`);
 
@@ -68,8 +68,9 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
                 continue;
             }
             
-            await context.redis.set(redisKey, 'true');
-            await context.redis.expire(redisKey, PRUNE_AGE_SECONDS);
+            await context.redis.set(`news_seen:${post.id}`, 'true', { 
+                expiration: new Date(Date.now() + PRUNE_AGE_SECONDS * 1000) 
+            });
         }
 
     } catch (e) {

@@ -32,6 +32,9 @@ export class WebhookManager {
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    this.logRateLimitHeaders(response.headers);
+                }
                 const errorText = await response.text();
                 UtilityManager.error(`[WEBHOOK] Failed to send (Status ${response.status}): ${errorText}`);
                 throw new Error(`Discord API error: ${response.status}`);
@@ -53,7 +56,7 @@ export class WebhookManager {
 
     static async getMessage(webhookUrl: string, messageId: string): Promise<any> {
         const webhookDetails = this.parseWebhookUrl(webhookUrl);
-        if (!webhookDetails) return null;
+        if (!webhookDetails) return true;
 
         const [webhookId, webhookToken] = webhookDetails;
         const url = `https://discord.com/api/webhooks/${webhookId}/${webhookToken}/messages/${messageId}`;
@@ -61,21 +64,24 @@ export class WebhookManager {
         try {
             const response = await fetch(url);
             if (!response.ok) {
+                if (response.status === 429) {
+                    this.logRateLimitHeaders(response.headers);
+                }
                 UtilityManager.error(`[WEBHOOK] Failed to fetch message ${messageId} (Status ${response.status})`);
-                return null;
+                return false;
             }
             return await response.json();
         } catch (e) {
             UtilityManager.error(`[WEBHOOK] Exception fetching message:`, e);
-            return null;
+            return false;
         }
     }
 
-    static async editMessage(webhookUrl: string, messageId: string, payload: unknown): Promise<void> {
+    static async editMessage(webhookUrl: string, messageId: string, payload: unknown): Promise<boolean> {
         const webhookDetails = this.parseWebhookUrl(webhookUrl);
         if (!webhookDetails) {
             UtilityManager.error(`[WEBHOOK] Invalid Webhook URL: ${webhookUrl}`);
-            return;
+            return true;
         }
 
         const [webhookId, webhookToken] = webhookDetails;
@@ -95,23 +101,29 @@ export class WebhookManager {
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    this.logRateLimitHeaders(response.headers);
+                }
                 const errorText = await response.text();
                 UtilityManager.error(`[WEBHOOK] Edit failed (Status ${response.status}): ${errorText}`);
+                return false;
             } else {
                 UtilityManager.log(`[WEBHOOK] Successfully updated message ID ${messageId}`);
+                return true;
             }
 
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             UtilityManager.error(`[WEBHOOK] Exception during editMessage: ${errorMessage}`);
+            return false;
         }
     }
 
-    static async updateMessageStateOnly(webhookUrl: string, messageId: string, newState: ItemState, context: Context): Promise<void> {
+    static async updateMessageStateOnly(webhookUrl: string, messageId: string, newState: ItemState, context: Context): Promise<boolean> {
         const webhookDetails = this.parseWebhookUrl(webhookUrl);
         if (!webhookDetails) {
             UtilityManager.error(`[WEBHOOK] Invalid Webhook URL for update: ${webhookUrl}`);
-            return;
+            return true;
         }
 
         const [webhookId, webhookToken] = webhookDetails;
@@ -120,15 +132,18 @@ export class WebhookManager {
         try {
             const getResponse = await fetch(discordApiUrl);
             if (!getResponse.ok) {
+                if (getResponse.status === 429) {
+                    this.logRateLimitHeaders(getResponse.headers);
+                }
                 UtilityManager.error(`[WEBHOOK] Failed to fetch message ${messageId} for update (Status ${getResponse.status}).`);
-                return;
+                return false;
             }
 
             const existingMessage = await getResponse.json();
 
             if (!existingMessage.embeds || existingMessage.embeds.length === 0) {
                 UtilityManager.log(`[WEBHOOK] Message ${messageId} has no embeds to update.`);
-                return;
+                return true;
             }
 
             const embed = existingMessage.embeds[0];
@@ -154,12 +169,15 @@ export class WebhookManager {
 
             if (patchResponse.ok) {
                 UtilityManager.log(`[WEBHOOK] Successfully updated state for message ${messageId} to ${newState}`);
+                return true;
             } else {
                 UtilityManager.error(`[WEBHOOK] Failed to patch message state (Status ${patchResponse.status}).`);
+                return false;
             }
 
         } catch (e) {
             UtilityManager.error(`[WEBHOOK] Exception during updateMessageStateOnly: ${e}`);
+            return false;
         }
     }
 
@@ -181,6 +199,7 @@ export class WebhookManager {
             
             // Handle Rate Limits (429)
             if (response.status === 429) {
+                this.logRateLimitHeaders(response.headers);
                 UtilityManager.log(`[WEBHOOK] Rate limited. Will try again next cycle.`);
                 return false;
             }
@@ -192,5 +211,16 @@ export class WebhookManager {
             UtilityManager.error(`[WEBHOOK] Network error during deletion: ${e}`);
             return false;
         }
+    }
+
+    private static logRateLimitHeaders(headers: Headers): void {
+        const rateLimitData = {
+            limit: headers.get('X-RateLimit-Limit'),
+            remaining: headers.get('X-RateLimit-Remaining'),
+            reset: headers.get('X-RateLimit-Reset'),
+            global: headers.get('X-RateLimit-Global'),
+            retryAfter: headers.get('Retry-After'),
+        };
+        UtilityManager.error(`[WEBHOOK RATE LIMIT] ${JSON.stringify(rateLimitData)}`);
     }
 }

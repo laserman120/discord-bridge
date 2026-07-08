@@ -18,20 +18,22 @@ export class UpdateHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched content to save API calls.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         const targetId = this.getRedditId(event);
-        if (!targetId) return;
+        if (!targetId) return true;
 
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
-        if (logEntries.length === 0) return;
+        if (logEntries.length === 0) return true;
 
         UtilityManager.log(`[UpdateHandler] Refreshing ${logEntries.length} messages for ${targetId}`);
 
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem) return true;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
+
+        let successValue = true;
         for (const entry of logEntries) {
             const currentStatus = entry.currentStatus;
 
@@ -42,11 +44,16 @@ export class UpdateHandler extends BaseHandler {
                 context
             );
 
-            await WebhookManager.editMessage(
+            const success = await WebhookManager.editMessage(
                 entry.webhookUrl,
                 entry.discordMessageId,
                 payload
             );
+            if(!success){
+                successValue = false;
+                break;
+            }
         }
+        return successValue;
     }
 }

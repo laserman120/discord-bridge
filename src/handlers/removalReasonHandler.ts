@@ -19,32 +19,33 @@ export class RemovalReasonHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched content to save API calls.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
         // Action Filter: We only care about adding removal reasons
-        if (event.action !== 'addremovalreason') return;
+        if (event.action !== 'addremovalreason') return true;
 
         // Resolve ID
         const targetId = this.getRedditId(event);
-        if (!targetId) return;
+        if (!targetId) return true;
 
         // Fetch log entries early. If we aren't tracking this item, stop immediately.
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
             UtilityManager.log(`[RemovalReasonHandler] No tracked messages for ${targetId}. skipping.`);
-            return;
+            return true;
         }
 
         // Resolve Content
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem || !context.subredditName) return;
+        if (!contentItem || !context.subredditName) return true;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
         // Verification: Ensure a reason actually exists
-        if (!contentData.removalReason) return;
+        if (!contentData.removalReason) return true;
 
         UtilityManager.log(`[RemovalReasonHandler] Syncing removal reason for ${targetId} across ${logEntries.length} entries.`);
 
+        let successValue = true;
         // Loop and Update existing messages
         for (const entry of logEntries) {
             // Determine effective state (Awaiting Review vs Removed)
@@ -58,17 +59,23 @@ export class RemovalReasonHandler extends BaseHandler {
             );
 
             // Update the Discord message with the new reason text
-            await WebhookManager.editMessage(
+            const success = await WebhookManager.editMessage(
                 entry.webhookUrl,
                 entry.discordMessageId,
                 payload
             );
+
+            if(!success) {
+                successValue = false;
+                break;
+            }
 
             // Update DB status if it's currently lagging behind
             if (entry.currentStatus !== state) {
                 await StorageManager.updateLogStatus(entry.discordMessageId, state, context);
             }
         }
+        return successValue;
     }
 
     /**

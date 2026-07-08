@@ -17,6 +17,7 @@ import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { MAX_AGE_QUEUE } from '../config/constants.js';
+import { truncate } from 'fs';
 
 export type HandlerName =
     | 'NewPostHandler' | 'PublicPostHandler' | 'StateSyncHandler'
@@ -143,7 +144,7 @@ export class QueueManager {
 
             if (!taskIds || taskIds.length === 0) return;
 
-            UtilityManager.log(`[Queue] Worker processing ${taskIds.length} tasks.`);
+            UtilityManager.log(`[Queue] Worker processing ${taskIds.length} tasks.  -----------`);
 
             // Batch fetch task payloads
             const taskDataStrings = await Promise.all(taskIds.map(t => context.redis.hGet(this.DATA_KEY, t.member)));
@@ -187,7 +188,8 @@ export class QueueManager {
                     items.forEach(item => contentCache.set(item.id, item));
                     modQueue = queueItems;
                 } catch (e) {
-                    UtilityManager.error('[Queue] Batch fetch failed:', e);
+                    UtilityManager.error('[Queue] Batch fetch failed, pausing queue for 5 minutes...:', e);
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     await context.redis.set('msg_queue:paused', Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
                     return;
                 }
@@ -200,7 +202,15 @@ export class QueueManager {
 
                 try {
                     UtilityManager.log(`[Queue] Dispatching ${task.payload.handler} for ${itemId || 'unknown'}`);
-                    await this.dispatch(task.payload, context, modQueue, preFetchedItem);
+                    const success = await this.dispatch(task.payload, context, modQueue, preFetchedItem);
+
+                    if (!success) {
+                        UtilityManager.error(`[Queue] Critical Dispatch failure for ${task.payload.handler} with ID ${task.id}`);
+                        UtilityManager.error(`[Queue] Pausing queue for 2 minutes due to dispatch failure.`);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        await context.redis.set('msg_queue:paused', Date.now().toString(), { expiration: new Date(Date.now() + 120000) }); // 2 min pause
+                        break;
+                    }
                 } catch (err) {
                     UtilityManager.error(`[Queue] Dispatch error for ${task.payload.handler}:`, err);
                 }
@@ -214,7 +224,8 @@ export class QueueManager {
                 // Small sleep to avoid hitting rate limits too hard during dispatch
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
-                
+            UtilityManager.log('[Queue] Worker cycle complete. -----------'); 
+            await new Promise(resolve => setTimeout(resolve, 500));
         } catch(e) {
             UtilityManager.error('[Queue] Worker fatal error:', e);
         } finally {
@@ -233,30 +244,29 @@ export class QueueManager {
         return d.id || d.itemId ||  d.targetComment?.id || d.targetPost?.id || d.commentId || d.postId;
     }
 
-    private static async dispatch(task: QueueTask, context: JobContext, currentQueue?: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<void> {
+    private static async dispatch(task: QueueTask, context: JobContext, currentQueue?: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<boolean> {
         const { handler, data } = task;
         // The handlers expect TriggerContext; JobContext is a compatible subset for these operations.
         const ctx = context as any; 
-
+        let returnData;
         switch (handler) {
-            case 'NewPostHandler': await NewPostHandler.handle(data, ctx, preFetchedContent); break;
-            case 'PublicPostHandler': await PublicPostHandler.handle(data, ctx, preFetchedContent); break;
-            case 'StateSyncHandler': await StateSyncHandler.handleModAction(data, ctx, preFetchedContent); break;
-            case 'RemovalHandler': await RemovalHandler.handle(data, ctx, preFetchedContent); break;
-            case 'SpamRemovalHandler': await SpamRemovalHandler.handle(data, ctx, preFetchedContent); break;
-            case 'RemovalReasonHandler': await RemovalReasonHandler.handle(data, ctx, preFetchedContent); break;
-            case 'ModLogHandler': await ModLogHandler.handle(data, ctx); break;
-            case 'UpdateHandler': await UpdateHandler.handle(data, ctx, preFetchedContent); break;
-            case 'FlairWatchHandler': await FlairWatchHandler.handle(data, ctx, preFetchedContent); break;
-            case 'ModActivityHandler': await ModActivityHandler.handle(data, ctx, preFetchedContent); break;
-            case 'ModAbuseHandler': await ModAbuseHandler.handle(data, ctx); break;
-            case 'ModMailHandler': await ModMailHandler.handle(data, ctx); break;
-            case 'ReportHandler': await ReportHandler.handle(data, ctx, preFetchedContent); break;
-            case 'DeletionHandler': await DeletionHandler.handle(data, ctx, preFetchedContent); break;
-            case 'ModQueueHandler': 
-                if (currentQueue) await ModQueueHandler.handle(data, ctx, currentQueue, preFetchedContent); 
-                break;
+            case 'NewPostHandler': returnData = await NewPostHandler.handle(data, ctx, preFetchedContent); break;
+            case 'PublicPostHandler': returnData = await PublicPostHandler.handle(data, ctx, preFetchedContent); break;
+            case 'StateSyncHandler': returnData = await StateSyncHandler.handleModAction(data, ctx, preFetchedContent); break;
+            case 'RemovalHandler': returnData = await RemovalHandler.handle(data, ctx, preFetchedContent); break;
+            case 'SpamRemovalHandler': returnData = await SpamRemovalHandler.handle(data, ctx, preFetchedContent); break;
+            case 'RemovalReasonHandler': returnData =  await RemovalReasonHandler.handle(data, ctx, preFetchedContent); break;
+            case 'ModLogHandler': returnData = await ModLogHandler.handle(data, ctx); break;
+            case 'UpdateHandler': returnData = await UpdateHandler.handle(data, ctx, preFetchedContent); break;
+            case 'FlairWatchHandler': returnData = await FlairWatchHandler.handle(data, ctx, preFetchedContent); break;
+            case 'ModActivityHandler': returnData = await ModActivityHandler.handle(data, ctx, preFetchedContent); break;
+            case 'ModAbuseHandler': returnData = await ModAbuseHandler.handle(data, ctx); break;
+            case 'ModMailHandler': returnData = await ModMailHandler.handle(data, ctx); break;
+            case 'ReportHandler': returnData = await ReportHandler.handle(data, ctx, preFetchedContent); break;
+            case 'DeletionHandler': returnData = await DeletionHandler.handle(data, ctx, preFetchedContent); break;
+            case 'ModQueueHandler': if (currentQueue) returnData = await ModQueueHandler.handle(data, ctx, currentQueue, preFetchedContent); break;
             default: UtilityManager.error(`[Queue] Unknown handler: ${handler}`);
         }
+        return returnData === false ? false : true;;
     }
 }

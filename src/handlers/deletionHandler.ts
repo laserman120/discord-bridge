@@ -19,26 +19,26 @@ export class DeletionHandler extends BaseHandler {
      * @param context - The Devvit execution context.
      * @param preFetchedContent - Optional pre-fetched content from the QueueManager.
      */
-    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<void> {
+    static async handle(event: any, context: TriggerContext, preFetchedContent?: Post | Comment): Promise<boolean> {
 
         const targetId = this.getRedditId(event);
-        if (!targetId) return;
+        if (!targetId) return true;
 
         const logEntries = await StorageManager.getLinkedLogEntries(targetId, context);
         if (logEntries.length === 0) {
             UtilityManager.log(`[DeletionHandler] No tracked messages for ${targetId}. Skipping.`);
-            return;
+            return true;
         }
         
         const contentItem = await this.fetchContent(targetId, context, preFetchedContent);
-        if (!contentItem) return;
+        if (!contentItem) return true;
 
         const isPost = targetId.startsWith('t3_');
         const isActuallyDeleted = isPost 
             ? (contentItem as Post).removedByCategory === 'deleted'
             : (contentItem as Comment).authorName === '[deleted]';
 
-        if (!isActuallyDeleted) return;
+        if (!isActuallyDeleted) return true;
 
         UtilityManager.log("[DeletionHandler] Post/Comment was deleted. Updating entries...")
 
@@ -74,6 +74,6 @@ export class DeletionHandler extends BaseHandler {
                 await StorageManager.updateLogStatus(entry.discordMessageId, ItemState.Deleted, context);
             }
         }
-
+        return true;
     }
 }

@@ -89,7 +89,11 @@ export class StorageManager {
      * Updates the status of an existing log.
      */
     static async updateLogStatus(discordMessageId: string, newStatus: ItemState, context: DevvitContext): Promise<void> {
-        await context.redis.hSet(this.getLogKey(discordMessageId), { currentStatus: newStatus });
+        const key = this.getLogKey(discordMessageId);
+        await Promise.all([
+            context.redis.hSet(key, { currentStatus: newStatus }),
+            context.redis.expire(key, PRUNE_AGE_SECONDS + 86400)
+        ]);
     }
 
     /**
@@ -206,7 +210,10 @@ export class StorageManager {
 
     // #region Modmail & Processed Message Tracking
     static async trackActiveModmail(id: string, context: DevvitContext) {
-        await context.redis.zAdd(this.getActiveModmailIndexKey(), { score: Date.now(), member: id });
+        await Promise.all([
+            context.redis.zAdd(this.getActiveModmailIndexKey(), { score: Date.now(), member: id }),
+            context.redis.expire(this.getActiveModmailIndexKey(), PRUNE_AGE_SECONDS)
+        ]);
     }
 
     static async untrackActiveModmail(id: string, context: DevvitContext) {
@@ -215,8 +222,10 @@ export class StorageManager {
 
     static async markMessageAsProcessed(redditId: string, messageId: string, context: DevvitContext) {
         const key = this.getProcessedMessagesKey(redditId);
-        await context.redis.zAdd(key, { score: Date.now(), member: messageId });
-        await context.redis.expire(key, PRUNE_AGE_SECONDS);
+        await Promise.all([
+            context.redis.zAdd(key, { score: Date.now(), member: messageId }),
+            context.redis.expire(key, PRUNE_AGE_SECONDS)
+        ]);
     }
 
     static async getProcessedMessageIds(redditId: string, context: DevvitContext): Promise<string[]> {
