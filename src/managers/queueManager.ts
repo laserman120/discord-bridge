@@ -144,7 +144,7 @@ export class QueueManager {
 
             if (!taskIds || taskIds.length === 0) return;
 
-            UtilityManager.log(`[Queue] Worker processing ${taskIds.length} tasks.  -----------`);
+            UtilityManager.log(`----------- [Queue] Worker processing ${taskIds.length} tasks.  -----------`);
 
             // Batch fetch task payloads
             const taskDataStrings = await Promise.all(taskIds.map(t => context.redis.hGet(this.DATA_KEY, t.member)));
@@ -224,8 +224,6 @@ export class QueueManager {
                 // Small sleep to avoid hitting rate limits too hard during dispatch
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
-            UtilityManager.log('[Queue] Worker cycle complete. -----------'); 
-            await new Promise(resolve => setTimeout(resolve, 500));
         } catch(e) {
             UtilityManager.error('[Queue] Worker fatal error:', e);
         } finally {

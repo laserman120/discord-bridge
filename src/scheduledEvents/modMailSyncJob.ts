@@ -36,10 +36,17 @@ export async function checkModMailStatus(event: any, context: JobContext): Promi
                 UtilityManager.log(`[ModMailSync] Conversation ${conversationId} is now Archived. Updating Discord.`);
 
                 const logEntries = await StorageManager.getLinkedLogEntries(conversationId, context as any);
+                const deleteOnHandle = await context.settings.get('MODMAIL_DELETE_ON_HANDLE') as boolean;
 
                 for (const entry of logEntries) {
                     if (entry.currentStatus !== ItemState.Archived_Modmail) {
 
+                        if (deleteOnHandle) {
+                            const success = await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
+                            if (success) await StorageManager.deleteLogEntry(entry, context as any);
+                            continue;
+                        }
+                        
                         const message = await WebhookManager.getMessage(entry.webhookUrl, entry.discordMessageId);
 
                         if (message && message.components) {

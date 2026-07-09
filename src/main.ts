@@ -157,7 +157,11 @@ Devvit.addSchedulerJob({
 
 Devvit.addSchedulerJob({
     name: 'process_queue',
-    onRun: (event, context) => QueueManager.processQueue(event, context),
+    onRun: async (event, context) => {
+        await QueueManager.processQueue(event, context);
+        UtilityManager.log('----------- [Queue] Worker cycle complete. -----------');
+        await new Promise(resolve => setTimeout(resolve, 250));
+    },
 });
 
 Devvit.addSchedulerJob({

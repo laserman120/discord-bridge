@@ -469,6 +469,14 @@ export const reportGroup = {
             scope: 'installation' as const,
             helpText: 'Custom text sent with notification',
         },
+        {
+            type: 'boolean' as const,
+            name: 'REPORT_DELETE_ON_HANDLE',
+            label: 'Delete Report Notifications when handled',
+            defaultValue: false,
+            scope: 'installation' as const,
+            helpText: 'Deletes the Discord message when the reported item is approved, removed, or deleted.',
+        },
     ]
 };
 
@@ -521,6 +529,14 @@ export const modmailGroup = {
             label: 'Add an additional button to open a user profile in Arctic-Shift',
             defaultValue: false,
             scope: 'installation' as const,
+        },
+        {
+            type: 'boolean' as const,
+            name: 'MODMAIL_DELETE_ON_HANDLE',
+            label: 'Delete ModMail Notifications when handled/archived',
+            defaultValue: false,
+            scope: 'installation' as const,
+            helpText: 'Deletes the Discord message when a moderator replies or archives the thread.',
         },
     ]
 };

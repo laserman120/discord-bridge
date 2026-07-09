@@ -185,6 +185,22 @@ export class ModMailHandler extends BaseHandler {
      * @private
      */
     private static async handleExistingUpdate(conversation: any, cleanId: string, latestLogEntry: any, messagesToBridge: any[], state: ItemState, context: TriggerContext): Promise<boolean> {
+        const deleteOnHandle = await context.settings.get('MODMAIL_DELETE_ON_HANDLE') as boolean;
+        
+        if (deleteOnHandle && [ItemState.Answered_Modmail, ItemState.Archived_Modmail].includes(state)) {
+            const success = await WebhookManager.deleteMessage(latestLogEntry.webhookUrl, latestLogEntry.discordMessageId);
+            if (success) {
+                await StorageManager.deleteLogEntry(latestLogEntry, context);
+                await StorageManager.untrackActiveModmail(cleanId, context);
+                for (const msg of messagesToBridge) {
+                    if (msg.id) await StorageManager.markMessageAsProcessed(cleanId, msg.id, context);
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
         const currentMessage = await WebhookManager.getMessage(latestLogEntry.webhookUrl, latestLogEntry.discordMessageId);
         if (!currentMessage) return true;
 

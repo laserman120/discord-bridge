@@ -81,12 +81,21 @@ export class StateSyncHandler extends BaseHandler {
             ChannelType.FlairWatch,
             ChannelType.ModActivity
         ];
+
+        const deleteReports = await context.settings.get('REPORT_DELETE_ON_HANDLE') as boolean;
         let successValue = true;
         for (const entry of logEntries) {
             // Skip if the Discord message is already in the correct state
             if (entry.currentStatus === newStatus) continue;
 
             if (syncableChannels.includes(entry.channelType)) {
+
+                if (entry.channelType === ChannelType.Reports && deleteReports && [ItemState.Removed, ItemState.Approved, ItemState.Spam, ItemState.Deleted].includes(newStatus)) {
+                    const success = await WebhookManager.deleteMessage(entry.webhookUrl, entry.discordMessageId);
+                    if (success) await StorageManager.deleteLogEntry(entry, context);
+                    continue;
+                }
+
                 const payload = await ComponentManager.createDefaultMessage(
                     contentData, 
                     newStatus, 
