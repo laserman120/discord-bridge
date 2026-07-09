@@ -144,7 +144,7 @@ export class QueueManager {
 
             if (!taskIds || taskIds.length === 0) return;
 
-            UtilityManager.log(`----------- [Queue] Worker processing ${taskIds.length} tasks.  -----------`);
+            UtilityManager.log(`[Queue] Worker processing ${taskIds.length} tasks.`);
 
             // Batch fetch task payloads
             const taskDataStrings = await Promise.all(taskIds.map(t => context.redis.hGet(this.DATA_KEY, t.member)));
