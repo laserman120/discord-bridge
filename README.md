@@ -4,7 +4,10 @@
 An app to help bridge the gap between reddit and discord. 
 Making at easy to keep track of anything related to your subreddit directly from your discord server.
 
-![Preview Gif](https://raw.githubusercontent.com/laserman120/discord-bridge/262e0344fe9f93b9fa9f374be2c0b0f0012fc63a/assets/Discord-Bridge_Preview.gif)
+| Preview |
+| :---: |
+| ![Preview Gif](https://raw.githubusercontent.com/laserman120/discord-bridge/262e0344fe9f93b9fa9f374be2c0b0f0012fc63a/assets/Discord-Bridge_Preview.gif) |
+
 
 ---
 
@@ -30,10 +33,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 	  - Automated Removal (Removed by AutoMod or similar)
 	  - Deleted ( Deleted by the author or reddit)
 	  - ...
-  - If a post is approved/removed/deleted or similar all private messages related to the post or comment will update to reflect the current state
+  - If a post is approved/removed/deleted all private messages will update to reflect the change.
   - ModMail notifications will update when replied or when archived
 
-  - Read Only by design, the App will never perform actions on your subreddit, it will only ever read the current state of posts, comments, and ModMail and update messages accordingly.
+  - Read Only by design, the App will never perform actions on your subreddit.
 
 | New Post Notification | Same Message after removal |
 | :---: | :---: |
@@ -53,11 +56,13 @@ Making at easy to keep track of anything related to your subreddit directly from
 - Pingable notification messages are **optional** and can be left empty if not desired.
 
 	![Basic Setup Example](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/Settings.png)
+
 ---
 
 ## Detailed Explanation of Features and Configuration
 
-- **Before installing it is highly recommended to check out the Wiki pages here:** [Discord Bridge Wiki](https://github.com/laserman120/discord-bridge/wiki)
+- **Before installing it is highly recommended to check out the Wiki pages here:** 
+  ### [Discord Bridge Wiki](https://github.com/laserman120/discord-bridge/wiki)
 - These pages contain detailed explanations of each feature, as well as configuration instructions and examples.
 
 ---
@@ -72,6 +77,19 @@ Making at easy to keep track of anything related to your subreddit directly from
 ## Changelog
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
+
+- 0.15.00
+  - Added setting to the Report Feed to remove handled messages instead of updating.
+  - Added setting to the ModMail Feed to remove handled messages instead of updating.
+  - Major backend improvements and rewrites.
+    - Fixed keys with missing TTL
+    - Improved Safeguards in which the Queue could become stuck.
+    - Implemented Safeguards to ignore items in the queue older than 13 days.
+    - Improved logging.
+  - Improved performance in cases in which not all feeds / features are enabled.
+  - Improvements to the report handling.
+  - Improvements to ModMail handling.
+  - Implemented Safeguad for Discord Rate Limiting, the app should no longer drop messages when sending to Discord fails.
 
 - 0.14.32
   - Minor fix to prevent double handling of ModLog entries

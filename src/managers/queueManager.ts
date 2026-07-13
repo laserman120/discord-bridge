@@ -17,7 +17,7 @@ import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { MAX_AGE_QUEUE } from '../config/constants.js';
-import { truncate } from 'fs';
+import { DebugHelper } from '../helpers/debugHelper.js';
 
 export type HandlerName =
     | 'NewPostHandler' | 'PublicPostHandler' | 'StateSyncHandler'
@@ -48,6 +48,22 @@ export class QueueManager {
      */
     static async enqueue(task: QueueTask, context: TriggerContext, delaySeconds: number = 0): Promise<void> {
         try {
+            const settings = await context.settings.getAll();
+            
+            if (settings['DEBUG_WIPE_QUEUE']) {
+                UtilityManager.log(`[Queue] DEBUG_WIPE_QUEUE is enabled. Skipping enqueue of ${task.handler}.`);
+                return;
+            }
+
+            if (settings['DEBUG_WIPE_MESSAGES']) {
+                UtilityManager.log(`[Queue] DEBUG_WIPE_MESSAGES is enabled. Skipping enqueue of ${task.handler}.`);
+                return;
+            }
+
+            if(settings['DEBUG_PAUSE_BRIDGE']) {
+                UtilityManager.log(`[Queue] DEBUG_PAUSE_BRIDGE is enabled. Skipping enqueue of ${task.handler}.`);
+                return;
+            }
             const taskId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
             const processAt = Date.now() + (delaySeconds * 1000);
             
@@ -70,6 +86,27 @@ export class QueueManager {
      * and dispatches to appropriate handlers.
      */
     static async processQueue(_event: any, context: JobContext): Promise<void> {
+
+        const settings = await context.settings.getAll();
+        let haltProcessing = false;
+
+        if (settings['DEBUG_WIPE_QUEUE']) {
+            UtilityManager.log(`[Queue] DEBUG_WIPE_QUEUE is enabled. Executing queue wipe sequence.`);
+            await DebugHelper.wipeQueue(context);
+            haltProcessing = true;
+        }
+
+        if (settings['DEBUG_WIPE_MESSAGES']) {
+            await DebugHelper.wipeMessages(context);
+            haltProcessing = true;
+        }
+
+        if (haltProcessing) return;
+
+        if(settings['DEBUG_PAUSE_BRIDGE']) {
+            UtilityManager.log(`[Queue] DEBUG_PAUSE_BRIDGE is enabled. Skipping queue processing.`);
+            return;
+        }
 
         const isPaused = await context.redis.get('msg_queue:paused');
         if (isPaused) {

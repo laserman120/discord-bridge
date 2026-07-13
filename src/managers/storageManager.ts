@@ -27,7 +27,7 @@ export class StorageManager {
         return `index:r:${redditId}`;
     }
 
-    private static getChronoIndexKey(): string {
+    static getChronoIndexKey(): string {
         return `chrono:log:index`;
     }
 
@@ -159,12 +159,11 @@ export class StorageManager {
         while (uniqueIds.size < limit) {
             const scoreMembers = await context.redis.zRange(
                 this.getChronoIndexKey(), 
-                0, 
-                -1, 
+                cursor, 
+                cursor + batchSize - 1, 
                 { 
-                    by: 'rank', // Added by: 'rank'
-                    reverse: true, 
-                    limit: { offset: cursor, count: batchSize } 
+                    by: 'rank',
+                    reverse: true
                 }
             );
 

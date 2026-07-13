@@ -877,3 +877,35 @@ export const modMailCustomizationGroup = {
         },
     ]
 };
+
+export const debugGroup = {
+    type: 'group' as const,
+    label: 'Debugging and Troubleshooting',
+    helpText: 'WARNING! READ THE WIKI BEFORE TOGGLING THESE OPTIONS. These options should only be toggled when instructed to do so.',
+    fields: [
+        {
+            type: 'boolean' as const,
+            name: 'DEBUG_PAUSE_BRIDGE',
+            label: 'Pause Discord Bridge (The APP will stop processing any new events)',
+            defaultValue: false,
+            scope: 'installation' as const,
+            helpText: 'WARNING! The APP will no longer respond to events, only background tasks will continue to run.',
+        },
+        {
+            type: 'boolean' as const,
+            name: 'DEBUG_WIPE_QUEUE',
+            label: 'DEBUG: Wipe the event queue (The APP will stop processing any new events)',
+            defaultValue: false,
+            scope: 'installation' as const,
+            helpText: 'WARNING! This will delete all events in the queue and stop the APP from processing new events.',
+        },
+        {
+            type: 'boolean' as const,
+            name: 'DEBUG_WIPE_MESSAGES',
+            label: 'DEBUG: Wipe all messages in discord (The APP will stop processing any new events)',
+            defaultValue: false,
+            scope: 'installation' as const,
+            helpText: 'WARNING! This will slowly delete all messages sent by the APP in discord (if possible) and stop the APP from processing new events.',
+        },
+    ]
+};

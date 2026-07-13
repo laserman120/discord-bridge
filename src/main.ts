@@ -1,6 +1,6 @@
 ﻿import { Devvit } from '@devvit/public-api';
-import { translationOverridesGroup, privateMessageCustomizationGroup, publicMessageCustomizationGroup, appNotificationGroup, publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup, modQueueGroup } from './config/settings.js';
-import { checkForOldMessages } from './scheduledEvents/checkForOldMessages.js';
+import { translationOverridesGroup, privateMessageCustomizationGroup, publicMessageCustomizationGroup, appNotificationGroup, publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup, modQueueGroup, debugGroup } from './config/settings.js';
+import { cleanupJob, deletionSyncJob } from './scheduledEvents/cleanupJob.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { QueueManager } from './managers/queueManager.js';
 import { checkModQueue } from './scheduledEvents/modQueueCheckJob.js';
@@ -26,6 +26,7 @@ Devvit.addSettings([
     customizationGroup,
     modMailCustomizationGroup,
     translationOverridesGroup,
+    debugGroup,
 ]);
 
 const ActionsRequiringUpdate = ["marknsfw", "lock", "unlock", "sticky", "unsticky", "spoiler", "unspoiler", "editflair"];
@@ -141,8 +142,8 @@ Devvit.addTrigger({
 });
 
 Devvit.addSchedulerJob({
-    name: 'cleanup_old_messages',
-    onRun: checkForOldMessages,
+    name: 'cleanup_job',
+    onRun: cleanupJob,
 });
 
 Devvit.addSchedulerJob({
@@ -187,7 +188,7 @@ Devvit.addTrigger({
             }
 
             const jobId = await context.scheduler.runJob({
-                name: 'cleanup_old_messages',
+                name: 'cleanup_job',
                 cron: '0 * * * *', // Run once every hour at minute 0
             });
             UtilityManager.log(`[Setup] Scheduled cleanup job with ID: ${jobId}`);
