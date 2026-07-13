@@ -57,9 +57,8 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 ## Detailed Explanation of Features and Configuration
 
-- **Before installing it is highly recommended to check out the Wiki pages here:** 
-  ### [Discord Bridge Wiki](https://github.com/laserman120/discord-bridge/wiki)
-- These pages contain detailed explanations of each feature, as well as configuration instructions and examples.
+- **Before installing it is highly recommended to check out the Wiki here:** 
+  ## [Discord Bridge Wiki](https://github.com/laserman120/discord-bridge/wiki)
 
 ---
 
