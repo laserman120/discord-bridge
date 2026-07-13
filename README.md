@@ -38,10 +38,6 @@ Making at easy to keep track of anything related to your subreddit directly from
 
   - Read Only by design, the App will never perform actions on your subreddit.
 
-| New Post Notification | Same Message after removal |
-| :---: | :---: |
-| ![New Post](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPost.png) | ![Same Message after removal](https://raw.githubusercontent.com/laserman120/discord-bridge/7911dd9c27a6d9ef20fcf38abfcb6830af0aeb52/assets/NewPostUpdated.png) |
-
 ---	
 
 ## Basic Setup and Configuration
