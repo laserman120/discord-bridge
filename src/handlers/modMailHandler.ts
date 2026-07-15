@@ -4,7 +4,7 @@ import { BaseHandler } from './baseHandler.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
-import { APP_USERNAME, MAX_MODMAIL_AGE_MS } from '../config/constants.js';
+import { APP_USERNAME, DISCORD_ERROR_CODES, MAX_MODMAIL_AGE_MS } from '../config/constants.js';
 import { TranslationHelper } from '../helpers/translationHelper.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 
@@ -176,6 +176,11 @@ export class ModMailHandler extends BaseHandler {
 
             return true;
         } else {
+            if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+            {
+                UtilityManager.log(`[ModMailHandler] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                return true;
+            }
             return false;
         }
     }

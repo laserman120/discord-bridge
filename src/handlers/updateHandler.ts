@@ -32,8 +32,6 @@ export class UpdateHandler extends BaseHandler {
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context);
 
-
-        let successValue = true;
         for (const entry of logEntries) {
             const currentStatus = entry.currentStatus;
 
@@ -49,11 +47,7 @@ export class UpdateHandler extends BaseHandler {
                 entry.discordMessageId,
                 payload
             );
-            if(!success){
-                successValue = false;
-                break;
-            }
         }
-        return successValue;
+        return true;
     }
 }

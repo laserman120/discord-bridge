@@ -893,6 +893,14 @@ export const debugGroup = {
         },
         {
             type: 'boolean' as const,
+            name: 'DEBUG_SEND_STATUS',
+            label: 'DEBUG: Send a status report to ModMail',
+            defaultValue: false,
+            scope: 'installation' as const,
+            helpText: 'This will generate a status report for debugging and send it to ModMail, it will send one every 10 minutes until disabled.',
+        },
+        {
+            type: 'boolean' as const,
             name: 'DEBUG_WIPE_QUEUE',
             label: 'DEBUG: Wipe the event queue (The APP will stop processing any new events)',
             defaultValue: false,
@@ -902,7 +910,7 @@ export const debugGroup = {
         {
             type: 'boolean' as const,
             name: 'DEBUG_WIPE_MESSAGES',
-            label: 'DEBUG: Wipe all messages in discord (The APP will stop processing any new events)',
+            label: 'DEBUG: Wipe all messages in Discord (The APP will stop processing any new events)',
             defaultValue: false,
             scope: 'installation' as const,
             helpText: 'WARNING! This will slowly delete all messages sent by the APP in discord (if possible) and stop the APP from processing new events.',

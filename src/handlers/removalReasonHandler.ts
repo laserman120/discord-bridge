@@ -45,7 +45,6 @@ export class RemovalReasonHandler extends BaseHandler {
 
         UtilityManager.log(`[RemovalReasonHandler] Syncing removal reason for ${targetId} across ${logEntries.length} entries.`);
 
-        let successValue = true;
         // Loop and Update existing messages
         for (const entry of logEntries) {
             // Determine effective state (Awaiting Review vs Removed)
@@ -65,17 +64,12 @@ export class RemovalReasonHandler extends BaseHandler {
                 payload
             );
 
-            if(!success) {
-                successValue = false;
-                break;
-            }
-
             // Update DB status if it's currently lagging behind
             if (entry.currentStatus !== state) {
                 await StorageManager.updateLogStatus(entry.discordMessageId, state, context);
             }
         }
-        return successValue;
+        return true;
     }
 
     /**

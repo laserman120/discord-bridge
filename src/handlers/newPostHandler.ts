@@ -6,6 +6,7 @@ import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 /**
  * Handles the initial bridging of newly submitted posts to a private Discord channel.
@@ -65,18 +66,23 @@ export class NewPostHandler extends BaseHandler {
         );
 
         // Dispatch to Discord & Record in Storage
-        const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
+        const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 
-        if (discordMessageId && !discordMessageId.startsWith('failed')) {
+        if (messageId && !messageId.startsWith('failed')) {
             await StorageManager.createLogEntry({
                 redditId: postId,
-                discordMessageId: discordMessageId,
+                discordMessageId: messageId,
                 channelType: ChannelType.NewPosts,
                 currentStatus: status,
                 webhookUrl: webhookUrl
             }, context);
             return true;
         } else {
+            if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+            {
+                UtilityManager.log(`[NewPostHandler] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                return true;
+            }
             return false;
         }
 

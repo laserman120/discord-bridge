@@ -6,6 +6,7 @@ import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 /**
  * Monitors and logs activity (posts and comments) from subreddit moderators.
@@ -73,6 +74,11 @@ export class ModActivityHandler extends BaseHandler {
             }, context);
             return true;
         } else {
+            if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+            {
+                UtilityManager.log(`[ModActivityHandler] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                return true;
+            }
             return false;
         }
     }

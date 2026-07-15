@@ -32,7 +32,8 @@ export async function cleanupOldMessages(event: any, context: JobContext): Promi
             const entry = await StorageManager.getLogEntry(discordId, context);
 
             if (!entry) {
-                UtilityManager.log(`[OldCleanup] Expired ID ${discordId} found in index but missing log entry. Skipping.`);
+                UtilityManager.log(`[JOB] Expired ID ${discordId} found in index but missing log entry. Purging from index.`);
+                await context.redis.zRem(StorageManager.getChronoIndexKey(), [discordId]);
                 continue;
             }
 
@@ -87,7 +88,7 @@ export async function cleanupStuckQueue(context: JobContext): Promise<void> {
 
         const queueCutoffMs = Date.now() - (PRUNE_AGE_SECONDS * 1000);
 
-        const stuckTasks = await context.redis.zRange('msg_queue:ids', 0, queueCutoffMs, { by: 'score' });
+        const stuckTasks = await context.redis.zRange(QueueManager.QUEUE_KEY, 0, queueCutoffMs, { by: 'score' });
 
         if (stuckTasks && stuckTasks.length > 0) {
             UtilityManager.log(`[Queue Maintenance] Found ${stuckTasks.length} orphaned/stuck items older than 13 days. Pruning...`);
@@ -95,8 +96,8 @@ export async function cleanupStuckQueue(context: JobContext): Promise<void> {
             const stuckIds = stuckTasks.map(t => t.member);
             
             await Promise.all([
-                context.redis.hDel('msg_queue:data', stuckIds),
-                context.redis.zRemRangeByScore('msg_queue:ids', 0, queueCutoffMs)
+                context.redis.hDel(QueueManager.DATA_KEY, stuckIds),
+                context.redis.zRemRangeByScore(QueueManager.QUEUE_KEY, 0, queueCutoffMs)
             ]);
             
             UtilityManager.log(`[Queue Maintenance] Successfully purged ${stuckIds.length} stuck queue items.`);

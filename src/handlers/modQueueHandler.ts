@@ -6,6 +6,7 @@ import { WebhookManager } from '../managers/webhookManager.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { ComponentManager } from '../managers/componentManager.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 
 type ThresholdRule = {
@@ -108,18 +109,23 @@ export class ModQueueHandler extends BaseHandler {
         
         // Dispatch and Store
         const payload = await ComponentManager.createDefaultMessage(contentData, state, ChannelType.ModQueue, context, notificationString);
-        const discordMessageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
+        const messageId = await WebhookManager.sendNewMessage(webhookUrl, payload, context);
 
-        if (discordMessageId && !discordMessageId.startsWith('failed')) {
+        if (messageId && !messageId.startsWith('failed')) {
             await StorageManager.createLogEntry({
                 redditId: targetId,
-                discordMessageId: discordMessageId,
+                discordMessageId: messageId,
                 channelType: ChannelType.ModQueue,
                 currentStatus: state,
                 webhookUrl: webhookUrl
             }, context);
             return true;
         } else {
+            if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+            {
+                UtilityManager.log(`[ModQueueHandler] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                return true;
+            }
             return false;
         }
     }

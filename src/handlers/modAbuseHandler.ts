@@ -3,6 +3,7 @@ import { CacheManager } from '../managers/cacheManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { BaseHandler } from './baseHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 export class ModAbuseHandler extends BaseHandler {
     /**
@@ -77,6 +78,11 @@ export class ModAbuseHandler extends BaseHandler {
                 await CacheManager.setWarningCooldown(moderatorName, context);
                 return true;
             } else {
+                if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+                {
+                    UtilityManager.log(`[ModAbuse] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                    return true;
+                }
                 return false;
             }
             

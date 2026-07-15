@@ -83,7 +83,6 @@ export class StateSyncHandler extends BaseHandler {
         ];
 
         const deleteReports = await context.settings.get('REPORT_DELETE_ON_HANDLE') as boolean;
-        let successValue = true;
         for (const entry of logEntries) {
             // Skip if the Discord message is already in the correct state
             if (entry.currentStatus === newStatus) continue;
@@ -106,13 +105,10 @@ export class StateSyncHandler extends BaseHandler {
                 const success = await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
                 if(success){
                     await StorageManager.updateLogStatus(entry.discordMessageId, newStatus, context);
-                } else {
-                    successValue = false;
-                    break;
                 }
                 
             }
         }
-        return successValue;
+        return true;
     }
 }

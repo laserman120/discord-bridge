@@ -6,7 +6,7 @@ import { EmbedManager } from '../managers/embedManager.js';
 import { ContentDataManager, ContentDetails } from '../managers/contentDataManager.js';
 import { PublicPostHandler } from '../handlers/publicPostHandler.js';
 import { FlairWatchHandler } from '../handlers/flairWatchHandler.js';
-import { ComponentManager } from '../managers/componentManager.js';
+import { ComponentManager } from '../managers/componentManager.js';  
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { BaseHandler } from './baseHandler.js';

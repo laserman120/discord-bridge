@@ -2,6 +2,7 @@ import { Devvit, Post, Context } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { LogEntry } from './storageManager.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 const DISCORD_API_BASE = 'https://discord.com/api/webhooks';
 
@@ -30,10 +31,10 @@ export class WebhookManager {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-
+            
             if (!response.ok) {
-                if (response.status === 429) {
-                    this.logRateLimitHeaders(response.headers);
+                if (DISCORD_ERROR_CODES.includes(response.status.toString())){
+                    return `failed_id_error_${response.status.toString()}`;
                 }
                 const errorText = await response.text();
                 UtilityManager.error(`[WEBHOOK] Failed to send (Status ${response.status}): ${errorText}`);
@@ -64,9 +65,6 @@ export class WebhookManager {
         try {
             const response = await fetch(url);
             if (!response.ok) {
-                if (response.status === 429) {
-                    this.logRateLimitHeaders(response.headers);
-                }
                 UtilityManager.error(`[WEBHOOK] Failed to fetch message ${messageId} (Status ${response.status})`);
                 return false;
             }
@@ -101,9 +99,6 @@ export class WebhookManager {
             });
 
             if (!response.ok) {
-                if (response.status === 429) {
-                    this.logRateLimitHeaders(response.headers);
-                }
                 const errorText = await response.text();
                 UtilityManager.error(`[WEBHOOK] Edit failed (Status ${response.status}): ${errorText}`);
                 return false;
@@ -132,9 +127,6 @@ export class WebhookManager {
         try {
             const getResponse = await fetch(discordApiUrl);
             if (!getResponse.ok) {
-                if (getResponse.status === 429) {
-                    this.logRateLimitHeaders(getResponse.headers);
-                }
                 UtilityManager.error(`[WEBHOOK] Failed to fetch message ${messageId} for update (Status ${getResponse.status}).`);
                 return false;
             }
@@ -196,13 +188,6 @@ export class WebhookManager {
                 UtilityManager.log(`[WEBHOOK] Discord message ${messageId} removed.`);
                 return true; 
             } 
-            
-            // Handle Rate Limits (429)
-            if (response.status === 429) {
-                this.logRateLimitHeaders(response.headers);
-                UtilityManager.log(`[WEBHOOK] Rate limited. Will try again next cycle.`);
-                return false;
-            }
     
             const errorText = await response.text();
             UtilityManager.error(`[WEBHOOK] Deletion failed (${response.status}): ${errorText}`);
@@ -211,16 +196,5 @@ export class WebhookManager {
             UtilityManager.error(`[WEBHOOK] Network error during deletion: ${e}`);
             return false;
         }
-    }
-
-    private static logRateLimitHeaders(headers: Headers): void {
-        const rateLimitData = {
-            limit: headers.get('X-RateLimit-Limit'),
-            remaining: headers.get('X-RateLimit-Remaining'),
-            reset: headers.get('X-RateLimit-Reset'),
-            global: headers.get('X-RateLimit-Global'),
-            retryAfter: headers.get('Retry-After'),
-        };
-        UtilityManager.error(`[WEBHOOK RATE LIMIT] ${JSON.stringify(rateLimitData)}`);
     }
 }

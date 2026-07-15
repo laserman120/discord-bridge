@@ -16,7 +16,7 @@ import { UpdateHandler } from '../handlers/updateHandler.js';
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
-import { MAX_AGE_QUEUE } from '../config/constants.js';
+import { MAX_AGE_QUEUE_SECONDS } from '../config/constants.js';
 import { DebugHelper } from '../helpers/debugHelper.js';
 
 export type HandlerName =
@@ -39,6 +39,7 @@ export class QueueManager {
     static readonly QUEUE_KEY = 'msg_queue:ids'; 
     static readonly DATA_KEY = 'msg_queue:data'; 
     static readonly LOCK_KEY = 'msg_queue:lock';
+    static readonly PAUSE_KEY = 'msg_queue:paused';
 
     /**
      * Adds a task to the queue with an optional delay.
@@ -69,7 +70,7 @@ export class QueueManager {
             
             const compressedData = LZString.compressToBase64(JSON.stringify(task));
             await context.redis.hSet(this.DATA_KEY, { [taskId]: compressedData });
-            await context.redis.expire(this.DATA_KEY, MAX_AGE_QUEUE); // 14 days fallback expiration
+            await context.redis.expire(this.DATA_KEY, MAX_AGE_QUEUE_SECONDS); // 14 days fallback expiration
             
             // The score is the timestamp when the task becomes 'ready'
             await context.redis.zAdd(this.QUEUE_KEY, { score: processAt, member: taskId });
@@ -101,6 +102,10 @@ export class QueueManager {
             haltProcessing = true;
         }
 
+        if (settings['DEBUG_SEND_STATUS']) {
+            await DebugHelper.sendStatusReport(context);
+        }
+
         if (haltProcessing) return;
 
         if(settings['DEBUG_PAUSE_BRIDGE']) {
@@ -108,7 +113,7 @@ export class QueueManager {
             return;
         }
 
-        const isPaused = await context.redis.get('msg_queue:paused');
+        const isPaused = await context.redis.get(QueueManager.PAUSE_KEY);
         if (isPaused) {
             const startTime = parseInt(isPaused);
             const now = Date.now();
@@ -124,10 +129,10 @@ export class QueueManager {
             
             if (!isTimestampValid) {
                 UtilityManager.log('[Queue] Queue Pause: Legacy lock format ("true") detected. Overriding for migration...');
-                context.redis.del('msg_queue:paused');
+                context.redis.del(QueueManager.PAUSE_KEY);
             } else if (isExpired) {
                 UtilityManager.log('[Queue] Stale timestamp pause detected. Overriding...');
-                context.redis.del('msg_queue:paused');
+                context.redis.del(QueueManager.PAUSE_KEY);
             }
         }
 
@@ -158,7 +163,7 @@ export class QueueManager {
             await context.settings.getAll(); // Test if we can fetch the settings
         } catch (e) {
             UtilityManager.error("[Queue] Unable to fetch settings. Aborting cycle, pausing queue");
-            await context.redis.set('msg_queue:paused',  Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
+            await context.redis.set(QueueManager.PAUSE_KEY,  Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
             return; 
         }
 
@@ -227,7 +232,7 @@ export class QueueManager {
                 } catch (e) {
                     UtilityManager.error('[Queue] Batch fetch failed, pausing queue for 5 minutes...:', e);
                     await new Promise(resolve => setTimeout(resolve, 500));
-                    await context.redis.set('msg_queue:paused', Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
+                    await context.redis.set(QueueManager.PAUSE_KEY, Date.now().toString(), { expiration: new Date(Date.now() + 300000) }); // 5 min pause
                     return;
                 }
             }

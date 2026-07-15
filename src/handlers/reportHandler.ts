@@ -59,7 +59,6 @@ export class ReportHandler extends BaseHandler {
 
         UtilityManager.log(`[ReportHandler] Broadcasting report count (${contentData.reportCount}) to ${logEntries.length} logs.`);
 
-        let successValue = true;
         for (const entry of logEntries) {
             if (syncableChannels.includes(entry.channelType)) {
                 const payload = await ComponentManager.createDefaultMessage(
@@ -70,13 +69,9 @@ export class ReportHandler extends BaseHandler {
                 );
 
                 const success = await WebhookManager.editMessage(entry.webhookUrl, entry.discordMessageId, payload);
-                if(!success){
-                    successValue = false;
-                    break;
-                }
             }
         }
-        return successValue;
+        return true;
     }
 
     /**

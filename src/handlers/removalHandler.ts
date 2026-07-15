@@ -7,6 +7,7 @@ import { UtilityManager } from '../helpers/utilityHelper.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { isAdminAccount } from '../helpers/adminAccountHelper.js';
 import { ComponentManager } from '../managers/componentManager.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 /**
  * Handles moderator removal actions (remove/spam).
@@ -86,6 +87,11 @@ export class RemovalHandler extends BaseHandler {
             }, context);
             return true;
         } else {
+            if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+            {
+                UtilityManager.log(`[RemovalHandler] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                return true;
+            }
             return false;
         }
 

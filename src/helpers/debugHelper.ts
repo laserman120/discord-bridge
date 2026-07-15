@@ -3,6 +3,7 @@ import { UtilityManager } from './utilityHelper.js';
 import { StorageManager, LogEntry } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
 import { QueueManager } from '../managers/queueManager.js';
+import { MAX_MODMAIL_AGE_MS } from '../config/constants.js';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -16,7 +17,9 @@ export class DebugHelper {
             if (queueCount > 0) {
                 await Promise.all([
                     context.redis.del(QueueManager.QUEUE_KEY),
-                    context.redis.del(QueueManager.DATA_KEY)
+                    context.redis.del(QueueManager.DATA_KEY),
+                    context.redis.del(QueueManager.LOCK_KEY),
+                    context.redis.del(QueueManager.PAUSE_KEY)
                 ]);
                 UtilityManager.log(`[DebugHelper] Successfully wiped ${queueCount} items from the queue.`);
             } else {
@@ -79,6 +82,66 @@ export class DebugHelper {
 
         } catch (error) {
             UtilityManager.error('[DebugHelper] CRITICAL ERROR during message wipe batch:', error);
+        }
+    }
+
+    /**
+     * Gathers system metrics and sends a modmail report. Limited to 1 per hour.
+     */
+    static async sendStatusReport(context: JobContext): Promise<void> {
+        const COOLDOWN_KEY = 'debug:status_report_cooldown';
+        const isOnCooldown = await context.redis.get(COOLDOWN_KEY);
+        if (isOnCooldown) return;
+
+        try {
+            const currentSub = await context.reddit.getCurrentSubreddit();
+            const now = Date.now();
+
+            const queueCount = await context.redis.zCard(QueueManager.QUEUE_KEY);
+            const dataKeys = await context.redis.hKeys(QueueManager.DATA_KEY);
+            const dataCount = dataKeys.length;
+            const lockValue = await context.redis.get(QueueManager.LOCK_KEY);
+            const pauseValue = await context.redis.get(QueueManager.PAUSE_KEY);
+
+            const trackedMessagesCount = await context.redis.zCard(StorageManager.getChronoIndexKey());
+            const activeModmailsCount = await context.redis.zCard(StorageManager.getActiveModmailIndexKey());
+
+            const formatTime = (val: string | undefined) => {
+                if (!val) return 'None';
+                const timeMs = parseInt(val, 10);
+                if (isNaN(timeMs)) return `Legacy/Invalid (${val})`;
+                const diffSec = Math.round((now - timeMs) / 1000);
+                return `Set ${diffSec} seconds ago`;
+            };
+
+            const bodyMarkdown = `**Discord Bridge System Status Report**
+
+**Queue Metrics**
+* Items in Queue (IDs): ${queueCount}
+* Stored Payloads (Data): ${dataCount} ${(dataCount > queueCount) ? '*(Warning: Orphaned payloads exist)*' : ''}
+* Lock Status: ${formatTime(lockValue)}
+* Pause Status: ${formatTime(pauseValue)}
+            
+**Storage Metrics**
+* Tracked Discord Messages: ${trackedMessagesCount}
+* Active Modmail Threads: ${activeModmailsCount}
+            
+*You can disable the Send Status setting now.*`;
+
+            const convId = await context.reddit.modMail.createModNotification({
+                subject: `Discord Bridge Debug Status`,
+                bodyMarkdown: bodyMarkdown,
+                subredditId: currentSub.id
+            });
+
+            if (convId) {
+                await context.redis.set(COOLDOWN_KEY, 'true', { expiration: new Date(now + MAX_MODMAIL_AGE_MS) });
+                UtilityManager.log(`[DebugHelper] Status report sent successfully via Modmail.`);
+            } else {
+                UtilityManager.error(`[DebugHelper] Failed to return conversation ID for status report.`);
+            }
+        } catch (error) {
+            UtilityManager.error(`[DebugHelper] Failed to send status report:`, error);
         }
     }
 }

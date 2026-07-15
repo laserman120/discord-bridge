@@ -7,6 +7,7 @@ import { ComponentManager } from '../managers/componentManager.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
 import { TranslationHelper } from '../helpers/translationHelper.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 /**
  * Handles items flagged as Spam or silently removed by Reddit's internal filters.
@@ -84,6 +85,11 @@ export class SpamRemovalHandler extends BaseHandler {
             }, context);
             return true;
         } else {
+            if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+            {
+                UtilityManager.log(`[SpamRemovalHandler] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                return true;
+            }
             return false;
         }
 

@@ -1,7 +1,7 @@
 import { Devvit } from '@devvit/public-api';
 import { ItemState, ChannelType } from '../config/enums.js';
 import { DevvitContext } from '../types/context.js';
-import { PRUNE_AGE_SECONDS } from '../config/constants.js';
+import { PRUNE_AGE_SECONDS, ONE_DAY_SECONDS } from '../config/constants.js';
 
 export interface LogEntry {
     redditId: string;
@@ -19,7 +19,7 @@ export interface LogEntry {
  */
 export class StorageManager {
     // #region Key Generators
-    private static getLogKey(discordMessageId: string): string {
+    static getLogKey(discordMessageId: string): string {
         return `log:d:${discordMessageId}`;
     }
 
@@ -31,11 +31,11 @@ export class StorageManager {
         return `chrono:log:index`;
     }
 
-    private static getActiveModmailIndexKey(): string {
+    static getActiveModmailIndexKey(): string {
         return `index:modmail:active`;
     }
 
-    private static getProcessedMessagesKey(redditId: string): string {
+    static getProcessedMessagesKey(redditId: string): string {
         return `processed:messages:${redditId}`;
     }
     // #endregion
@@ -58,13 +58,13 @@ export class StorageManager {
             unixTimestamp: unixTimestamp.toString()
         };
 
-        await redis.hSet(this.getLogKey(entry.discordMessageId), redisPayload);
-        
-        // Index by Reddit ID (for finding messages linked to a post)
-        await redis.zAdd(this.getIndexKey(entry.redditId), { score: 1, member: entry.discordMessageId });
-        
-        // Index by Time (for cleanup and "Recent" queries)
-        await redis.zAdd(this.getChronoIndexKey(), { score: unixTimestamp, member: entry.discordMessageId });
+        await Promise.all([
+            redis.hSet(this.getLogKey(entry.discordMessageId), redisPayload),
+            redis.expire(this.getLogKey(entry.discordMessageId), PRUNE_AGE_SECONDS + ONE_DAY_SECONDS),
+            redis.zAdd(this.getIndexKey(entry.redditId), { score: 1, member: entry.discordMessageId }),
+            redis.expire(this.getIndexKey(entry.redditId), PRUNE_AGE_SECONDS + ONE_DAY_SECONDS),
+            redis.zAdd(this.getChronoIndexKey(), { score: unixTimestamp, member: entry.discordMessageId })
+        ]);
     }
 
     /**

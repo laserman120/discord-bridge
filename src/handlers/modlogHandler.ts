@@ -6,6 +6,7 @@ import { WebhookManager } from '../managers/webhookManager.js';
 import { EmbedManager } from '../managers/embedManager.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { ContentDataManager } from '../managers/contentDataManager.js';
+import { DISCORD_ERROR_CODES } from '../config/constants.js';
 
 /**
  * Bridges General Moderator Logs from Reddit to Discord.
@@ -62,6 +63,11 @@ export class ModLogHandler extends BaseHandler {
             }, context);
             return true;
         } else {
+            if(messageId && DISCORD_ERROR_CODES.includes(messageId.replace('failed_id_error_', ''))) 
+            {
+                UtilityManager.log(`[ModLogHandler] Discord webhook ran into error: ${messageId.replace('failed_id_error_', '')}`);
+                return true;
+            }
             return false;
         }
     }
