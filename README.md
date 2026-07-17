@@ -73,6 +73,14 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
 
+- 0.15.10
+  - Backend safety features to prevent data overflow.
+  - Improved handling of Spam removals
+
+- 0.15.08
+  - Fixed major issue with discord error handling.
+  - Implemented Debug options in the settings. (Warning: Debug options are only meant to be used when instructed to do so.)
+
 - 0.15.00
   - Added setting to the Report Feed to remove handled messages instead of updating.
   - Added setting to the ModMail Feed to remove handled messages instead of updating.

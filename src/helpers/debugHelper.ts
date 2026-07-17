@@ -86,6 +86,29 @@ export class DebugHelper {
     }
 
     /**
+         * Checks queue size and wipes it if it exceeds a critical threshold to prevent overflow.
+         */
+    static async checkQueueOverflow(context: JobContext | TriggerContext, limit: number = 20000): Promise<void> {
+        try {
+            const queueCount = await context.redis.zCard(QueueManager.QUEUE_KEY);
+            if (queueCount >= limit) {
+                UtilityManager.error(`[CRITICAL WARNING] Queue size (${queueCount}) exceeded maximum limit (${limit}). Initiating emergency wipe.`);
+                
+                await this.wipeQueue(context);
+
+                const currentSub = await context.reddit.getCurrentSubreddit();
+                await context.reddit.modMail.createModNotification({
+                    subject: `CRITICAL: Queue Overflow Prevented`,
+                    bodyMarkdown: `**Emergency Queue Wipe Executed**\n\nThe Discord Bridge queue reached an abnormal size of ${queueCount} items, exceeding the safe limit of ${limit}.\n\nAll pending events have been wiped.\n\nTo further investigate please reach out directly. [Here](https://www.reddit.com/message/compose/?to=_GLAD0S_) `,
+                    subredditId: currentSub.id
+                });
+            }
+        } catch (error) {
+            UtilityManager.error('[DebugHelper] Failed to execute checkQueueOverflow:', error);
+        }
+    }
+
+    /**
      * Gathers system metrics and sends a modmail report. Limited to 1 per hour.
      */
     static async sendStatusReport(context: JobContext): Promise<void> {

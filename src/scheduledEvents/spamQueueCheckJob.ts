@@ -16,11 +16,17 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
 
     const now = Date.now();
     const cutoffTimestamp = now - (PRUNE_AGE_SECONDS * 1000);
+    const processedKey = `spamcheck:processed`;
 
     for (const item of spamQueue) {
         const isPost = item.id.startsWith("t3_");
 
         if (item.createdAt.getTime() < cutoffTimestamp) {
+            continue;
+        }
+
+        const isProcessed = await context.redis.zScore(processedKey, item.id);
+        if (isProcessed !== undefined) {
             continue;
         }
 
@@ -50,33 +56,33 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
                 id: item.id
             };
 
-            if (hasConflictingLog && !alreadyLogged) {
-                //Logs do exist, but not in removals
-                UtilityManager.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other.`);
-                if (scanEnabled) {
+            if (existingLogs.length > 0) {
+                if (hasConflictingLog && !alreadyLogged) {
+                    // Logs do exist, but not in removals
+                    UtilityManager.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other.`);
+                    if (scanEnabled) {
+                        await QueueManager.enqueue({
+                            handler: 'SpamRemovalHandler',
+                            data: mockEvent
+                        }, context);
+                    }
                     await QueueManager.enqueue({
-                        handler: 'SpamRemovalHandler',
+                        handler: 'StateSyncHandler',
                         data: mockEvent
                     }, context);
+                } else if (hasConflictingLog && alreadyLogged) {
+                    // Logs exist and are in removals, but not marked as spam/removed
+                    UtilityManager.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other, but already logged in removals.`);
+                    await QueueManager.enqueue({
+                        handler: 'StateSyncHandler',
+                        data: mockEvent
+                    }, context);
+                } else {
+                    // Item has logs and currentStatus IS Spam or Removed. It is correctly handled.
+                    UtilityManager.log(`[SpamCheck] ${item.id} is already correctly tracked as Spam/Removed.`);
                 }
-
-                await QueueManager.enqueue({
-                    handler: 'StateSyncHandler',
-                    data: mockEvent
-                }, context);
-            } else if (hasConflictingLog && alreadyLogged) {
-                // Logs exist and are in removals, but not marked as spam/removed
-                UtilityManager.log(`[SpamCheck] Conflict detected for ${item.id}. Real: Removed/Spam, DB: Live/Other, but already logged in removals.`);
-
-                await QueueManager.enqueue({
-                    handler: 'StateSyncHandler',
-                    data: mockEvent
-                }, context);
-            } else if (alreadyLogged) {
-                // It's in the spam queue and we already logged it as removed.
-                UtilityManager.log(`[SpamCheck] ${item.id} is correctly logged as removed.`);
             } else {
-                // no logs exist for the item
+                // Truly no logs exist for the item
                 UtilityManager.log(`[SpamCheck] New silent removal detected: ${item.id}.`);
 
                 if (scanEnabled) {
@@ -90,6 +96,11 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
                     handler: 'StateSyncHandler',
                     data: mockEvent
                 }, context);
+
+                await Promise.all([
+                    context.redis.zAdd(processedKey, { member: item.id, score: now }),
+                    context.redis.expire(processedKey, PRUNE_AGE_SECONDS)
+                ]);
             }
         } else {
             // Manually removed by mod, or deleted by user.

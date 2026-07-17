@@ -49,6 +49,9 @@ export class QueueManager {
      */
     static async enqueue(task: QueueTask, context: TriggerContext, delaySeconds: number = 0): Promise<void> {
         try {
+
+            await DebugHelper.checkQueueOverflow(context);
+
             const settings = await context.settings.getAll();
             
             if (settings['DEBUG_WIPE_QUEUE']) {
