@@ -73,9 +73,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
 
-- 0.15.10
+- 0.15.12
   - Backend safety features to prevent data overflow.
   - Improved handling of Spam removals
+  - Adjusted update notification
 
 - 0.15.08
   - Fixed major issue with discord error handling.

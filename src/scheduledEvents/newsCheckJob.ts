@@ -59,7 +59,7 @@ export async function checkNewsUpdates(event: any, context: JobContext): Promise
             const cleanBody = UtilityManager.cleanBodyText(post.body || '');
             const convId = await context.reddit.modMail.createModNotification({
                 subject: `Discord Bridge ${notificationType}: ${cleanTitle}`,
-                bodyMarkdown: `**Discord Bridge ${notificationType}**\n\n${post.url}\n\n${cleanBody ? cleanBody.substring(0, 1000) + '...' : ''}\n\n*You can disable these notifications in the App Settings.*\n\n*This is an automatic message, if you require assistance, have questions or want to request a feature, contact me directly* ( [Here](https://www.reddit.com/message/compose/?to=_GLAD0S_) ) *or create a post in* [r/Discord_Bridge](https://www.reddit.com/r/Discord_Bridge/)`,
+                bodyMarkdown: `**Discord Bridge ${notificationType}**\n\n${post.url}\n\n${cleanBody ? cleanBody.substring(0, 1000) + '...' : ''}\n\n**To update the app please visit:** https://developers.reddit.com/r/${currentSub.name}/apps **and press "Update".**\n*You can disable these notifications in the App Settings.*\n\n*This is an automatic message, if you require assistance, have questions or want to request a feature, contact me directly* ( [Here](https://www.reddit.com/message/compose/?to=_GLAD0S_) ) *or create a post in* [r/Discord_Bridge](https://www.reddit.com/r/Discord_Bridge/)`,
                 subredditId: currentSub.id
             });
 
