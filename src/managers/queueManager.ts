@@ -225,11 +225,9 @@ export class QueueManager {
             if (allItemIds.size > 0) {
                 try {
                     const subreddit = await context.reddit.getCurrentSubreddit();
-                    const [items, queueItems] = await Promise.all([
-                        subreddit.getCommentsAndPostsByIds(Array.from(allItemIds)).all(),
-                        subreddit.getModQueue().all()
-                    ]);
-                    
+                    const items = await subreddit.getCommentsAndPostsByIds(Array.from(allItemIds)).all();
+                    const queueItems = await subreddit.getModQueue().all();
+
                     items.forEach(item => contentCache.set(item.id, item));
                     modQueue = queueItems;
                 } catch (e) {
@@ -278,7 +276,6 @@ export class QueueManager {
 
     /**
      * Utility to extract Reddit ThingID from various event data shapes.
-     * Keeps logic identical to original implementation.
      */
     private static extractItemId(payload: QueueTask): string | undefined {
         const d = payload.data;
@@ -289,7 +286,6 @@ export class QueueManager {
 
     private static async dispatch(task: QueueTask, context: JobContext, currentQueue?: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<boolean> {
         const { handler, data } = task;
-        // The handlers expect TriggerContext; JobContext is a compatible subset for these operations.
         const ctx = context as any; 
         let returnData;
         switch (handler) {

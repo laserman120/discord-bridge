@@ -14,6 +14,8 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
 
     const spamQueue = await subreddit.getSpam({ limit: 100, type: "all" }).all();
 
+    const modQueue = await subreddit.getModQueue().all()
+
     const now = Date.now();
     const cutoffTimestamp = now - (PRUNE_AGE_SECONDS * 1000);
     const processedKey = `spamcheck:processed`;
@@ -39,6 +41,12 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
             }
         } else if (!item.isRemoved() && !item.isSpam()) {
                 isSilentRemoval = true;
+        }
+
+        if(modQueue.some(queueItem => queueItem.id === item.id))
+        {
+            // Item is present in the Mod Queue, it cannot be a silent removal.
+            isSilentRemoval = false;
         }
 
         if (isSilentRemoval) {
