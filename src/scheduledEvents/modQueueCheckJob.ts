@@ -19,7 +19,7 @@ export async function checkModQueue(event: any, context: JobContext): Promise<vo
         UtilityManager.error('[ModQueueCheckJob] Failed to get subreddit instance.');
         return;
     }
-    const currentQueue = await subreddit.getModQueue().all();
+    const currentQueue = await subreddit.getModQueue({ type: 'all', limit: 100 }).all();
     if(!currentQueue){
         UtilityManager.error('[ModQueueCheckJob] Failed to fetch mod queue.');
         return;

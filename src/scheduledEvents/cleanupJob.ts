@@ -1,19 +1,20 @@
 import { Devvit, JobContext } from '@devvit/public-api';
 import { StorageManager, LogEntry } from '../managers/storageManager.js';
 import { WebhookManager } from '../managers/webhookManager.js';
-import { PRUNE_AGE_SECONDS } from '../config/constants.js';
+import { PRUNE_AGE_SECONDS, SCHEDULED_JOB_TIMEOUT_MS } from '../config/constants.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { QueueManager } from '../managers/queueManager.js';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function cleanupJob(event: any, context: JobContext): Promise<void> {
-    await cleanupOldMessages(event, context);
+    const timeoutTime = Date.now() + SCHEDULED_JOB_TIMEOUT_MS;
+    await cleanupOldMessages(event, context, timeoutTime);
     await cleanupStuckQueue(context);
-    await deletionSyncJob(event, context);
+    await deletionSyncJob(event, context, timeoutTime);
 }
 
-export async function cleanupOldMessages(event: any, context: JobContext): Promise<void> {
+export async function cleanupOldMessages(event: any, context: JobContext, timeOut: number): Promise<void> {
     UtilityManager.log('[OldCleanup] Starting scheduled old message cleanup...');
 
     try {
@@ -29,6 +30,10 @@ export async function cleanupOldMessages(event: any, context: JobContext): Promi
         let successfulDeletions = 0;
 
         for (const discordId of expiredDiscordIds) {
+            if (Date.now() > timeOut) {
+                UtilityManager.log(`[OldCleanup] Timeout reached. Stopping cleanup job early. Processed ${successfulDeletions} items so far.`);
+                break;
+            }
             const entry = await StorageManager.getLogEntry(discordId, context);
 
             if (!entry) {
@@ -107,7 +112,7 @@ export async function cleanupStuckQueue(context: JobContext): Promise<void> {
     }
 }
 
-export async function deletionSyncJob(event: any, context: JobContext): Promise<void> {
+export async function deletionSyncJob(event: any, context: JobContext, timeout: number): Promise<void> {
     UtilityManager.log('[DeletionSync] Starting deletion sync sweep for recent items...');
     try {
         const recentIds = await StorageManager.getRecentTrackedPostIds(100, context as any);
@@ -128,6 +133,10 @@ export async function deletionSyncJob(event: any, context: JobContext): Promise<
         }
         UtilityManager.log(`[DeletionSync] Fetched ${recentIds.length} items. Checking for deletions...`);
         for (const id of recentIds) {
+            if(Date.now() > timeout) {
+                UtilityManager.log(`[DeletionSync] Timeout reached. Stopping deletion sync job early. Queued ${foundDeleted} items so far.`);
+                break;
+            }
             try {
                 let isDeleted = false;
                 const item = fetchedItemsMap.get(id);

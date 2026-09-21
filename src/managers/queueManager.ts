@@ -16,7 +16,7 @@ import { UpdateHandler } from '../handlers/updateHandler.js';
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
-import { MAX_AGE_QUEUE_SECONDS } from '../config/constants.js';
+import { MAX_AGE_QUEUE_SECONDS, SCHEDULED_JOB_TIMEOUT_MS } from '../config/constants.js';
 import { DebugHelper } from '../helpers/debugHelper.js';
 
 export type HandlerName =
@@ -90,6 +90,7 @@ export class QueueManager {
      * and dispatches to appropriate handlers.
      */
     static async processQueue(_event: any, context: JobContext): Promise<void> {
+        const timeoutTime = Date.now() + SCHEDULED_JOB_TIMEOUT_MS;
 
         const settings = await context.settings.getAll();
         let haltProcessing = false;
@@ -130,10 +131,7 @@ export class QueueManager {
                 return;
             } 
             
-            if (!isTimestampValid) {
-                UtilityManager.log('[Queue] Queue Pause: Legacy lock format ("true") detected. Overriding for migration...');
-                context.redis.del(QueueManager.PAUSE_KEY);
-            } else if (isExpired) {
+            if (isExpired) {
                 UtilityManager.log('[Queue] Stale timestamp pause detected. Overriding...');
                 context.redis.del(QueueManager.PAUSE_KEY);
             }
@@ -155,9 +153,7 @@ export class QueueManager {
                 return;
             } 
             
-            if (!isTimestampValid) {
-                UtilityManager.log('[Queue] Legacy lock format ("true") detected. Overriding for migration...');
-            } else if (isExpired) {
+            if (isExpired) {
                 UtilityManager.log('[Queue] Stale timestamp lock detected. Overriding...');
             }
         }
@@ -177,7 +173,7 @@ export class QueueManager {
 
         try {
             const now = Date.now();
-            const MAX_BATCH_SIZE = 100;
+            const MAX_BATCH_SIZE = 50;
 
             // Fetch only tasks where score (processAt) is <= now
             const taskIds = await context.redis.zRange(
@@ -197,6 +193,7 @@ export class QueueManager {
             const allItemIds = new Set<string>();
 
             // Parse payloads and collect Reddit IDs for batch fetching
+            let requiresModQueue = false;
             taskDataStrings.forEach((str, index) => {
                 if (!str) return;
                 try {
@@ -213,6 +210,9 @@ export class QueueManager {
                     if (itemId?.startsWith('t3_') || itemId?.startsWith('t1_')) {
                         allItemIds.add(itemId);
                     }
+                    if (payload.handler == "ModQueueHandler") {
+                        requiresModQueue = true;
+                    }
                 } catch (e) {
                     UtilityManager.error('[Queue] Payload parse error', e);
                 }
@@ -226,10 +226,10 @@ export class QueueManager {
                 try {
                     const subreddit = await context.reddit.getCurrentSubreddit();
                     const items = await subreddit.getCommentsAndPostsByIds(Array.from(allItemIds)).all();
-                    const queueItems = await subreddit.getModQueue().all();
-
+                    if(requiresModQueue) {
+                        modQueue = await subreddit.getModQueue({ type: 'all', limit: 100 }).all();
+                    }               
                     items.forEach(item => contentCache.set(item.id, item));
-                    modQueue = queueItems;
                 } catch (e) {
                     UtilityManager.error('[Queue] Batch fetch failed, pausing queue for 5 minutes...:', e);
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -240,6 +240,12 @@ export class QueueManager {
 
             // Dispatch Tasks
             for (const task of tasks) {
+                // Check for timeout
+                if(Date.now() > timeoutTime) {
+                    UtilityManager.log('[Queue] Worker timeout reached. Exiting...');
+                    break;
+                }
+
                 const itemId = this.extractItemId(task.payload);
                 const preFetchedItem = itemId ? contentCache.get(itemId) : undefined;
 

@@ -14,7 +14,7 @@ export async function checkSpamQueue(event: any, context: JobContext): Promise<v
 
     const spamQueue = await subreddit.getSpam({ limit: 100, type: "all" }).all();
 
-    const modQueue = await subreddit.getModQueue().all()
+    const modQueue = await subreddit.getModQueue({ type: 'all', limit: 100 }).all()
 
     const now = Date.now();
     const cutoffTimestamp = now - (PRUNE_AGE_SECONDS * 1000);

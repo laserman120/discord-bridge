@@ -12,3 +12,4 @@ export const MAX_AGE_QUEUE_SECONDS = 14 * ONE_DAY_SECONDS // 14 days in seconds,
 export const NEWS_MAX_AGE_MS = 12 * 60 * 60 * 1000; // Max age of news posts to consider for notifications (12 hours)
 export const MAX_MODMAIL_AGE_MS = 10 * 60 * 1000; // 10 minutes, if a modmail conversation has messages older than 10 minutes that are untracked we ignore them.
 export const DISCORD_ERROR_CODES = ["400", "401", "403", "404", "405", "413"]
+export const SCHEDULED_JOB_TIMEOUT_MS = 20 * 1000; // 20 seconds, timeout for scheduled jobs

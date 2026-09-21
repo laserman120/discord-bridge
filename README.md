@@ -72,8 +72,10 @@ Making at easy to keep track of anything related to your subreddit directly from
 ## Changelog
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
+- 0.15.16
+  - Backend Improvements for stability
 
-- 0.15.14
+- 0.15.15
   - Minor backend changes
 
 - 0.15.13

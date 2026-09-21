@@ -137,36 +137,36 @@ export class ComponentManager {
 
     static async createDefaultMessage(details: ContentDetails, status: ItemState, channelType: ChannelType, context: TriggerContext, pingableMessage?: string): Promise<ComponentPayload> {
         // --- SETTINGS FETCHING ---
+        const settings = await context.settings.getAll();
+        const publicShowIcon = settings['PUBLIC_SHOW_DEFAULT_ICON'] as boolean || false;
+        const privateShowIcon = settings['PRIVATE_SHOW_DEFAULT_ICON'] as boolean || false;
 
-        const publicShowIcon = await context.settings.get('PUBLIC_SHOW_DEFAULT_ICON') as boolean || false;
-        const privateShowIcon = await context.settings.get('PRIVATE_SHOW_DEFAULT_ICON') as boolean || false;
+        const publicShowMoreBody = settings['PUBLIC_DISPLAY_MORE_BODY'] as boolean || false;
+        const publicShowNsfwBody = settings['PUBLIC_SHOW_NSFW_BODY'] as boolean || false;
+        const publicShowSpoilerBody = settings['PUBLIC_SHOW_SPOILER_BODY'] as boolean || false;
+        const publicShowNsfwImage = settings['PUBLIC_SHOW_NSFW_IMAGES'] as boolean || false;
+        const publicShowSpoilerImage = settings['PUBLIC_SHOW_SPOILER_IMAGE'] as boolean || false;
+        const publicShowAuthor = settings['PUBLIC_SHOW_AUTHOR'] as boolean || false;
+        const publicShowFlair = settings['PUBLIC_SHOW_FLAIR'] as boolean || false;
+        const publicShowContentWarning = settings['PUBLIC_SHOW_CONTENT_WARNING'] as boolean || false;
 
-        const publicShowMoreBody = await context.settings.get('PUBLIC_DISPLAY_MORE_BODY')
-        const publicShowNsfwBody = await context.settings.get('PUBLIC_SHOW_NSFW_BODY') as boolean || false;
-        const publicShowSpoilerBody = await context.settings.get('PUBLIC_SHOW_SPOILER_BODY') as boolean || false;
-        const publicShowNsfwImage = await context.settings.get('PUBLIC_SHOW_NSFW_IMAGES') as boolean || false;
-        const publicShowSpoilerImage = await context.settings.get('PUBLIC_SHOW_SPOILER_IMAGE') as boolean || false;
-        const publicShowAuthor = await context.settings.get('PUBLIC_SHOW_AUTHOR') as boolean || false;
-        const publicShowFlair = await context.settings.get('PUBLIC_SHOW_FLAIR') as boolean || false;
-        const publicShowContentWarning = await context.settings.get('PUBLIC_SHOW_CONTENT_WARNING') as boolean || false;
+        const showModQueueButton = settings['MOD_QUEUE_BUTTON'] as boolean || false;
 
-        const showModQueueButton = await context.settings.get('MOD_QUEUE_BUTTON') as boolean || false;
+        const privateShowMoreBody = settings['PRIVATE_DISPLAY_MORE_BODY'] as boolean || false;
+        const showArcticShift = settings['PRIVATE_SHOW_ARCTIC_SHIFT_BUTTON'] as boolean || false;
+        const showAuthorButton = settings['PRIVATE_SHOW_DEFAULT_AUTHOR_BUTTON'] as boolean || false;
 
-        const privateShowMoreBody = await context.settings.get('PRIVATE_DISPLAY_MORE_BODY');
-        const showArcticShift = await context.settings.get('PRIVATE_SHOW_ARCTIC_SHIFT_BUTTON') as boolean || false;
-        const showAuthorButton = await context.settings.get('PRIVATE_SHOW_DEFAULT_AUTHOR_BUTTON') as boolean || false;
+        const showAuthorAge = settings['PRIVATE_SHOW_AUTHOR_AGE'] as boolean || false;
 
-        const showAuthorAge = await context.settings.get('PRIVATE_SHOW_AUTHOR_AGE') as boolean || false;
+        const showAuthorFlair = settings['PRIVATE_SHOW_AUTHOR_FLAIR'] as boolean || false;
+        const showPostFlair = settings['PRIVATE_SHOW_POST_FLAIR'] as boolean || false;
 
-        const showAuthorFlair = await context.settings.get('PRIVATE_SHOW_AUTHOR_FLAIR') as boolean || false;
-        const showPostFlair = await context.settings.get('PRIVATE_SHOW_POST_FLAIR') as boolean || false;
-
-        const showTotalKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_KARMA') as boolean || false;
-        const showLinkKarma = await context.settings.get('PRIVATE_SHOW_LINK_KARMA') as boolean || false;
-        const showCommentKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_KARMA') as boolean || false;
-        const showTotalSubKarma = await context.settings.get('PRIVATE_SHOW_TOTAL_SUB_KARMA') as boolean || false;
-        const showLinkSubKarma = await context.settings.get('PRIVATE_SHOW_LINK_SUB_KARMA') as boolean || false;
-        const showCommentSubKarma = await context.settings.get('PRIVATE_SHOW_COMMENT_SUB_KARMA') as boolean || false;
+        const showTotalKarma = settings['PRIVATE_SHOW_TOTAL_KARMA'] as boolean || false;
+        const showLinkKarma = settings['PRIVATE_SHOW_LINK_KARMA'] as boolean || false;
+        const showCommentKarma = settings['PRIVATE_SHOW_COMMENT_KARMA'] as boolean || false;
+        const showTotalSubKarma = settings['PRIVATE_SHOW_TOTAL_SUB_KARMA'] as boolean || false;
+        const showLinkSubKarma = settings['PRIVATE_SHOW_LINK_SUB_KARMA'] as boolean || false;
+        const showCommentSubKarma = settings['PRIVATE_SHOW_COMMENT_SUB_KARMA'] as boolean || false;
 
         const { statusText, actionText } = await this.getStatusDetails(status, context);
         const color = await UtilityManager.getColorFromState(status, context);
