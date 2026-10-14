@@ -15,6 +15,7 @@ import { ModActivityHandler } from '../handlers/modActivityHandler.js';
 import { UpdateHandler } from '../handlers/updateHandler.js'; 
 import { ModQueueHandler } from '../handlers/modQueueHandler.js';
 import { SpamRemovalHandler } from '../handlers/spamRemovalHandler.js';
+import { EditedContentHandler } from '../handlers/editedContentHandler.js';
 import { UtilityManager } from '../helpers/utilityHelper.js';
 import { MAX_AGE_QUEUE_SECONDS, SCHEDULED_JOB_TIMEOUT_MS } from '../config/constants.js';
 import { DebugHelper } from '../helpers/debugHelper.js';
@@ -24,7 +25,8 @@ export type HandlerName =
     | 'RemovalHandler' | 'RemovalReasonHandler' | 'ReportHandler'
     | 'ModLogHandler' | 'DeletionHandler' | 'FlairWatchHandler'
     | 'ModActivityHandler' | 'ModAbuseHandler' | 'ModMailHandler'
-    | 'ModQueueHandler' | 'UpdateHandler' | 'SpamRemovalHandler';
+    | 'ModQueueHandler' | 'UpdateHandler' | 'SpamRemovalHandler'
+    | 'EditedContentHandler';
 
 export interface QueueTask {
     handler: HandlerName;
@@ -287,7 +289,7 @@ export class QueueManager {
         const d = payload.data;
         if (d.type === 'CommentDelete') return d.commentId;
         if (d.type === 'PostDelete') return d.postId;
-        return d.id || d.itemId ||  d.targetComment?.id || d.targetPost?.id || d.commentId || d.postId;
+        return d.id || d.itemId ||  d.targetComment?.id || d.targetPost?.id || d.commentId || d.postId || d.comment?.id || d.post?.id;
     }
 
     private static async dispatch(task: QueueTask, context: JobContext, currentQueue?: (Post | Comment)[], preFetchedContent?: Post | Comment): Promise<boolean> {
@@ -303,6 +305,7 @@ export class QueueManager {
             case 'RemovalReasonHandler': returnData =  await RemovalReasonHandler.handle(data, ctx, preFetchedContent); break;
             case 'ModLogHandler': returnData = await ModLogHandler.handle(data, ctx); break;
             case 'UpdateHandler': returnData = await UpdateHandler.handle(data, ctx, preFetchedContent); break;
+            case 'EditedContentHandler': returnData = await EditedContentHandler.handle(data, ctx, preFetchedContent); break;
             case 'FlairWatchHandler': returnData = await FlairWatchHandler.handle(data, ctx, preFetchedContent); break;
             case 'ModActivityHandler': returnData = await ModActivityHandler.handle(data, ctx, preFetchedContent); break;
             case 'ModAbuseHandler': returnData = await ModAbuseHandler.handle(data, ctx); break;

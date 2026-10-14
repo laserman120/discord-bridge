@@ -1,5 +1,5 @@
 ﻿import { Devvit } from '@devvit/public-api';
-import { translationOverridesGroup, privateMessageCustomizationGroup, publicMessageCustomizationGroup, appNotificationGroup, publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup, modQueueGroup, debugGroup } from './config/settings.js';
+import { editGroup, translationOverridesGroup, privateMessageCustomizationGroup, publicMessageCustomizationGroup, appNotificationGroup, publicNotificationGroup, newPostsGroup, removalGroup, reportGroup, modmailGroup, modlogGroup, flairWatchConfigField, modAbuseGroup, moderatorWatchConfigGrup, customizationGroup, modMailCustomizationGroup, modQueueGroup, debugGroup } from './config/settings.js';
 import { cleanupJob, deletionSyncJob } from './scheduledEvents/cleanupJob.js';
 import { checkModMailStatus } from './scheduledEvents/modMailSyncJob.js';
 import { QueueManager } from './managers/queueManager.js';
@@ -18,6 +18,7 @@ Devvit.addSettings([
     modQueueGroup,
     removalGroup,
     reportGroup,
+    editGroup, 
     modmailGroup,
     modlogGroup,
     flairWatchConfigField,
@@ -131,12 +132,20 @@ Devvit.addTrigger({
 Devvit.addTrigger({
     events: ['PostUpdate', 'CommentUpdate', 'PostNsfwUpdate', 'PostSpoilerUpdate', 'PostFlairUpdate'],
     onEvent: async (event, context) => {
+        const webhookEdited = await context.settings.get('WEBHOOK_EDITED_CONTENT');
+
         if ((event.type == 'PostUpdate' || event.type == 'PostNsfwUpdate' || event.type == 'PostSpoilerUpdate' || event.type == 'PostFlairUpdate') && event.post) {
             await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 5);
+            if (event.type == 'PostUpdate' && webhookEdited) {
+                await QueueManager.enqueue({ handler: 'EditedContentHandler', data: event }, context, 5);
+            }
         }
 
         if (event.type == 'CommentUpdate' && event.comment) {
             await QueueManager.enqueue({ handler: 'UpdateHandler', data: event }, context, 5);
+            if (webhookEdited) {
+                await QueueManager.enqueue({ handler: 'EditedContentHandler', data: event }, context, 5);
+            }
         }
     },
 });

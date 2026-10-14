@@ -181,7 +181,7 @@ export class ComponentManager {
         }
 
         // TITLE & IMAGE HANDLING
-        let titleText = details.type === 'post' ? details.title.substring(0, 256) : await TranslationHelper.t(TranslationKey.TEXT_COMMENT_BY, context, { author: details.authorName }, isPublic);
+        let titleText = details.type === 'post' ? details.title.substring(0, 256) : await TranslationHelper.t(TranslationKey.TEXT_COMMENT_BY, context, { author: UtilityManager.escapeMarkdown(details.authorName) }, isPublic);
         const titleMarkdown = `### ${titleText}`;
 
         let imageUrl: string | undefined = details.imageUrl;

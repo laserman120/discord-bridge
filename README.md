@@ -18,6 +18,7 @@ Making at easy to keep track of anything related to your subreddit directly from
   - Removals, as well as why the removal occured
   - Spam removals
   - Reports
+  - Edits
   - ModMail
   - ModLog
   - Posts made with specific flairs
@@ -72,6 +73,12 @@ Making at easy to keep track of anything related to your subreddit directly from
 ## Changelog
 
 **Full Patch Notes:** For a detailed list of every bug fix and minor change, please visit our [Wiki Page](https://github.com/laserman120/discord-bridge/wiki/X-%E2%80%90-Patch-Notes).
+- 0.15.17
+  - Added an Edited feed
+    - This feed will show recent edits made, if a message is edited several times the old ones will be deleted.
+  - Fixed issue with incorrect URLs to the Authors Profile Page
+  - Updated dependencies
+
 - 0.15.16
   - Backend Improvements for stability
 

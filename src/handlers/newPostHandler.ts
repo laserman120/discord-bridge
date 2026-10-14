@@ -37,7 +37,7 @@ export class NewPostHandler extends BaseHandler {
 
         // Resolve Content (respecting pre-fetched data)
         const contentItem = await this.fetchContent(postId, context, preFetchedContent);
-        if (!contentItem || !(contentItem instanceof Post)) {
+        if (!contentItem || !contentItem.id.startsWith('t3_')) {
             return true;
         }
 

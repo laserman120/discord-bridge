@@ -33,7 +33,7 @@ export class PublicPostHandler extends BaseHandler {
         }
 
         const contentItem = await this.fetchContent(postId, context, preFetchedContent);
-        if (!contentItem || !(contentItem instanceof Post)) return true;
+        if (!contentItem || !contentItem.id.startsWith('t3_') || !('title' in contentItem)) return true;
 
         const contentData = await ContentDataManager.gatherDetails(contentItem, context, event);
         if (contentData.removalReason || contentData.removedBy) {

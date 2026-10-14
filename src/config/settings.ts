@@ -508,6 +508,33 @@ export const reportGroup = {
     ]
 };
 
+export const editGroup = {
+    type: 'group' as const,
+    label: 'Edited Settings',
+    helpText: 'Configure how edits are handled and notified.\nEach edit will create a new message and delete old ones.',
+    fields: [
+        {
+            type: 'string' as const,
+            name: 'WEBHOOK_EDITED_CONTENT',
+            label: 'Edits Webhook URL',
+            required: false,
+            scope: 'installation' as const,
+            helpText: `Channel that sends messages when an item is edited.`,
+            onValidate: async ({ value }: { value?: string }) => {
+                return UtilityManager.validateWebhookUrl(value);
+            }
+        },
+        {
+            type: 'string' as const,
+            name: 'EDITED_CONTENT_MESSAGE',
+            label: 'Pingable Edit Message',
+            defaultValue: 'New Edit',
+            scope: 'installation' as const,
+            helpText: 'Custom text sent with notification',
+        },
+    ]
+};
+
 export const modmailGroup = {
     type: 'group' as const,
     label: 'ModMail Settings',

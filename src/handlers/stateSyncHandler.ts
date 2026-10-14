@@ -79,7 +79,8 @@ export class StateSyncHandler extends BaseHandler {
             ChannelType.Removals,
             ChannelType.Reports,
             ChannelType.FlairWatch,
-            ChannelType.ModActivity
+            ChannelType.ModActivity,
+            ChannelType.EditedContent
         ];
 
         const deleteReports = await context.settings.get('REPORT_DELETE_ON_HANDLE') as boolean;

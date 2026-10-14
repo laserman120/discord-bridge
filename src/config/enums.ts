@@ -24,6 +24,7 @@ export enum ChannelType {
     PublicFlairWatch = 'PUBLIC_FLAIR_WATCH_CHANNEL',
     ModActivity = 'MOD_ACTIVITY_CHANNEL',
     ModQueue = 'MOD_QUEUE_CHANNEL',
+    EditedContent = 'EDITED_CONTENT_CHANNEL',
 }
 export enum ContentType {
     Post = 'POST',

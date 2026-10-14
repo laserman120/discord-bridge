@@ -17,6 +17,8 @@ export abstract class BaseHandler {
             event.targetPost?.id ||    // ModAction on a post
             event.commentId ||         // CommentDelete event
             event.postId ||            // PostDelete event
+            event.comment?.id || 
+            event.post?.id  || 
             event.conversationId?.replace('ModmailConversation_', '') // 7. Modmail events
         );
     }
